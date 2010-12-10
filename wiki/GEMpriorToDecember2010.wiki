@@ -4,11 +4,12 @@ A brief history of GEM.
 
 GEM was created by the New Zealand Electricity Commission in 2006. While used to support several areas of work, its primary purpose for the first 3 or 4 years was in supporting the analysis of grid upgrade proposals.
 
-On 1 November 2010 the Electricity Commission was dis-established and replaced with the Electricity Authority (www.ea.govt.nz). As a regulatory agency, the objective and functions of the EA are quite different from its predecessor. One of its key functions is to monitor the performance of all aspects of the electricity sector. In this role, the EA will continue to develop, maintain, and employ GEM. The EA will also continue to make GEM freely available to any person interested in using it.
+On 1 November 2010 the Electricity Commission was dis-established and replaced with a new regulatory agency, the Electricity Authority (www.ea.govt.nz). The objective and functions of the EA are quite different from its predecessor. One of its new and important functions is to monitor the performance of all aspects of the electricity sector. In this role, the EA will continue to develop, maintain, and make use of GEM. The EA will also continue to make GEM freely available to any person or organisation interested in using it.
 
-=Version 2.0.0=
+=Recent versions of GEM=
+The last version of GEM released by the Electricity Commission was v1.5.10 in May 2010. See https://gemmodel.pbworks.com for all releases of GEM and associated documentation prior to December 2010. Please note that as of December 2010, the gemmodel.pbworks.com site will not be updated or maintained, although it will continue to be available.
+
+A slightly modified version of 1.5.10 (GEM_1_5_10_2010SOO) is available for download from thi site - click on the Downloads tab. The 2010 SOO was published by the Electricity Commission in September 2010. GEM_1_5_10_2010SOO contains the codes and data files necessary to replicate the results presented in the 2010 SOO.
+
+=Version 2.0.0 comin soon=
 A significantly revamped version of GEM, v2.0.0, will be released early in 2011.
-
-The last release of GEM by the Electricity Commission was v1.5.10 in May 2010. See https://gemmodel.pbworks.com for all releases of GEM and associated documentation prior to December 2010. As of December 2010, the gemmodel.pbworks.com site will no longer be maintained.
-
-A slightly modified version of 1.5.10 (GEM_1_5_10_2010SOO) is available for download from http://code.google.com/p/gem/downloads. The 2010 SOO was published by the Electricity Commission in September 2010. GEM_1_5_10_2010SOO contains the codes and data files necessary to replicate the results presented therein.
