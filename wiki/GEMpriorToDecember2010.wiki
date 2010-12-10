@@ -1,0 +1,8 @@
+#The history of GEM.
+
+=Introduction=
+
+GEM was created by the New Zealand Electricity Commission in 2006. It's primary purpose for the first 3 or 4 years was in supporting the analysis of grid upgrade proposals. On 1 November 2010 the Electricity Commission
+
+=Further information=
+See https://gemmodel.pbworks.com
