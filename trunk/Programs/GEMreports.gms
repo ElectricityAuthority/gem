@@ -115,24 +115,24 @@ Sets
 
 * a) Sets and parameters from input GDX file - now with an extra dimension, i.e. set sc.
 Sets
-  mapf_fg(sc,f,fg)                    'Map fuel groups to fuel types'
-  techColor(sc,k,red,green,blue)      'RGB color mix for technologies - to pass to plotting applications'
-  fuelColor(sc,f,red,green,blue)      'RGB color mix for fuels - to pass to plotting applications'
-  fuelGrpcolor(sc,fg,red,green,blue)  'RGB color mix for fuel groups - to pass to plotting applications'
-  peaker(sc,k)                        'Peaking plant technologies'
-  demandGen(sc,k)                     'Demand side technologies modelled as generation'
-  regionCentroid(sc,i,r)              'Identify the centroid of each region with a substation'
+  mapf_fg(sc,f,fg)                              'Map fuel groups to fuel types'
+  techColor(sc,k,red,green,blue)                'RGB color mix for technologies - to pass to plotting applications'
+  fuelColor(sc,f,red,green,blue)                'RGB color mix for fuels - to pass to plotting applications'
+  fuelGrpcolor(sc,fg,red,green,blue)            'RGB color mix for fuel groups - to pass to plotting applications'
+  peaker(sc,k)                                  'Peaking plant technologies'
+  demandGen(sc,k)                               'Demand side technologies modelled as generation'
+  regionCentroid(sc,i,r)                        'Identify the centroid of each region with a substation'
 Parameters
-  i_nameplate(sc,g)                   'Nameplate capacity of generating plant, MW'
-  i_fixedOM(sc,g)                     'Fixed O&M costs by plant, $/kW/year'
-  i_refurbDecisionYear(sc,g)          'Decision year for endogenous "refurbish or retire" decision for eligble generation plant'
-  i_plantReservesCost(sc,g,rc)        'Plant-specific cost per reserve class, $/MWh'
-  i_VOLLcost(sc,s)                    'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
-  i_HVDCshr(sc,o)                     'Share of HVDC charge to be incurred by plant owner'
-  i_HVDClevy(sc,y)                    'HVDC charge levied on new South Island plant by year, $/kW'
-  i_hydroWeight(sc,hd)                'Weights on hydro outflows when multiple hydro outputs is used'
-  i_txCapacity(sc,r,rr,ps)            'Transmission path capacities (bi-directional), MW'
-  i_substnCoordinates(sc,i,geo)       'Geographic coordinates for substations'
+  i_nameplate(sc,g)                             'Nameplate capacity of generating plant, MW'
+  i_fixedOM(sc,g)                               'Fixed O&M costs by plant, $/kW/year'
+  i_refurbDecisionYear(sc,g)                    'Decision year for endogenous "refurbish or retire" decision for eligble generation plant'
+  i_plantReservesCost(sc,g,rc)                  'Plant-specific cost per reserve class, $/MWh'
+  i_VOLLcost(sc,s)                              'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
+  i_HVDCshr(sc,o)                               'Share of HVDC charge to be incurred by plant owner'
+  i_HVDClevy(sc,y)                              'HVDC charge levied on new South Island plant by year, $/kW'
+  i_hydroWeight(sc,hd)                          'Weights on hydro outflows when multiple hydro outputs is used'
+  i_txCapacity(sc,r,rr,ps)                      'Transmission path capacities (bi-directional), MW'
+  i_substnCoordinates(sc,i,geo)                 'Geographic coordinates for substations'
   ;
 
 $gdxin 'all_input.gdx'
@@ -146,49 +146,49 @@ i_txCapacity(sc,r,r,ps) = 0 ;
 
 * b) Sets and parameters from GEMdata GDX file - now with an extra dimension, i.e. set sc.
 Sets
-  firstPeriod(sc,t)                    'First time period (i.e. period within the modelled year)'
-  exist(sc,g)                          'Generation plant that are presently operating'
-  commit(sc,g)                         'Generation plant that are assumed to be committed'
-  new(sc,g)                            'Potential generation plant that are neither existing nor committed'
-  neverBuild(sc,g)                     'Generation plant that are determined a priori by user never to be built'
-  schedHydroPlant(sc,g)                'Schedulable hydro generation plant'
-  mapg_k(sc,g,k)                       'Map technology types to generating plant'
-  mapg_f(sc,g,f)                       'Map fuel types to generating plant'
-  mapg_o(sc,g,o)                       'Map plant owners to generating plant'
-  mapg_i(sc,g,i)                       'Map substations to generating plant'
-  mapg_r(sc,g,r)                       'Map regions to generating plant'
-  mapg_e(sc,g,e)                       'Map zones to generating plant'
-  mapg_ild(sc,g,ild)                   'Map islands to generating plant'
-  mapild_r(sc,ild,r)                   'Map the regions to islands'
-  sigen(sc,g)                          'South Island generation plant'
-  possibleToBuild(sc,g)                'Generating plant that may possibly be built in any valid build year'
-  possibleToRefurbish(sc,g)            'Generating plant that may possibly be refurbished in any valid modelled year'
-  possibleToEndogRetire(sc,g)          'Generating plant that may possibly be endogenously retired'
-  possibleToRetire(sc,g)               'Generating plant that may possibly be retired (exogenously or endogenously)'
-  validYrBuild(sc,g,y)                 'Valid years in which new generation plant may be built'
-  nwd(sc,r,rr)                         'Northward direction of flow on Benmore-Haywards HVDC'
-  swd(sc,r,rr)                         'Southward direction of flow on Benmore-Haywards HVDC'
-  paths(sc,r,rr)                       'All valid transmission paths'
-  transitions(sc,tupg,r,rr,ps,pss)     'For all transmission paths, define the allowable transitions from one upgrade state to another'
-  allowedStates(sc,r,rr,ps)            'All of the allowed states (initial and upgraded) for each active path'
+  firstPeriod(sc,t)                             'First time period (i.e. period within the modelled year)'
+  exist(sc,g)                                   'Generation plant that are presently operating'
+  commit(sc,g)                                  'Generation plant that are assumed to be committed'
+  new(sc,g)                                     'Potential generation plant that are neither existing nor committed'
+  neverBuild(sc,g)                              'Generation plant that are determined a priori by user never to be built'
+  schedHydroPlant(sc,g)                         'Schedulable hydro generation plant'
+  mapg_k(sc,g,k)                                'Map technology types to generating plant'
+  mapg_f(sc,g,f)                                'Map fuel types to generating plant'
+  mapg_o(sc,g,o)                                'Map plant owners to generating plant'
+  mapg_i(sc,g,i)                                'Map substations to generating plant'
+  mapg_r(sc,g,r)                                'Map regions to generating plant'
+  mapg_e(sc,g,e)                                'Map zones to generating plant'
+  mapg_ild(sc,g,ild)                            'Map islands to generating plant'
+  mapild_r(sc,ild,r)                            'Map the regions to islands'
+  sigen(sc,g)                                   'South Island generation plant'
+  possibleToBuild(sc,g)                         'Generating plant that may possibly be built in any valid build year'
+  possibleToRefurbish(sc,g)                     'Generating plant that may possibly be refurbished in any valid modelled year'
+  possibleToEndogRetire(sc,g)                   'Generating plant that may possibly be endogenously retired'
+  possibleToRetire(sc,g)                        'Generating plant that may possibly be retired (exogenously or endogenously)'
+  validYrBuild(sc,g,y)                          'Valid years in which new generation plant may be built'
+  nwd(sc,r,rr)                                  'Northward direction of flow on Benmore-Haywards HVDC'
+  swd(sc,r,rr)                                  'Southward direction of flow on Benmore-Haywards HVDC'
+  paths(sc,r,rr)                                'All valid transmission paths'
+  transitions(sc,tupg,r,rr,ps,pss)              'For all transmission paths, define the allowable transitions from one upgrade state to another'
+  allowedStates(sc,r,rr,ps)                     'All of the allowed states (initial and upgraded) for each active path'
 Parameters
-  yearNum(sc,y)                        'Real number associated with each year'
-  hoursPerBlock(sc,t,lb)               'Hours per load block by time period'
-  PVfacG(sc,y,t)                       "Generation investor's present value factor by period"
-  PVfacT(sc,y,t)                       "Transmission investor's present value factor by period"
-  capCharge(sc,g,y)                    'Annualised or levelised capital charge for new generation plant, $/MW/yr'
-  refurbCapCharge(sc,g,y)              'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
-  exogMWretired(sc,g,y)                'Exogenously retired MW by plant and year, MW'
-  SRMC(sc,g,y)                         'Short run marginal cost of each generation project by year, $/MWh'
-  locFac_Recip(sc,e)                   'Reciprocal of zonally-based location factors'
-  AClossFactors(sc,ild)                'Upwards adjustment to load to account for AC (or intraregional) losses'
-  NrgDemand(sc,r,y,t,lb)               'Load (or energy demand) by region, year, time period and load block for selected growth profile, GWh (used to create ldcMW)'
-  txEarlyComYr(sc,tupg,r,rr,ps,pss)    'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
-  txFixedComYr(sc,tupg,r,rr,ps,pss)    'Fixed year in which a transmission upgrade must occur (a parameter, not a set)'
-  reserveViolationPenalty(sc,ild,rc)   'Reserve violation penalty, $/MWh'
+  yearNum(sc,y)                                 'Real number associated with each year'
+  hoursPerBlock(sc,t,lb)                        'Hours per load block by time period'
+  PVfacG(sc,y,t)                                'Generation investor's present value factor by period'
+  PVfacT(sc,y,t)                                'Transmission investor's present value factor by period'
+  capCharge(sc,g,y)                             'Annualised or levelised capital charge for new generation plant, $/MW/yr'
+  refurbCapCharge(sc,g,y)                       'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
+  exogMWretired(sc,g,y)                         'Exogenously retired MW by plant and year, MW'
+  SRMC(sc,g,y)                                  'Short run marginal cost of each generation project by year, $/MWh'
+  locFac_Recip(sc,e)                            'Reciprocal of zonally-based location factors'
+  AClossFactors(sc,ild)                         'Upwards adjustment to load to account for AC (or intraregional) losses'
+  NrgDemand(sc,r,y,t,lb)                        'Load (or energy demand) by region, year, time period and load block for selected growth profile, GWh (used to create ldcMW)'
+  txEarlyComYr(sc,tupg,r,rr,ps,pss)             'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
+  txFixedComYr(sc,tupg,r,rr,ps,pss)             'Fixed year in which a transmission upgrade must occur (a parameter, not a set)'
+  reserveViolationPenalty(sc,ild,rc)            'Reserve violation penalty, $/MWh'
 *++++++++++
 * More non-free reserves code.
-  pNFresvCost(sc,r,rr,stp)             'Constant cost of each non-free piece (or step) of function, $/MWh'
+  pNFresvCost(sc,r,rr,stp)                      'Constant cost of each non-free piece (or step) of function, $/MWh'
 *++++++++++
   ;
 
@@ -203,54 +203,54 @@ $loaddc reserveViolationPenalty pNFresvCost
 
 * c) Sets and parameters from prepared output GDX file - now with an extra dimension, i.e. set sc.
 Sets
-  h(sc,hd)                                    'Selected elements of HD - used to control multiple versus single hydro years to determine build timing'
-  activeSolve(sc,rt,hY)                       'Collect the rt-hY index used for each solve' 
-  activeHD(sc,rt,hY,hd)                       'Collect the rt-hY-hd index used for each solve'
-  activeRT(sc,rt)                             'Identify the run types actually employed in this model run'
-  solveGoal(sc,goal)                          'User-selected solve goal'
+  h(sc,hd)                                      'Selected elements of HD - used to control multiple versus single hydro years to determine build timing'
+  activeSolve(sc,rt,hY)                         'Collect the rt-hY index used for each solve' 
+  activeHD(sc,rt,hY,hd)                         'Collect the rt-hY-hd index used for each solve'
+  activeRT(sc,rt)                               'Identify the run types actually employed in this model run'
+  solveGoal(sc,goal)                            'User-selected solve goal'
 Parameters
 * Miscellaneous parameters
-  solveReport(sc,rt,hY,*,*)                   'Collect various details about each solve of the models (both GEM and DISP)'
+  solveReport(sc,rt,hY,*,*)                     'Collect various details about each solve of the models (both GEM and DISP)'
 * Free variables
-  s2_TOTALCOST(sc,rt)                         'Discounted total system costs over all modelled years, $m (objective function value)'
-  s2_TX(sc,rt,r,rr,y,t,lb,hd)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s2_TOTALCOST(sc,rt)                           'Discounted total system costs over all modelled years, $m (objective function value)'
+  s2_TX(sc,rt,r,rr,y,t,lb,hd)                   'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
 * Binary Variables
-  s2_BRET(sc,rt,g,y)                          'Binary variable to identify endogenous retirement year for the eligble generation plant'
-  s2_ISRETIRED(sc,rt,g)                       'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
-  s2_BTX(sc,rt,r,rr,ps,y)                     'Binary variable indicating the current state of a transmission path'
+  s2_BRET(sc,rt,g,y)                            'Binary variable to identify endogenous retirement year for the eligble generation plant'
+  s2_ISRETIRED(sc,rt,g)                         'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
+  s2_BTX(sc,rt,r,rr,ps,y)                       'Binary variable indicating the current state of a transmission path'
 * Positive Variables
-  s2_REFURBCOST(sc,rt,g,y)                    'Annualised generation plant refurbishment expenditure charge, $'
-  s2_BUILD(sc,rt,g,y)                         'New capacity installed by generating plant and year, MW'
-  s2_RETIRE(sc,rt,g,y)                        'Capacity endogenously retired by generating plant and year, MW'
-  s2_CAPACITY(sc,rt,g,y)                      'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s2_TXCAPCHARGES(sc,rt,r,rr,y)               'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s2_GEN(sc,rt,g,y,t,lb,hd)                   'Generation by generating plant and block, GWh'
-  s2_VOLLGEN(sc,rt,s,y,t,lb,hd)               'Generation by VOLL plant and block, GWh'
-  s2_PUMPEDGEN(sc,rt,g,y,t,lb,hd)             'Energy from pumped hydro (treated like demand), GWh'
-  s2_LOSS(sc,rt,r,rr,y,t,lb,hd)               'Transmission losses along each path, MW'
-  s2_TXPROJVAR(sc,rt,tupg,y)                  'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  s2_TXUPGRADE(sc,rt,r,rr,ps,pss,y)           'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
-  s2_RESV(sc,rt,g,rc,y,t,lb,hd)               'Reserve energy supplied, MWh'
-  s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,hd)         'Reserve energy supply violations, MWh'
-  s2_RESVTRFR(sc,rt,rc,ild,ild1,y,t,lb,hd)    'Reserve energy transferred from one island to another, MWh'
+  s2_REFURBCOST(sc,rt,g,y)                      'Annualised generation plant refurbishment expenditure charge, $'
+  s2_BUILD(sc,rt,g,y)                           'New capacity installed by generating plant and year, MW'
+  s2_RETIRE(sc,rt,g,y)                          'Capacity endogenously retired by generating plant and year, MW'
+  s2_CAPACITY(sc,rt,g,y)                        'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s2_TXCAPCHARGES(sc,rt,r,rr,y)                 'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s2_GEN(sc,rt,g,y,t,lb,hd)                     'Generation by generating plant and block, GWh'
+  s2_VOLLGEN(sc,rt,s,y,t,lb,hd)                 'Generation by VOLL plant and block, GWh'
+  s2_PUMPEDGEN(sc,rt,g,y,t,lb,hd)               'Energy from pumped hydro (treated like demand), GWh'
+  s2_LOSS(sc,rt,r,rr,y,t,lb,hd)                 'Transmission losses along each path, MW'
+  s2_TXPROJVAR(sc,rt,tupg,y)                    'Continuous 0-1 variable indicating whether an upgrade project is applied'
+  s2_TXUPGRADE(sc,rt,r,rr,ps,pss,y)             'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
+  s2_RESV(sc,rt,g,rc,y,t,lb,hd)                 'Reserve energy supplied, MWh'
+  s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,hd)           'Reserve energy supply violations, MWh'
+  s2_RESVTRFR(sc,rt,rc,ild,ild1,y,t,lb,hd)      'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
-  s2_RENNRGPENALTY(sc,rt,y)                   'Penalty used to make renewable energy constraint feasible, GWh'
+  s2_RENNRGPENALTY(sc,rt,y)                     'Penalty used to make renewable energy constraint feasible, GWh'
 * Slack variables
-  s2_ANNMWSLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s2_SEC_NZSLACK(sc,rt,y)                     'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI1SLACK(sc,rt,y)                    'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
-  s2_SEC_NI2SLACK(sc,rt,y)                    'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
-  s2_NOWIND_NZSLACK(sc,rt,y)                  'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NISLACK(sc,rt,y)                  'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
-  s2_RENCAPSLACK(sc,rt,y)                     'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s2_HYDROSLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s2_MINUTILSLACK(sc,rt,y)                    'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s2_FUELSLACK(sc,rt,y)                       'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s2_ANNMWSLACK(sc,rt,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s2_SEC_NZSLACK(sc,rt,y)                       'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
+  s2_SEC_NI1SLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
+  s2_SEC_NI2SLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
+  s2_NOWIND_NZSLACK(sc,rt,y)                    'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
+  s2_NOWIND_NISLACK(sc,rt,y)                    'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
+  s2_RENCAPSLACK(sc,rt,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s2_HYDROSLACK(sc,rt,y)                        'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s2_MINUTILSLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s2_FUELSLACK(sc,rt,y)                         'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations, i.e. marginal values. (ignore the objective function)
-  s2_bal_supdem(sc,rt,r,y,t,lb,hd)            'Balance supply and demand in each region, year, time period and load block'
+  s2_bal_supdem(sc,rt,r,y,t,lb,hd)              'Balance supply and demand in each region, year, time period and load block'
 *++++++++++
 * More non-free reserves code.
-  s2_RESVCOMPONENTS(sc,rt,r,rr,y,t,lb,hd,stp) 'Non-free reserve components, MW'
+  s2_RESVCOMPONENTS(sc,rt,r,rr,y,t,lb,hd,stp)   'Non-free reserve components, MW'
 *++++++++++
   ;
 
@@ -269,100 +269,100 @@ $loaddc s2_RESVCOMPONENTS
 *++++++++++
 
 *  declared but not loaded yet - follows s2_VOLLGEN
-*  s2_PUMPEDGEN(sc,rt,g,y,t,lb,hd)             'Energy from pumped hydro (treated like demand), GWh'
-*  s2_RESV(sc,rt,g,rc,y,t,lb,hd)               'Reserve energy supplied, MWh'
-*  s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,hd)         'Reserve energy supply violations, MWh'
-*  s2_RESVTRFR(sc,rt,rc,ild,ild1,y,t,lb,hd)    'Reserve energy transferred from one island to another, MWh'
+*  s2_PUMPEDGEN(sc,rt,g,y,t,lb,hd)              'Energy from pumped hydro (treated like demand), GWh'
+*  s2_RESV(sc,rt,g,rc,y,t,lb,hd)                'Reserve energy supplied, MWh'
+*  s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,hd)          'Reserve energy supply violations, MWh'
+*  s2_RESVTRFR(sc,rt,rc,ild,ild1,y,t,lb,hd)     'Reserve energy transferred from one island to another, MWh'
 
 
 
 * d) Sets and parameters declared for the first time (local to GEMreports).
 Sets
-  a                             'Activity related to generation investment'
-                                 / blt   'Potential and actual built capacity by technology (gross of retirements)'
-                                   rfb   'Potential and actual refurbished capacity by technology'
-                                   rtd   'Potential and actual retired capacity by technology'   /
-  buildSoln(rt)                 'Determine which run type element to use for reporting results related to building generation or transmission'
-  activeRTHD(sc,rt,hd)          'Determine the sc-rt-hd index used for each solve'
-  activeCapacity(sc,g,y)        'Identify all plant that are active in any given year, i.e. existing or built but never retired'
+  a                                             'Activity related to generation investment'
+                                                  /  blt   'Potential and actual built capacity by technology (gross of retirements)'
+                                                    rfb   'Potential and actual refurbished capacity by technology'
+                                                    rtd   'Potential and actual retired capacity by technology'   /
+  buildSoln(rt)                                 'Determine which run type element to use for reporting results related to building generation or transmission'
+  activeRTHD(sc,rt,hd)                          'Determine the sc-rt-hd index used for each solve'
+  activeCapacity(sc,g,y)                        'Identify all plant that are active in any given year, i.e. existing or built but never retired'
 * Components of objective function
-  objc                          'Objective function components'
-                                 / obj_total       'Objective function value'
-                                   obj_gencapex    'Discounted levelised generation plant capital costs'
-                                   obj_refurb      'Discounted levelised refurbishment capital costs'
-                                   obj_txcapex     'Discounted levelised transmission capital costs'
-                                   obj_fixOM       'After tax discounted fixed costs at generation plant'
-                                   obj_hvdc        'After tax discounted HVDC charges'
-                                   obj_varOM       'After tax discounted variable costs at generation plant'
-                                   VOLLcost        'After tax discounted value of lost load'
-                                   obj_rescosts    'After tax discounted reserve costs at generation plant'
-                                   obj_nfrcosts    'After tax discounted cost of non-free reserve cover for HVDC'
-                                   obj_renNrg      'Penalty cost of failing to meet renewables target'
-                                   obj_resvviol    'Penalty cost of failing to meet reserves'
-                                   slk_rstrctMW    'Slack on restriction on annual MW built'
-                                   slk_nzsec       'Slack on NZ security constraint'
-                                   slk_ni1sec      'Slack on NI1 security constraint'
-                                   slk_ni2sec      'Slack on NI2 security constraint'
-                                   slk_nzNoWnd     'Slack on NZ no wind security constraint'
-                                   slk_niNoWnd     'Slack on NI no wind security constraint'
-                                   slk_renCap      'Slack on renewable capacity constraint'
-                                   slk_limHyd      'Slack on limit hydro output constraint'
-                                   slk_minutil     'Slack on minimum utilisation constraint'
-                                   slk_limFuel     'Slack on limit fuel use constraint'  /
-  pen(objc)                     'Penalty components of objective function'
-                                 / obj_renNrg, obj_resvviol /
-  slk(objc)                     'Slack components of objective function'
-                                 / slk_rstrctMW, slk_nzsec, slk_ni1sec, slk_ni2sec, slk_nzNoWnd, slk_niNoWnd, slk_renCap, slk_limHyd, slk_minutil, slk_limFuel /
+  objc                                          'Objective function components'
+                                                  / obj_total       'Objective function value'
+                                                    obj_gencapex    'Discounted levelised generation plant capital costs'
+                                                    obj_refurb      'Discounted levelised refurbishment capital costs'
+                                                    obj_txcapex     'Discounted levelised transmission capital costs'
+                                                    obj_fixOM       'After tax discounted fixed costs at generation plant'
+                                                    obj_hvdc        'After tax discounted HVDC charges'
+                                                    obj_varOM       'After tax discounted variable costs at generation plant'
+                                                    VOLLcost        'After tax discounted value of lost load'
+                                                    obj_rescosts    'After tax discounted reserve costs at generation plant'
+                                                    obj_nfrcosts    'After tax discounted cost of non-free reserve cover for HVDC'
+                                                    obj_renNrg      'Penalty cost of failing to meet renewables target'
+                                                    obj_resvviol    'Penalty cost of failing to meet reserves'
+                                                    slk_rstrctMW    'Slack on restriction on annual MW built'
+                                                    slk_nzsec       'Slack on NZ security constraint'
+                                                    slk_ni1sec      'Slack on NI1 security constraint'
+                                                    slk_ni2sec      'Slack on NI2 security constraint'
+                                                    slk_nzNoWnd     'Slack on NZ no wind security constraint'
+                                                    slk_niNoWnd     'Slack on NI no wind security constraint'
+                                                    slk_renCap      'Slack on renewable capacity constraint'
+                                                    slk_limHyd      'Slack on limit hydro output constraint'
+                                                    slk_minutil     'Slack on minimum utilisation constraint'
+                                                    slk_limFuel     'Slack on limit fuel use constraint'  /
+  pen(objc)                                     'Penalty components of objective function'
+                                                  / obj_renNrg, obj_resvviol /
+  slk(objc)                                     'Slack components of objective function'
+                                                  / slk_rstrctMW, slk_nzsec, slk_ni1sec, slk_ni2sec, slk_nzNoWnd, slk_niNoWnd, slk_renCap, slk_limHyd, slk_minutil, slk_limFuel /
   ;
 
 Parameters
 * Parameters declared for the first time (local to GEMreports).
-  counter                                     'A recyclable counter'
-  problems                                    'A flag indicating problems with some solutions - other than the presence of slacks or penalties'
-  warnings                                    'A flag indicating warnings - warnings are much less serious than problems (problems ought not be ignored)'
-  objComponentsYr(sc,rt,y,*)                  'Components of objective function value by year (tmg, reo and average over all hydrology for the dispatch solves)'
-  objComponents(sc,rt,objc)                   'Components of objective function value (tmg, reo and average over all hydrology for the dispatch solves)'
-  numGenPlant(sc)                             'Number of generating plant in data file'
-  numVOLLplant(sc)                            'Number of shortage generating plant in data file'
-  numExist(sc)                                'Number of generating plant that are presently operating'
-  numCommit(sc)                               'Number of generating plant that are assumed to be committed'
-  numNew(sc)                                  'Number of potential generating plant that are neither existing nor committed'
-  numNeverBuild(sc)                           'Number of generating plant that are determined a priori by user never to be built'
-  numZeroMWplt(sc)                            'Number of generating plant that are specified in input data to have a nameplate capacity of zero MW'
-  numSchedHydroPlant(sc)                      'Number of schedulable hydro generation plant'
+  counter                                       'A recyclable counter'
+  problems                                      'A flag indicating problems with some solutions - other than the presence of slacks or penalties'
+  warnings                                      'A flag indicating warnings - warnings are much less serious than problems (problems ought not be ignored)'
+  objComponentsYr(sc,rt,y,*)                    'Components of objective function value by year (tmg, reo and average over all hydrology for the dispatch solves)'
+  objComponents(sc,rt,objc)                     'Components of objective function value (tmg, reo and average over all hydrology for the dispatch solves)'
+  numGenPlant(sc)                               'Number of generating plant in data file'
+  numVOLLplant(sc)                              'Number of shortage generating plant in data file'
+  numExist(sc)                                  'Number of generating plant that are presently operating'
+  numCommit(sc)                                 'Number of generating plant that are assumed to be committed'
+  numNew(sc)                                    'Number of potential generating plant that are neither existing nor committed'
+  numNeverBuild(sc)                             'Number of generating plant that are determined a priori by user never to be built'
+  numZeroMWplt(sc)                              'Number of generating plant that are specified in input data to have a nameplate capacity of zero MW'
+  numSchedHydroPlant(sc)                        'Number of schedulable hydro generation plant'
 * Capacity and dispatch
-  potentialCap(sc,k,a)                        'Potential capacity able to be built/refurbished/retired by technology, MW'
-  actualCap(sc,rt,k,a)                        'Actual capacity built/refurbished/retired by technology, MW'
-  actualCapPC(sc,rt,k,a)                      'Actual capacity built/refurbished/retired as a percentage of potential by technology'
-  partialMWbuilt(sc,g)                        'The MW actually built in the case of plant not fully constructed'
-  numYrsToBuildPlant(sc,g,y)                  'Identify the number of years taken to build a generating plant (-1 indicates plant is retired)'
-  buildOrRetireMW(sc,g,y)                     'Collect up both build (positive) and retirement (negative), MW'
-  buildYr(sc,g)                               'Year in which new generating plant is built, or first built if built over multiple years'
-  retireYr(sc,g)                              'Year in which generating plant is retired'
-  buildMW(sc,g)                               'MW built at each generating plant able to be built'
-  retireMW(sc,g)                              'MW retired at each generating plant able to be retired'
-  finalMW(sc,g)                               'Existing plus built less retired MW by plant'
-  totalExistMW(sc)                            'Total existing generating capacity, MW'
-  totalExistDSM(sc)                           'Total existing DSM and IL capacity, MW'
-  totalBuiltMW(sc)                            'Total new generating capacity installed, MW'
-  totalBuiltDSM(sc)                           'Total new DSM and IL capacity installed, MW'
-  totalRetiredMW(sc)                          'Total retired capacity, MW'
-  genYr(sc,rt,hd,g,y)                         'Generation by plant and year, GWh'
-  genGWh(sc,rt,hd)                            'Generation - includes DSM, IL and shortage (deficit) generation, GWh'
-  genTWh(sc,rt,hd)                            'Generation - includes DSM, IL and shortage (deficit) generation, TWh'
-  genDSM(sc,rt,hd)                            'DSM and IL dispatched, GWh'
-  genPeaker(sc,rt,hd)                         'Generation by peakers, GWh'
-  deficitGen(sc,rt,hd,y,t,lb)                 'Aggregate deficit generation (i.e. sum over all shortage generators), GWh'
-  xsDeficitGen(sc,rt,hd,y,t,lb)               'Excessive deficit generation in any load block, period or year (excessive means it exceeds 3% of total generation), GWh'
+  potentialCap(sc,k,a)                          'Potential capacity able to be built/refurbished/retired by technology, MW'
+  actualCap(sc,rt,k,a)                          'Actual capacity built/refurbished/retired by technology, MW'
+  actualCapPC(sc,rt,k,a)                        'Actual capacity built/refurbished/retired as a percentage of potential by technology'
+  partialMWbuilt(sc,g)                          'The MW actually built in the case of plant not fully constructed'
+  numYrsToBuildPlant(sc,g,y)                    'Identify the number of years taken to build a generating plant (-1 indicates plant is retired)'
+  buildOrRetireMW(sc,g,y)                       'Collect up both build (positive) and retirement (negative), MW'
+  buildYr(sc,g)                                 'Year in which new generating plant is built, or first built if built over multiple years'
+  retireYr(sc,g)                                'Year in which generating plant is retired'
+  buildMW(sc,g)                                 'MW built at each generating plant able to be built'
+  retireMW(sc,g)                                'MW retired at each generating plant able to be retired'
+  finalMW(sc,g)                                 'Existing plus built less retired MW by plant'
+  totalExistMW(sc)                              'Total existing generating capacity, MW'
+  totalExistDSM(sc)                             'Total existing DSM and IL capacity, MW'
+  totalBuiltMW(sc)                              'Total new generating capacity installed, MW'
+  totalBuiltDSM(sc)                             'Total new DSM and IL capacity installed, MW'
+  totalRetiredMW(sc)                            'Total retired capacity, MW'
+  genYr(sc,rt,hd,g,y)                           'Generation by plant and year, GWh'
+  genGWh(sc,rt,hd)                              'Generation - includes DSM, IL and shortage (deficit) generation, GWh'
+  genTWh(sc,rt,hd)                              'Generation - includes DSM, IL and shortage (deficit) generation, TWh'
+  genDSM(sc,rt,hd)                              'DSM and IL dispatched, GWh'
+  genPeaker(sc,rt,hd)                           'Generation by peakers, GWh'
+  deficitGen(sc,rt,hd,y,t,lb)                   'Aggregate deficit generation (i.e. sum over all shortage generators), GWh'
+  xsDeficitGen(sc,rt,hd,y,t,lb)                 'Excessive deficit generation in any load block, period or year (excessive means it exceeds 3% of total generation), GWh'
 * Transmission
-  actualTxCap(sc,rt,r,rr,y)                   'Actual transmission capacity for each path in each modelled year (may depend on endogenous decisions)'
-  priorTxCap(sc,r,rr,ps)                      'Transmission capacity prior to a state change for all states (silent, though, on when state changes), MW'
-  postTxCap(sc,r,rr,ps)                       'Transmission capacity after a state change for all states (silent, though, on when state changes), MW'
-  numYrsToBuildTx(sc,tupg,y)                  'Identify the number of years taken to build a particular upgrade of a transmission investment'
-  interTxLossYrGWh(sc,rt,hd,y)                'Interregional transmission losses by year, GWh'
-  interTxLossGWh(sc,rt,hd)                    'Total interregional transmission losses, GWh'
-  intraTxLossYrGWh(sc,y)                      'Intraregional transmission losses by year, GWh'
-  intraTxLossGWh(sc)                          'Total intraregional transmission losses, GWh'
+  actualTxCap(sc,rt,r,rr,y)                     'Actual transmission capacity for each path in each modelled year (may depend on endogenous decisions)'
+  priorTxCap(sc,r,rr,ps)                        'Transmission capacity prior to a state change for all states (silent, though, on when state changes), MW'
+  postTxCap(sc,r,rr,ps)                         'Transmission capacity after a state change for all states (silent, though, on when state changes), MW'
+  numYrsToBuildTx(sc,tupg,y)                    'Identify the number of years taken to build a particular upgrade of a transmission investment'
+  interTxLossYrGWh(sc,rt,hd,y)                  'Interregional transmission losses by year, GWh'
+  interTxLossGWh(sc,rt,hd)                      'Total interregional transmission losses, GWh'
+  intraTxLossYrGWh(sc,y)                        'Intraregional transmission losses by year, GWh'
+  intraTxLossGWh(sc)                            'Total intraregional transmission losses, GWh'
   ;
 
 
@@ -1167,8 +1167,8 @@ $offtext
 
 Sets
 * Capacity
-  pkrs_plus20(sc,rt,hd,g)   'Identify peakers that produce 20% or more energy in a year than they are theoretically capable of'
-  noPkr_minus20(sc,rt,hd,g) 'Identify non-peakers that produce less than 20% of the energy in a year than they are theoretically capable of'
+  pkrs_plus20(sc,rt,hd,g)                       'Identify peakers that produce 20% or more energy in a year than they are theoretically capable of'
+  noPkr_minus20(sc,rt,hd,g)                     'Identify non-peakers that produce less than 20% of the energy in a year than they are theoretically capable of'
 
 * GIT analysis
   cy        'Class of years'
@@ -1206,96 +1206,96 @@ Sets
   ;
 
 Parameters
-  GITresults(item,d,sc,dt,cy)        'GIT analysis summary'
-  Chktotals(sc,rt,*)                  'Calculate national generation, transmission, losses and load, GWh'
+  GITresults(item,d,sc,dt,cy)                   'GIT analysis summary'
+  Chktotals(sc,rt,*)                            'Calculate national generation, transmission, losses and load, GWh'
 
 * Items common to all SCs (where more than one SC is solved)
-  numSC_fact                          '(NumSC)!'
-  numSC_fact2                         '(NumSC - 2)!'
-  numCombos                            'numSC_fact / 2 * numSC_fact2, i.e. the number of ways of picking k unordered outcomes from n possibilities'
-  retiresame(sc,g,y)                 'MW retired and year retired is the same across all SCs'
-  refurbsame(sc,g)                   'Refurbishment year is the same across all SCs'
-  txupgradesame(sc,tupg,y)           'Transmission upgrade and upgrade year is the same across all SCs'
+  numSC_fact                                    '(NumSC)!'
+  numSC_fact2                                   '(NumSC - 2)!'
+  numCombos                                     'numSC_fact / 2 * numSC_fact2, i.e. the number of ways of picking k unordered outcomes from n possibilities'
+  retiresame(sc,g,y)                            'MW retired and year retired is the same across all SCs'
+  refurbsame(sc,g)                              'Refurbishment year is the same across all SCs'
+  txupgradesame(sc,tupg,y)                      'Transmission upgrade and upgrade year is the same across all SCs'
 
 * Reserves
-  totalresvviol(sc,rt,rc,hd)          'Total energy reserves violation, MW (to be written into results summary report)'
+  totalresvviol(sc,rt,rc,hd)                     'Total energy reserves violation, MW (to be written into results summary report)'
 
 * Generation capex
-  capchrg_r(sc,rt,g,y)                'Capex charges (net of depreciation tax credit effects) by built plant by year, $m (real)'
-  capchrg_pv(sc,rt,g,y,d)             'Capex charges (net of depreciation tax credit effects) by built plant by year, $m (present value)'
-  capchrgyr_r(sc,rt,y)                'Capex charges on built plant (net of depreciation tax credit effects) by year, $m (real)'
-  capchrgyr_pv(sc,rt,y,d)             'Capex charges on built plant (net of depreciation tax credit effects) by year, $m (present value)'
-  capchrgplt_r(sc,rt,g)               'Capex charges (net of depreciation tax credit effects) by plant, $m (real)'
-  capchrgplt_pv(sc,rt,g,d)            'Capex charges (net of depreciation tax credit effects) by plant, $m (present value)'
-  capchrgtot_r(sc,rt)                 'Total capex charges on built plant (net of depreciation tax credit effects), $m (real)'
-  capchrgtot_pv(sc,rt,d)              'Total capex charges on built plant (net of depreciation tax credit effects), $m (present value)'
+  capchrg_r(sc,rt,g,y)                           'Capex charges (net of depreciation tax credit effects) by built plant by year, $m (real)'
+  capchrg_pv(sc,rt,g,y,d)                        'Capex charges (net of depreciation tax credit effects) by built plant by year, $m (present value)'
+  capchrgyr_r(sc,rt,y)                           'Capex charges on built plant (net of depreciation tax credit effects) by year, $m (real)'
+  capchrgyr_pv(sc,rt,y,d)                        'Capex charges on built plant (net of depreciation tax credit effects) by year, $m (present value)'
+  capchrgplt_r(sc,rt,g)                          'Capex charges (net of depreciation tax credit effects) by plant, $m (real)'
+  capchrgplt_pv(sc,rt,g,d)                       'Capex charges (net of depreciation tax credit effects) by plant, $m (present value)'
+  capchrgtot_r(sc,rt)                            'Total capex charges on built plant (net of depreciation tax credit effects), $m (real)'
+  capchrgtot_pv(sc,rt,d)                         'Total capex charges on built plant (net of depreciation tax credit effects), $m (present value)'
 
-  taxcred_r(sc,rt,g,y)                'Tax credit on depreciation by built plant by year, $m (real)'
-  taxcred_pv(sc,rt,g,y,d)             'Tax credit on depreciation by built plant by year, $m (present value)'
-  taxcredyr_r(sc,rt,y)                'Tax credit on depreciation of built plant by year, $m (real)'
-  taxcredyr_pv(sc,rt,y,d)             'Tax credit on depreciation of built plant by year, $m (present value)'
-  taxcredplt_r(sc,rt,g)               'Tax credit on depreciation by plant, $m (real)'
-  taxcredplt_pv(sc,rt,g,d)            'Tax credit on depreciation by plant, $m (present value)'
-  taxcredtot_r(sc,rt)                 'Total tax credit on depreciation of built plant, $m (real)'
-  taxcredtot_pv(sc,rt,d)              'Total tax credit on depreciation of built plant, $m (present value)'
+  taxcred_r(sc,rt,g,y)                           'Tax credit on depreciation by built plant by year, $m (real)'
+  taxcred_pv(sc,rt,g,y,d)                        'Tax credit on depreciation by built plant by year, $m (present value)'
+  taxcredyr_r(sc,rt,y)                           'Tax credit on depreciation of built plant by year, $m (real)'
+  taxcredyr_pv(sc,rt,y,d)                        'Tax credit on depreciation of built plant by year, $m (present value)'
+  taxcredplt_r(sc,rt,g)                          'Tax credit on depreciation by plant, $m (real)'
+  taxcredplt_pv(sc,rt,g,d)                       'Tax credit on depreciation by plant, $m (present value)'
+  taxcredtot_r(sc,rt)                            'Total tax credit on depreciation of built plant, $m (real)'
+  taxcredtot_pv(sc,rt,d)                         'Total tax credit on depreciation of built plant, $m (present value)'
 
 * Generation plant fixed costs
-  fopexgross_r(sc,rt,g,y,t)           'Fixed O&M expenses (before tax benefit) by built plant by year by period, $m (real)'
-  fopexgross_pv(sc,rt,g,y,t,d)        'Fixed O&M expenses (before tax benefit) by built plant by year by period, $m (present value)'
-  fopexnet_r(sc,rt,g,y,t)             'Fixed O&M expenses (after tax benefit) by built plant by year by period, $m (real)'
-  fopexnet_pv(sc,rt,g,y,t,d)          'Fixed O&M expenses (after tax benefit) by built plant by year by period, $m (present value)'
-  fopexgrosstot_r(sc,rt)              'Total fixed O&M expenses (before tax benefit), $m (real)'
-  fopexgrosstot_pv(sc,rt,d)           'Total fixed O&M expenses (before tax benefit), $m (present value)'
-  fopexnettot_r(sc,rt)                'Total fixed O&M expenses (after tax benefit), $m (real)'
-  fopexnettot_pv(sc,rt,d)             'Total fixed O&M expenses (after tax benefit), $m (present value)'
+  fopexgross_r(sc,rt,g,y,t)                      'Fixed O&M expenses (before tax benefit) by built plant by year by period, $m (real)'
+  fopexgross_pv(sc,rt,g,y,t,d)                   'Fixed O&M expenses (before tax benefit) by built plant by year by period, $m (present value)'
+  fopexnet_r(sc,rt,g,y,t)                        'Fixed O&M expenses (after tax benefit) by built plant by year by period, $m (real)'
+  fopexnet_pv(sc,rt,g,y,t,d)                     'Fixed O&M expenses (after tax benefit) by built plant by year by period, $m (present value)'
+  fopexgrosstot_r(sc,rt)                         'Total fixed O&M expenses (before tax benefit), $m (real)'
+  fopexgrosstot_pv(sc,rt,d)                      'Total fixed O&M expenses (before tax benefit), $m (present value)'
+  fopexnettot_r(sc,rt)                           'Total fixed O&M expenses (after tax benefit), $m (real)'
+  fopexnettot_pv(sc,rt,d)                        'Total fixed O&M expenses (after tax benefit), $m (present value)'
 
 * Generation plant HVDC costs
-  hvdcgross_r(sc,rt,g,y,t)            'HVDC charges (before tax benefit) by built plant by year by period, $m (real)'
-  hvdcgross_pv(sc,rt,g,y,t,d)         'HVDC charges (before tax benefit) by built plant by year by period, $m (present value)'
-  hvdcnet_r(sc,rt,g,y,t)              'HVDC charges (after tax benefit) by built plant by year by period, $m (real)'
-  hvdcnet_pv(sc,rt,g,y,t,d)           'HVDC charges (after tax benefit) by built plant by year by period, $m (present value)'
-  hvdcgrosstot_r(sc,rt)               'Total HVDC charges (before tax benefit), $m (real)'
-  hvdcgrosstot_pv(sc,rt,d)            'Total HVDC charges (before tax benefit), $m (present value)'
-  hvdcnettot_r(sc,rt)                 'Total HVDC charges (after tax benefit), $m (real)'
-  hvdcnettot_pv(sc,rt,d)              'Total HVDC charges (after tax benefit), $m (present value)'
+  hvdcgross_r(sc,rt,g,y,t)                       'HVDC charges (before tax benefit) by built plant by year by period, $m (real)'
+  hvdcgross_pv(sc,rt,g,y,t,d)                    'HVDC charges (before tax benefit) by built plant by year by period, $m (present value)'
+  hvdcnet_r(sc,rt,g,y,t)                         'HVDC charges (after tax benefit) by built plant by year by period, $m (real)'
+  hvdcnet_pv(sc,rt,g,y,t,d)                      'HVDC charges (after tax benefit) by built plant by year by period, $m (present value)'
+  hvdcgrosstot_r(sc,rt)                          'Total HVDC charges (before tax benefit), $m (real)'
+  hvdcgrosstot_pv(sc,rt,d)                       'Total HVDC charges (before tax benefit), $m (present value)'
+  hvdcnettot_r(sc,rt)                            'Total HVDC charges (after tax benefit), $m (real)'
+  hvdcnettot_pv(sc,rt,d)                         'Total HVDC charges (after tax benefit), $m (present value)'
 
 * Generation plant total SRMCs
-  vopexgross_r(sc,rt,g,y,t,hd)        'Variable O&M expenses with LF adjustment (before tax benefit) by built plant by year by period, $m (real)'
-  vopexgross_pv(sc,rt,g,y,t,hd,d)     'Variable O&M expenses with LF adjustment (before tax benefit) by built plant by year by period, $m (present value)'
-  vopexnet_r(sc,rt,g,y,t,hd)          'Variable O&M expenses with LF adjustment (after tax benefit) by built plant by year by period, $m (real)'
-  vopexnet_pv(sc,rt,g,y,t,hd,d)       'Variable O&M expenses with LF adjustment (after tax benefit) by built plant by year by period, $m (present value)'
-  vopexgrosstot_r(sc,rt,hd)           'Total variable O&M expenses with LF adjustment (before tax benefit), $m (real)'
-  vopexgrosstot_pv(sc,rt,hd,d)        'Total variable O&M expenses with LF adjustment (before tax benefit), $m (present value)'
-  vopexnettot_r(sc,rt,hd)             'Total variable O&M expenses with LF adjustment (after tax benefit), $m (real)'
-  vopexnettot_pv(sc,rt,hd,d)          'Total variable O&M expenses with LF adjustment (after tax benefit), $m (present value)'
+  vopexgross_r(sc,rt,g,y,t,hd)                   'Variable O&M expenses with LF adjustment (before tax benefit) by built plant by year by period, $m (real)'
+  vopexgross_pv(sc,rt,g,y,t,hd,d)                'Variable O&M expenses with LF adjustment (before tax benefit) by built plant by year by period, $m (present value)'
+  vopexnet_r(sc,rt,g,y,t,hd)                     'Variable O&M expenses with LF adjustment (after tax benefit) by built plant by year by period, $m (real)'
+  vopexnet_pv(sc,rt,g,y,t,hd,d)                  'Variable O&M expenses with LF adjustment (after tax benefit) by built plant by year by period, $m (present value)'
+  vopexgrosstot_r(sc,rt,hd)                      'Total variable O&M expenses with LF adjustment (before tax benefit), $m (real)'
+  vopexgrosstot_pv(sc,rt,hd,d)                   'Total variable O&M expenses with LF adjustment (before tax benefit), $m (present value)'
+  vopexnettot_r(sc,rt,hd)                        'Total variable O&M expenses with LF adjustment (after tax benefit), $m (real)'
+  vopexnettot_pv(sc,rt,hd,d)                     'Total variable O&M expenses with LF adjustment (after tax benefit), $m (present value)'
 
-  vopexgrossnolf_r(sc,rt,g,y,t,hd)    'Variable O&M expenses without LF adjustment (before tax benefit) by built plant by year by period, $m (real)'
-  vopexgrossnolf_pv(sc,rt,g,y,t,hd,d) 'Variable O&M expenses without LF adjustment (before tax benefit) by built plant by year by period, $m (present value)'
-  vopexnetnolf_r(sc,rt,g,y,t,hd)      'Variable O&M expenses without LF adjustment (after tax benefit) by built plant by year by period, $m (real)'
-  vopexnetnolf_pv(sc,rt,g,y,t,hd,d)   'Variable O&M expenses without LF adjustment (after tax benefit) by built plant by year by period, $m (present value)'
-  vopexgrosstotnolf_r(sc,rt,hd)       'Total variable O&M expenses without LF adjustment (before tax benefit), $m (real)'
-  vopexgrosstotnolf_pv(sc,rt,hd,d)    'Total variable O&M expenses without LF adjustment (before tax benefit), $m (present value)'
-  vopexnettotnolf_r(sc,rt,hd)         'Total variable O&M expenses without LF adjustment (after tax benefit), $m (real)'
-  vopexnettotnolf_pv(sc,rt,hd,d)      'Total variable O&M expenses without LF adjustment (after tax benefit), $m (present value)'
+  vopexgrossnolf_r(sc,rt,g,y,t,hd)               'Variable O&M expenses without LF adjustment (before tax benefit) by built plant by year by period, $m (real)'
+  vopexgrossnolf_pv(sc,rt,g,y,t,hd,d)            'Variable O&M expenses without LF adjustment (before tax benefit) by built plant by year by period, $m (present value)'
+  vopexnetnolf_r(sc,rt,g,y,t,hd)                 'Variable O&M expenses without LF adjustment (after tax benefit) by built plant by year by period, $m (real)'
+  vopexnetnolf_pv(sc,rt,g,y,t,hd,d)              'Variable O&M expenses without LF adjustment (after tax benefit) by built plant by year by period, $m (present value)'
+  vopexgrosstotnolf_r(sc,rt,hd)                  'Total variable O&M expenses without LF adjustment (before tax benefit), $m (real)'
+  vopexgrosstotnolf_pv(sc,rt,hd,d)               'Total variable O&M expenses without LF adjustment (before tax benefit), $m (present value)'
+  vopexnettotnolf_r(sc,rt,hd)                    'Total variable O&M expenses without LF adjustment (after tax benefit), $m (real)'
+  vopexnettotnolf_pv(sc,rt,hd,d)                 'Total variable O&M expenses without LF adjustment (after tax benefit), $m (present value)'
 
 * Transmission equipment capex
-  txcapchrg_r(sc,rt,r,rr,ps,y)        'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (real)'
-  txcapchrg_pv(sc,rt,r,rr,ps,y,d)     'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (present value)'
-  txcapchrgyr_r(sc,rt,y)              'Transmission capex charges (net of depreciation tax credit effects) by year, $m (real)'
-  txcapchrgyr_pv(sc,rt,y,d)           'Transmission capex charges (net of depreciation tax credit effects) by year, $m (present value)'
-  txcapchrgeqp_r(sc,rt,r,rr,ps)       'Transmission capex charges (net of depreciation tax credit effects) by equipment, $m (real)'
-  txcapchrgeqp_pv(sc,rt,r,rr,ps,d)    'Transmission capex charges (net of depreciation tax credit effects) by equipment, $m (present value)'
-  txcapchrgtot_r(sc,rt)               'Total transmission capex charges (net of depreciation tax credit effects), $m (real)'
-  txcapchrgtot_pv(sc,rt,d)            'Total transmission capex charges (net of depreciation tax credit effects), $m (present value)'
+  txcapchrg_r(sc,rt,r,rr,ps,y)                   'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (real)'
+  txcapchrg_pv(sc,rt,r,rr,ps,y,d)                'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (present value)'
+  txcapchrgyr_r(sc,rt,y)                         'Transmission capex charges (net of depreciation tax credit effects) by year, $m (real)'
+  txcapchrgyr_pv(sc,rt,y,d)                      'Transmission capex charges (net of depreciation tax credit effects) by year, $m (present value)'
+  txcapchrgeqp_r(sc,rt,r,rr,ps)                  'Transmission capex charges (net of depreciation tax credit effects) by equipment, $m (real)'
+  txcapchrgeqp_pv(sc,rt,r,rr,ps,d)               'Transmission capex charges (net of depreciation tax credit effects) by equipment, $m (present value)'
+  txcapchrgtot_r(sc,rt)                          'Total transmission capex charges (net of depreciation tax credit effects), $m (real)'
+  txcapchrgtot_pv(sc,rt,d)                       'Total transmission capex charges (net of depreciation tax credit effects), $m (present value)'
 
-  txtaxcred_r(sc,rt,r,rr,ps,y)        'Tax credit on depreciation by built transmission equipment by year, $m (real)'
-  txtaxcred_pv(sc,rt,r,rr,ps,y,d)     'Tax credit on depreciation by built transmission equipment by year, $m (present value)'
-  txtaxcredyr_r(sc,rt,y)              'Tax credit on depreciation on transmission equipment by year, $m (real)'
-  txtaxcredyr_pv(sc,rt,y,d)           'Tax credit on depreciation on transmission equipment by year, $m (present value)'
-  txtaxcredeqp_r(sc,rt,r,rr,ps)       'Tax credit on depreciation by transmission equipment, $m (real)'
-  txtaxcredeqp_pv(sc,rt,r,rr,ps,d)    'Tax credit on depreciation by transmission equipment, $m (present value)'
-  txtaxcredtot_r(sc,rt)               'Total tax credit on depreciation of transmission equipment, $m (real)'
-  txtaxcredtot_pv(sc,rt,d)            'Total tax credit on depreciation of transmission equipment, $m (present value)'   ;
+  txtaxcred_r(sc,rt,r,rr,ps,y)                   'Tax credit on depreciation by built transmission equipment by year, $m (real)'
+  txtaxcred_pv(sc,rt,r,rr,ps,y,d)                'Tax credit on depreciation by built transmission equipment by year, $m (present value)'
+  txtaxcredyr_r(sc,rt,y)                         'Tax credit on depreciation on transmission equipment by year, $m (real)'
+  txtaxcredyr_pv(sc,rt,y,d)                      'Tax credit on depreciation on transmission equipment by year, $m (present value)'
+  txtaxcredeqp_r(sc,rt,r,rr,ps)                  'Tax credit on depreciation by transmission equipment, $m (real)'
+  txtaxcredeqp_pv(sc,rt,r,rr,ps,d)               'Tax credit on depreciation by transmission equipment, $m (present value)'
+  txtaxcredtot_r(sc,rt)                          'Total tax credit on depreciation of transmission equipment, $m (real)'
+  txtaxcredtot_pv(sc,rt,d)                       'Total tax credit on depreciation of transmission equipment, $m (present value)'   ;
 
 
 
@@ -1368,25 +1368,25 @@ loop(activeRT(sc,rt),
   hvdcnettot_pv(sc,rt,d)   = sum((g,y,t), hvdcnet_pv(sc,rt,g,y,t,d)) ;
 
 * Generation plant total SRMCs
-  vopexgross_r(sc,rt,g,y,t,hd)$activeRTHD(sc,rt,hd)    = 1e-3 * sum((mapg_e(g,e),lb), SRMC(g,y) * s2_gen(sc,rt,g,y,t,lb,hd) * locFac_Recip(e) ) ;
-  vopexgross_pv(sc,rt,g,y,t,hd,d)$activeRTHD(sc,rt,hd) = PVfacsM(y,t,d) * vopexgross_r(sc,rt,g,y,t,hd) ;
-  vopexnet_r(sc,rt,g,y,t,hd)$activeRTHD(sc,rt,hd)      = (1 - i_taxRate)  * vopexgross_r(sc,rt,g,y,t,hd) ;
-  vopexnet_pv(sc,rt,g,y,t,hd,d)$activeRTHD(sc,rt,hd)   = PVfacsM(y,t,d) * vopexnet_r(sc,rt,g,y,t,hd) ;
+  vopexgross_r(sc,rt,g,y,t,hd)$activeRTHD(sc,rt,hd)               = 1e-3 * sum((mapg_e(g,e),lb), SRMC(g,y) * s2_gen(sc,rt,g,y,t,lb,hd) * locFac_Recip(e) ) ;
+  vopexgross_pv(sc,rt,g,y,t,hd,d)$activeRTHD(sc,rt,hd)            = PVfacsM(y,t,d) * vopexgross_r(sc,rt,g,y,t,hd) ;
+  vopexnet_r(sc,rt,g,y,t,hd)$activeRTHD(sc,rt,hd)                 = (1 - i_taxRate)  * vopexgross_r(sc,rt,g,y,t,hd) ;
+  vopexnet_pv(sc,rt,g,y,t,hd,d)$activeRTHD(sc,rt,hd)              = PVfacsM(y,t,d) * vopexnet_r(sc,rt,g,y,t,hd) ;
 
-  vopexgrosstot_r(sc,rt,hd)$activeRTHD(sc,rt,hd)    = sum((g,y,t), vopexgross_r(sc,rt,g,y,t,hd)) ;
-  vopexgrosstot_pv(sc,rt,hd,d)$activeRTHD(sc,rt,hd) = sum((g,y,t), vopexgross_pv(sc,rt,g,y,t,hd,d)) ;
-  vopexnettot_r(sc,rt,hd)$activeRTHD(sc,rt,hd)      = sum((g,y,t), vopexnet_r(sc,rt,g,y,t,hd)) ;
-  vopexnettot_pv(sc,rt,hd,d)$activeRTHD(sc,rt,hd)   = sum((g,y,t), vopexnet_pv(sc,rt,g,y,t,hd,d)) ;
+  vopexgrosstot_r(sc,rt,hd)$activeRTHD(sc,rt,hd)                  = sum((g,y,t), vopexgross_r(sc,rt,g,y,t,hd)) ;
+  vopexgrosstot_pv(sc,rt,hd,d)$activeRTHD(sc,rt,hd)               = sum((g,y,t), vopexgross_pv(sc,rt,g,y,t,hd,d)) ;
+  vopexnettot_r(sc,rt,hd)$activeRTHD(sc,rt,hd)                    = sum((g,y,t), vopexnet_r(sc,rt,g,y,t,hd)) ;
+  vopexnettot_pv(sc,rt,hd,d)$activeRTHD(sc,rt,hd)                 = sum((g,y,t), vopexnet_pv(sc,rt,g,y,t,hd,d)) ;
 
-  vopexgrossNoLF_r(sc,rt,g,y,t,hd)$activeRTHD(sc,rt,hd)    = 1e-3 * SRMC(g,y) * sum(lb, s2_gen(sc,rt,g,y,t,lb,hd)) ;
-  vopexgrossNoLF_pv(sc,rt,g,y,t,hd,d)$activeRTHD(sc,rt,hd) = PVfacsM(y,t,d) * vopexgrossNoLF_r(sc,rt,g,y,t,hd) ;
-  vopexnetNoLF_r(sc,rt,g,y,t,hd)$activeRTHD(sc,rt,hd)      = (1 - i_taxRate)  * vopexgrossNoLF_r(sc,rt,g,y,t,hd) ;
-  vopexnetNoLF_pv(sc,rt,g,y,t,hd,d)$activeRTHD(sc,rt,hd)   = PVfacsM(y,t,d) * vopexnetNoLF_r(sc,rt,g,y,t,hd) ;
+  vopexgrossNoLF_r(sc,rt,g,y,t,hd)$activeRTHD(sc,rt,hd)           = 1e-3 * SRMC(g,y) * sum(lb, s2_gen(sc,rt,g,y,t,lb,hd)) ;
+  vopexgrossNoLF_pv(sc,rt,g,y,t,hd,d)$activeRTHD(sc,rt,hd)        = PVfacsM(y,t,d) * vopexgrossNoLF_r(sc,rt,g,y,t,hd) ;
+  vopexnetNoLF_r(sc,rt,g,y,t,hd)$activeRTHD(sc,rt,hd)             = (1 - i_taxRate)  * vopexgrossNoLF_r(sc,rt,g,y,t,hd) ;
+  vopexnetNoLF_pv(sc,rt,g,y,t,hd,d)$activeRTHD(sc,rt,hd)          = PVfacsM(y,t,d) * vopexnetNoLF_r(sc,rt,g,y,t,hd) ;
 
-  vopexgrosstotNoLF_r(sc,rt,hd)$activeRTHD(sc,rt,hd)    = sum((g,y,t), vopexgrossNoLF_r(sc,rt,g,y,t,hd)) ;
-  vopexgrosstotNoLF_pv(sc,rt,hd,d)$activeRTHD(sc,rt,hd) = sum((g,y,t), vopexgrossNoLF_pv(sc,rt,g,y,t,hd,d)) ;
-  vopexnettotNoLF_r(sc,rt,hd)$activeRTHD(sc,rt,hd)      = sum((g,y,t), vopexnetNoLF_r(sc,rt,g,y,t,hd)) ;
-  vopexnettotNoLF_pv(sc,rt,hd,d)$activeRTHD(sc,rt,hd)   = sum((g,y,t), vopexnetNoLF_pv(sc,rt,g,y,t,hd,d)) ;
+  vopexgrosstotNoLF_r(sc,rt,hd)$activeRTHD(sc,rt,hd)              = sum((g,y,t), vopexgrossNoLF_r(sc,rt,g,y,t,hd)) ;
+  vopexgrosstotNoLF_pv(sc,rt,hd,d)$activeRTHD(sc,rt,hd)           = sum((g,y,t), vopexgrossNoLF_pv(sc,rt,g,y,t,hd,d)) ;
+  vopexnettotNoLF_r(sc,rt,hd)$activeRTHD(sc,rt,hd)                = sum((g,y,t), vopexnetNoLF_r(sc,rt,g,y,t,hd)) ;
+  vopexnettotNoLF_pv(sc,rt,hd,d)$activeRTHD(sc,rt,hd)             = sum((g,y,t), vopexnetNoLF_pv(sc,rt,g,y,t,hd,d)) ;
 
 * Transmission equipment capex
   txcapchrg_r(sc,rt,allowedStates(sc,r,rr,ps),y) = 0 ;
@@ -1619,22 +1619,22 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
 
 **
 ** Yet to write out the 16 transmission capex related parameters... but do we even want to?
-** txcapchrg_r(sc,rt,r,rr,ps,y)        'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (real)'
-** txcapchrg_pv(sc,rt,r,rr,ps,y,d)     'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (present value)'
-** txcapchrgyr_r(sc,rt,y)              'Transmission capex charges (net of depreciation tax credit effects) by year, $m (real)'
-** txcapchrgyr_pv(sc,rt,y,d)           'Transmission capex charges (net of depreciation tax credit effects) by year, $m (present value)'
-** txcapchrgeqp_r(sc,rt,r,rr,ps)       'Transmission capex charges (net of depreciation tax credit effects) by equipment, $m (real)'
-** txcapchrgeqp_pv(sc,rt,r,rr,ps,d)    'Transmission capex charges (net of depreciation tax credit effects) by equipment, $m (present value)'
-** txcapchrgtot_r(sc,rt)               'Total transmission capex charges (net of depreciation tax credit effects), $m (real)'
-** txcapchrgtot_pv(sc,rt,d)            'Total transmission capex charges (net of depreciation tax credit effects), $m (present value)'
-** txtaxcred_r(sc,rt,r,rr,ps,y)        'Tax credit on depreciation by built transmission equipment by year, $m (real)'
-** txtaxcred_pv(sc,rt,r,rr,ps,y,d)     'Tax credit on depreciation by built transmission equipment by year, $m (present value)'
-** txtaxcredyr_r(sc,rt,y)              'Tax credit on depreciation on transmission equipment by year, $m (real)'
-** txtaxcredyr_pv(sc,rt,y,d)           'Tax credit on depreciation on transmission equipment by year, $m (present value)'
-** txtaxcredeqp_r(sc,rt,r,rr,ps)       'Tax credit on depreciation by transmission equipment, $m (real)'
-** txtaxcredeqp_pv(sc,rt,r,rr,ps,d)    'Tax credit on depreciation by transmission equipment, $m (present value)'
-** txtaxcredtot_r(sc,rt)               'Total tax credit on depreciation of transmission equipment, $m (real)'
-** txtaxcredtot_pv(sc,rt,d)            'Total tax credit on depreciation of transmission equipment, $m (present value)'   ;
+** txcapchrg_r(sc,rt,r,rr,ps,y)                 'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (real)'
+** txcapchrg_pv(sc,rt,r,rr,ps,y,d)              'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (present value)'
+** txcapchrgyr_r(sc,rt,y)                       'Transmission capex charges (net of depreciation tax credit effects) by year, $m (real)'
+** txcapchrgyr_pv(sc,rt,y,d)                    'Transmission capex charges (net of depreciation tax credit effects) by year, $m (present value)'
+** txcapchrgeqp_r(sc,rt,r,rr,ps)                'Transmission capex charges (net of depreciation tax credit effects) by equipment, $m (real)'
+** txcapchrgeqp_pv(sc,rt,r,rr,ps,d)             'Transmission capex charges (net of depreciation tax credit effects) by equipment, $m (present value)'
+** txcapchrgtot_r(sc,rt)                        'Total transmission capex charges (net of depreciation tax credit effects), $m (real)'
+** txcapchrgtot_pv(sc,rt,d)                     'Total transmission capex charges (net of depreciation tax credit effects), $m (present value)'
+** txtaxcred_r(sc,rt,r,rr,ps,y)                 'Tax credit on depreciation by built transmission equipment by year, $m (real)'
+** txtaxcred_pv(sc,rt,r,rr,ps,y,d)              'Tax credit on depreciation by built transmission equipment by year, $m (present value)'
+** txtaxcredyr_r(sc,rt,y)                       'Tax credit on depreciation on transmission equipment by year, $m (real)'
+** txtaxcredyr_pv(sc,rt,y,d)                    'Tax credit on depreciation on transmission equipment by year, $m (present value)'
+** txtaxcredeqp_r(sc,rt,r,rr,ps)                'Tax credit on depreciation by transmission equipment, $m (real)'
+** txtaxcredeqp_pv(sc,rt,r,rr,ps,d)             'Tax credit on depreciation by transmission equipment, $m (present value)'
+** txtaxcredtot_r(sc,rt)                        'Total tax credit on depreciation of transmission equipment, $m (real)'
+** txtaxcredtot_pv(sc,rt,d)                     'Total tax credit on depreciation of transmission equipment, $m (present value)'   ;
 **
 
 
@@ -1654,7 +1654,7 @@ Parameters
   TechZoneMW(sc,k,e)   'Built megawatts less retired megawatts by technology and zone'
   TechRegMW(sc,k,r)    'Built megawatts less retired megawatts by technology and region'
   TechYearMW(sc,k,y)   'Built megawatts less retired megawatts by technology and year'
-  SCyearMW(sc,y)      'Built megawatts less retired megawatts by SC and year'
+  SCyearMW(sc,y)       'Built megawatts less retired megawatts by SC and year'
   ;
 
 if(%RunType%=2,
@@ -2181,21 +2181,21 @@ $ontext
 ** given the actual GEM solution.
 
 Sets
-  z                         'A sequence of years'            / z1 * z100  /
-  mc                        'Index for LRMC values'          / c1 * c2000 /
+  z                                             'A sequence of years'            / z1 * z100  /
+  mc                                            'Index for LRMC values'          / c1 * c2000 /
   checkmap(sc,g,y,z)
 
 Parameter
-*  mwh(sc,g,y)              'MWh per year per plant actually generated'
-  mwh(sc,g)              'MWh per year per plant actually generated'
-  plantyrs(g)               'Plant life, years'
-  depreciation(sc,g,z)     'Depreciation in each year of plant life, $m'
-  undepcapital(sc,g,z)     'Undepreciated capital in each year of plant life, $m'
-  cndte_lrmc(mc)            "Candidate lrmc's, $/MWh"
-  dcf(sc,g,mc)             'Post-tax discounted cashflows by plant at each candidate LRMC level, $m'
-  lrmc(sc,g)               'LRMC of each plant, $/MWh'
-  totcosts(sc,g,z)         'Total costs, $m'
-  lrmc_offset               'Constant to add to 1 to kick off the candidate LRMC series'     / 0 /
+*  mwh(sc,g,y)                                  'MWh per year per plant actually generated'
+  mwh(sc,g)                                     'MWh per year per plant actually generated'
+  plantyrs(g)                                   'Plant life, years'
+  depreciation(sc,g,z)                          'Depreciation in each year of plant life, $m'
+  undepcapital(sc,g,z)                          'Undepreciated capital in each year of plant life, $m'
+  cndte_lrmc(mc)                                'Candidate lrmc's, $/MWh'
+  dcf(sc,g,mc)                                  'Post-tax discounted cashflows by plant at each candidate LRMC level, $m'
+  lrmc(sc,g)                                    'LRMC of each plant, $/MWh'
+  totcosts(sc,g,z)                              'Total costs, $m'
+  lrmc_offset                                   'Constant to add to 1 to kick off the candidate LRMC series'     / 0 /
   ycount
   zcount(sc,g)
   ;

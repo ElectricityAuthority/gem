@@ -225,11 +225,11 @@ BTX.fx(notAllowedStates,y) = 0 ;
 THETA.fx(slackBus(r),y,t,lb,hd) = 0 ;
 
 * Fix reserve variables to zero if they are not needed.
-RESV.fx(g,rc,y,t,lb,hd)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
-RESVVIOL.fx(rc,ild,y,t,lb,hd)$(        not useReserves ) = 0 ;
-RESVTRFR.fx(rc,ild,ild1,y,t,lb,hd)$( ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
-RESVREQINT.fx(rc,ild,y,t,lb,hd)$(      not useReserves ) = 0 ;
-NORESVTRFR.fx(ild,ild1,y,t,lb,hd)$(    not useReserves ) = 0 ;
+RESV.fx(g,rc,y,t,lb,hd)$(                  ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
+RESVVIOL.fx(rc,ild,y,t,lb,hd)$(              not useReserves ) = 0 ;
+RESVTRFR.fx(rc,ild,ild1,y,t,lb,hd)$(       ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
+RESVREQINT.fx(rc,ild,y,t,lb,hd)$(            not useReserves ) = 0 ;
+NORESVTRFR.fx(ild,ild1,y,t,lb,hd)$(          not useReserves ) = 0 ;
 
 * Fix to zero the intra-island reserve variables.
 RESVTRFR.fx(rc,ild,ild,y,t,lb,hd) = 0 ;
@@ -614,77 +614,77 @@ numDisYrs = sum(disHydYrs(hY), 1 ) ;
 
 loop(activeRT(rt),
   if(not sameas(rt,'dis'),
-    s2_TOTALCOST(rt)                           = sum(activeSolve(rt,hY), s_TOTALCOST(rt,hY) ) ;
-    s2_TX(rt,paths,y,t,lb,hd)                  = sum(activeSolve(rt,hY), s_TX(rt,hY,paths,y,t,lb,hd) ) ;
-    s2_BRET(rt,g,y)                            = sum(activeSolve(rt,hY), s_BRET(rt,hY,g,y) ) ;
-    s2_ISRETIRED(rt,g)                         = sum(activeSolve(rt,hY), s_ISRETIRED(rt,hY,g) ) ;
-    s2_BTX(rt,paths,ps,y)                      = sum(activeSolve(rt,hY), s_BTX(rt,hY,paths,ps,y) ) ;
-    s2_REFURBCOST(rt,g,y)                      = sum(activeSolve(rt,hY), s_REFURBCOST(rt,hY,g,y) ) ;
-    s2_BUILD(rt,g,y)                           = sum(activeSolve(rt,hY), s_BUILD(rt,hY,g,y) ) ;
-    s2_RETIRE(rt,g,y)                          = sum(activeSolve(rt,hY), s_RETIRE(rt,hY,g,y) ) ;
-    s2_CAPACITY(rt,g,y)                        = sum(activeSolve(rt,hY), s_CAPACITY(rt,hY,g,y) ) ;
-    s2_TXCAPCHARGES(rt,paths,y)                = sum(activeSolve(rt,hY), s_TXCAPCHARGES(rt,hY,paths,y) ) ;
-    s2_GEN(rt,g,y,t,lb,hd)                     = sum(activeSolve(rt,hY), s_GEN(rt,hY,g,y,t,lb,hd) ) ;
-    s2_VOLLGEN(rt,s,y,t,lb,hd)                 = sum(activeSolve(rt,hY), s_VOLLGEN(rt,hY,s,y,t,lb,hd) ) ;
-    s2_PUMPEDGEN(rt,g,y,t,lb,hd)               = sum(activeSolve(rt,hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,hd) ) ;
-    s2_LOSS(rt,paths,y,t,lb,hd)                = sum(activeSolve(rt,hY), s_LOSS(rt,hY,paths,y,t,lb,hd) ) ;
-    s2_TXPROJVAR(rt,tupg,y)                    = sum(activeSolve(rt,hY), s_TXPROJVAR(rt,hY,tupg,y) ) ;
-    s2_TXUPGRADE(rt,paths,ps,pss,y)            = sum(activeSolve(rt,hY), s_TXUPGRADE(rt,hY,paths,ps,pss,y) ) ;
-    s2_RESV(rt,g,rc,y,t,lb,hd)                 = sum(activeSolve(rt,hY), s_RESV(rt,hY,g,rc,y,t,lb,hd) ) ;
-    s2_RESVVIOL(rt,rc,ild,y,t,lb,hd)           = sum(activeSolve(rt,hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,hd) ) ;
-    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,hd)      = sum(activeSolve(rt,hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,hd) ) ;
-    s2_RENNRGPENALTY(rt,y)                     = sum(activeSolve(rt,hY), s_RENNRGPENALTY(rt,hY,y) ) ;
-    s2_ANNMWSLACK(rt,y)                        = sum(activeSolve(rt,hY), s_ANNMWSLACK(rt,hY,y) ) ;
-    s2_SEC_NZSLACK(rt,y)                       = sum(activeSolve(rt,hY), s_SEC_NZSLACK(rt,hY,y) ) ;
-    s2_SEC_NI1SLACK(rt,y)                      = sum(activeSolve(rt,hY), s_SEC_NI1SLACK(rt,hY,y) ) ;
-    s2_SEC_NI2SLACK(rt,y)                      = sum(activeSolve(rt,hY), s_SEC_NI2SLACK(rt,hY,y) ) ;
-    s2_NOWIND_NZSLACK(rt,y)                    = sum(activeSolve(rt,hY), s_NOWIND_NZSLACK(rt,hY,y) ) ;
-    s2_NOWIND_NISLACK(rt,y)                    = sum(activeSolve(rt,hY), s_NOWIND_NISLACK(rt,hY,y) ) ;
-    s2_RENCAPSLACK(rt,y)                       = sum(activeSolve(rt,hY), s_RENCAPSLACK(rt,hY,y) ) ;
-    s2_HYDROSLACK(rt,y)                        = sum(activeSolve(rt,hY), s_HYDROSLACK(rt,hY,y) ) ;
-    s2_MINUTILSLACK(rt,y)                      = sum(activeSolve(rt,hY), s_MINUTILSLACK(rt,hY,y) ) ;
-    s2_FUELSLACK(rt,y)                         = sum(activeSolve(rt,hY), s_FUELSLACK(rt,hY,y) ) ;
-    s2_bal_supdem(rt,r,y,t,lb,hd)              = sum(activeSolve(rt,hY), s_bal_supdem(rt,hY,r,y,t,lb,hd) ) ;
+    s2_TOTALCOST(rt)                                = sum(activeSolve(rt,hY), s_TOTALCOST(rt,hY) ) ;
+    s2_TX(rt,paths,y,t,lb,hd)                       = sum(activeSolve(rt,hY), s_TX(rt,hY,paths,y,t,lb,hd) ) ;
+    s2_BRET(rt,g,y)                                 = sum(activeSolve(rt,hY), s_BRET(rt,hY,g,y) ) ;
+    s2_ISRETIRED(rt,g)                              = sum(activeSolve(rt,hY), s_ISRETIRED(rt,hY,g) ) ;
+    s2_BTX(rt,paths,ps,y)                           = sum(activeSolve(rt,hY), s_BTX(rt,hY,paths,ps,y) ) ;
+    s2_REFURBCOST(rt,g,y)                           = sum(activeSolve(rt,hY), s_REFURBCOST(rt,hY,g,y) ) ;
+    s2_BUILD(rt,g,y)                                = sum(activeSolve(rt,hY), s_BUILD(rt,hY,g,y) ) ;
+    s2_RETIRE(rt,g,y)                               = sum(activeSolve(rt,hY), s_RETIRE(rt,hY,g,y) ) ;
+    s2_CAPACITY(rt,g,y)                             = sum(activeSolve(rt,hY), s_CAPACITY(rt,hY,g,y) ) ;
+    s2_TXCAPCHARGES(rt,paths,y)                     = sum(activeSolve(rt,hY), s_TXCAPCHARGES(rt,hY,paths,y) ) ;
+    s2_GEN(rt,g,y,t,lb,hd)                          = sum(activeSolve(rt,hY), s_GEN(rt,hY,g,y,t,lb,hd) ) ;
+    s2_VOLLGEN(rt,s,y,t,lb,hd)                      = sum(activeSolve(rt,hY), s_VOLLGEN(rt,hY,s,y,t,lb,hd) ) ;
+    s2_PUMPEDGEN(rt,g,y,t,lb,hd)                    = sum(activeSolve(rt,hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,hd) ) ;
+    s2_LOSS(rt,paths,y,t,lb,hd)                     = sum(activeSolve(rt,hY), s_LOSS(rt,hY,paths,y,t,lb,hd) ) ;
+    s2_TXPROJVAR(rt,tupg,y)                         = sum(activeSolve(rt,hY), s_TXPROJVAR(rt,hY,tupg,y) ) ;
+    s2_TXUPGRADE(rt,paths,ps,pss,y)                 = sum(activeSolve(rt,hY), s_TXUPGRADE(rt,hY,paths,ps,pss,y) ) ;
+    s2_RESV(rt,g,rc,y,t,lb,hd)                      = sum(activeSolve(rt,hY), s_RESV(rt,hY,g,rc,y,t,lb,hd) ) ;
+    s2_RESVVIOL(rt,rc,ild,y,t,lb,hd)                = sum(activeSolve(rt,hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,hd) ) ;
+    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,hd)           = sum(activeSolve(rt,hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,hd) ) ;
+    s2_RENNRGPENALTY(rt,y)                          = sum(activeSolve(rt,hY), s_RENNRGPENALTY(rt,hY,y) ) ;
+    s2_ANNMWSLACK(rt,y)                             = sum(activeSolve(rt,hY), s_ANNMWSLACK(rt,hY,y) ) ;
+    s2_SEC_NZSLACK(rt,y)                            = sum(activeSolve(rt,hY), s_SEC_NZSLACK(rt,hY,y) ) ;
+    s2_SEC_NI1SLACK(rt,y)                           = sum(activeSolve(rt,hY), s_SEC_NI1SLACK(rt,hY,y) ) ;
+    s2_SEC_NI2SLACK(rt,y)                           = sum(activeSolve(rt,hY), s_SEC_NI2SLACK(rt,hY,y) ) ;
+    s2_NOWIND_NZSLACK(rt,y)                         = sum(activeSolve(rt,hY), s_NOWIND_NZSLACK(rt,hY,y) ) ;
+    s2_NOWIND_NISLACK(rt,y)                         = sum(activeSolve(rt,hY), s_NOWIND_NISLACK(rt,hY,y) ) ;
+    s2_RENCAPSLACK(rt,y)                            = sum(activeSolve(rt,hY), s_RENCAPSLACK(rt,hY,y) ) ;
+    s2_HYDROSLACK(rt,y)                             = sum(activeSolve(rt,hY), s_HYDROSLACK(rt,hY,y) ) ;
+    s2_MINUTILSLACK(rt,y)                           = sum(activeSolve(rt,hY), s_MINUTILSLACK(rt,hY,y) ) ;
+    s2_FUELSLACK(rt,y)                              = sum(activeSolve(rt,hY), s_FUELSLACK(rt,hY,y) ) ;
+    s2_bal_supdem(rt,r,y,t,lb,hd)                   = sum(activeSolve(rt,hY), s_bal_supdem(rt,hY,r,y,t,lb,hd) ) ;
 *++++++++++
 *   More non-free reserves code.
-    s2_RESVCOMPONENTS(rt,paths,y,t,lb,hd,stp)  = sum(activeSolve(rt,hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,hd,stp) ) ;
+    s2_RESVCOMPONENTS(rt,paths,y,t,lb,hd,stp)       = sum(activeSolve(rt,hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,hd,stp) ) ;
 *++++++++++
     else
     if(numDisYrs < 1, numDisYrs = 1 ) ; ! DInflowYr must have been 1 in which case only the average year was used and numDisYrs = 1
-    s2_TOTALCOST(rt)                           = sum(disHydYrs(hY), s_TOTALCOST(rt,hY) ) / numDisYrs ;
-    s2_TX(rt,paths,y,t,lb,dum)                 = sum(disHydYrs(hY), s_TX(rt,hY,paths,y,t,lb,dum) ) / numDisYrs ;
-    s2_BRET(rt,g,y)                            = sum(disHydYrs(hY), s_BRET(rt,hY,g,y) ) / numDisYrs ;
-    s2_ISRETIRED(rt,g)                         = sum(disHydYrs(hY), s_ISRETIRED(rt,hY,g) ) / numDisYrs ;
-    s2_BTX(rt,paths,ps,y)                      = sum(disHydYrs(hY), s_BTX(rt,hY,paths,ps,y) ) / numDisYrs ;
-    s2_REFURBCOST(rt,g,y)                      = sum(disHydYrs(hY), s_REFURBCOST(rt,hY,g,y) ) / numDisYrs ;
-    s2_BUILD(rt,g,y)                           = sum(disHydYrs(hY), s_BUILD(rt,hY,g,y) ) / numDisYrs ;
-    s2_RETIRE(rt,g,y)                          = sum(disHydYrs(hY), s_RETIRE(rt,hY,g,y) ) / numDisYrs ;
-    s2_CAPACITY(rt,g,y)                        = sum(disHydYrs(hY), s_CAPACITY(rt,hY,g,y) ) / numDisYrs ;
-    s2_TXCAPCHARGES(rt,paths,y)                = sum(disHydYrs(hY), s_TXCAPCHARGES(rt,hY,paths,y) ) / numDisYrs ;
-    s2_GEN(rt,g,y,t,lb,dum)                    = sum(disHydYrs(hY), s_GEN(rt,hY,g,y,t,lb,dum) ) / numDisYrs ;
-    s2_VOLLGEN(rt,s,y,t,lb,dum)                = sum(disHydYrs(hY), s_VOLLGEN(rt,hY,s,y,t,lb,dum) ) / numDisYrs ;
-    s2_PUMPEDGEN(rt,g,y,t,lb,dum)              = sum(disHydYrs(hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,dum) ) / numDisYrs ;
-    s2_LOSS(rt,paths,y,t,lb,dum)               = sum(disHydYrs(hY), s_LOSS(rt,hY,paths,y,t,lb,dum) ) / numDisYrs ;
-    s2_TXPROJVAR(rt,tupg,y)                    = sum(disHydYrs(hY), s_TXPROJVAR(rt,hY,tupg,y) ) / numDisYrs ;
-    s2_TXUPGRADE(rt,paths,ps,pss,y)            = sum(disHydYrs(hY), s_TXUPGRADE(rt,hY,paths,ps,pss,y) ) / numDisYrs ;
-    s2_RESV(rt,g,rc,y,t,lb,dum)                = sum(disHydYrs(hY), s_RESV(rt,hY,g,rc,y,t,lb,dum) ) / numDisYrs ;
-    s2_RESVVIOL(rt,rc,ild,y,t,lb,dum)          = sum(disHydYrs(hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,dum) ) / numDisYrs ;
-    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,dum)     = sum(disHydYrs(hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,dum) ) / numDisYrs ;
-    s2_RENNRGPENALTY(rt,y)                     = sum(disHydYrs(hY), s_RENNRGPENALTY(rt,hY,y) ) / numDisYrs ;
-    s2_ANNMWSLACK(rt,y)                        = sum(disHydYrs(hY), s_ANNMWSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_SEC_NZSLACK(rt,y)                       = sum(disHydYrs(hY), s_SEC_NZSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_SEC_NI1SLACK(rt,y)                      = sum(disHydYrs(hY), s_SEC_NI1SLACK(rt,hY,y) ) / numDisYrs ;
-    s2_SEC_NI2SLACK(rt,y)                      = sum(disHydYrs(hY), s_SEC_NI2SLACK(rt,hY,y) ) / numDisYrs ;
-    s2_NOWIND_NZSLACK(rt,y)                    = sum(disHydYrs(hY), s_NOWIND_NZSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_NOWIND_NISLACK(rt,y)                    = sum(disHydYrs(hY), s_NOWIND_NISLACK(rt,hY,y) ) / numDisYrs ;
-    s2_RENCAPSLACK(rt,y)                       = sum(disHydYrs(hY), s_RENCAPSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_HYDROSLACK(rt,y)                        = sum(disHydYrs(hY), s_HYDROSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_MINUTILSLACK(rt,y)                      = sum(disHydYrs(hY), s_MINUTILSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_FUELSLACK(rt,y)                         = sum(disHydYrs(hY), s_FUELSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_bal_supdem(rt,r,y,t,lb,dum)             = sum(disHydYrs(hY), s_bal_supdem(rt,hY,r,y,t,lb,dum) ) / numDisYrs ;
+    s2_TOTALCOST(rt)                                = sum(disHydYrs(hY), s_TOTALCOST(rt,hY) ) / numDisYrs ;
+    s2_TX(rt,paths,y,t,lb,dum)                      = sum(disHydYrs(hY), s_TX(rt,hY,paths,y,t,lb,dum) ) / numDisYrs ;
+    s2_BRET(rt,g,y)                                 = sum(disHydYrs(hY), s_BRET(rt,hY,g,y) ) / numDisYrs ;
+    s2_ISRETIRED(rt,g)                              = sum(disHydYrs(hY), s_ISRETIRED(rt,hY,g) ) / numDisYrs ;
+    s2_BTX(rt,paths,ps,y)                           = sum(disHydYrs(hY), s_BTX(rt,hY,paths,ps,y) ) / numDisYrs ;
+    s2_REFURBCOST(rt,g,y)                           = sum(disHydYrs(hY), s_REFURBCOST(rt,hY,g,y) ) / numDisYrs ;
+    s2_BUILD(rt,g,y)                                = sum(disHydYrs(hY), s_BUILD(rt,hY,g,y) ) / numDisYrs ;
+    s2_RETIRE(rt,g,y)                               = sum(disHydYrs(hY), s_RETIRE(rt,hY,g,y) ) / numDisYrs ;
+    s2_CAPACITY(rt,g,y)                             = sum(disHydYrs(hY), s_CAPACITY(rt,hY,g,y) ) / numDisYrs ;
+    s2_TXCAPCHARGES(rt,paths,y)                     = sum(disHydYrs(hY), s_TXCAPCHARGES(rt,hY,paths,y) ) / numDisYrs ;
+    s2_GEN(rt,g,y,t,lb,dum)                         = sum(disHydYrs(hY), s_GEN(rt,hY,g,y,t,lb,dum) ) / numDisYrs ;
+    s2_VOLLGEN(rt,s,y,t,lb,dum)                     = sum(disHydYrs(hY), s_VOLLGEN(rt,hY,s,y,t,lb,dum) ) / numDisYrs ;
+    s2_PUMPEDGEN(rt,g,y,t,lb,dum)                   = sum(disHydYrs(hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,dum) ) / numDisYrs ;
+    s2_LOSS(rt,paths,y,t,lb,dum)                    = sum(disHydYrs(hY), s_LOSS(rt,hY,paths,y,t,lb,dum) ) / numDisYrs ;
+    s2_TXPROJVAR(rt,tupg,y)                         = sum(disHydYrs(hY), s_TXPROJVAR(rt,hY,tupg,y) ) / numDisYrs ;
+    s2_TXUPGRADE(rt,paths,ps,pss,y)                 = sum(disHydYrs(hY), s_TXUPGRADE(rt,hY,paths,ps,pss,y) ) / numDisYrs ;
+    s2_RESV(rt,g,rc,y,t,lb,dum)                     = sum(disHydYrs(hY), s_RESV(rt,hY,g,rc,y,t,lb,dum) ) / numDisYrs ;
+    s2_RESVVIOL(rt,rc,ild,y,t,lb,dum)               = sum(disHydYrs(hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,dum) ) / numDisYrs ;
+    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,dum)          = sum(disHydYrs(hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,dum) ) / numDisYrs ;
+    s2_RENNRGPENALTY(rt,y)                          = sum(disHydYrs(hY), s_RENNRGPENALTY(rt,hY,y) ) / numDisYrs ;
+    s2_ANNMWSLACK(rt,y)                             = sum(disHydYrs(hY), s_ANNMWSLACK(rt,hY,y) ) / numDisYrs ;
+    s2_SEC_NZSLACK(rt,y)                            = sum(disHydYrs(hY), s_SEC_NZSLACK(rt,hY,y) ) / numDisYrs ;
+    s2_SEC_NI1SLACK(rt,y)                           = sum(disHydYrs(hY), s_SEC_NI1SLACK(rt,hY,y) ) / numDisYrs ;
+    s2_SEC_NI2SLACK(rt,y)                           = sum(disHydYrs(hY), s_SEC_NI2SLACK(rt,hY,y) ) / numDisYrs ;
+    s2_NOWIND_NZSLACK(rt,y)                         = sum(disHydYrs(hY), s_NOWIND_NZSLACK(rt,hY,y) ) / numDisYrs ;
+    s2_NOWIND_NISLACK(rt,y)                         = sum(disHydYrs(hY), s_NOWIND_NISLACK(rt,hY,y) ) / numDisYrs ;
+    s2_RENCAPSLACK(rt,y)                            = sum(disHydYrs(hY), s_RENCAPSLACK(rt,hY,y) ) / numDisYrs ;
+    s2_HYDROSLACK(rt,y)                             = sum(disHydYrs(hY), s_HYDROSLACK(rt,hY,y) ) / numDisYrs ;
+    s2_MINUTILSLACK(rt,y)                           = sum(disHydYrs(hY), s_MINUTILSLACK(rt,hY,y) ) / numDisYrs ;
+    s2_FUELSLACK(rt,y)                              = sum(disHydYrs(hY), s_FUELSLACK(rt,hY,y) ) / numDisYrs ;
+    s2_bal_supdem(rt,r,y,t,lb,dum)                  = sum(disHydYrs(hY), s_bal_supdem(rt,hY,r,y,t,lb,dum) ) / numDisYrs ;
 *++++++++++
 *   More non-free reserves code.
-    s2_RESVCOMPONENTS(rt,paths,y,t,lb,dum,stp) = sum(disHydYrs(hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,dum,stp) ) / numDisYrs ;
+    s2_RESVCOMPONENTS(rt,paths,y,t,lb,dum,stp)      = sum(disHydYrs(hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,dum,stp) ) / numDisYrs ;
 *++++++++++
   ) ;
 ) ;
