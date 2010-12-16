@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 16/12/2010 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 17/12/2010 (imm@ea.govt.nz)
 
 $ontext
   This program does....
