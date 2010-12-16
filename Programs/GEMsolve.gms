@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 12/10/2010 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 17/10/2010 (imm@ea.govt.nz)
 
 
 $ontext
@@ -147,20 +147,20 @@ REFURBCOST.lo(g,y) = 0 ;                             REFURBCOST.up(g,y) = +inf ;
 ISRETIRED.lo(g) = 0 ;                                ISRETIRED.up(g) = 1 ;
 BRET.lo(g,y) = 0 ;                                   BRET.up(g,y) = 1 ;
 RETIRE.lo(g,y) = 0 ;                                 RETIRE.up(g,y) = +inf ;
-GEN.lo(g,y,t,lb,outcomes) = 0 ;                      GEN.up(g,y,t,lb,outcomes)  = +inf ;
-VOLLGEN.lo(s,y,t,lb,outcomes) = 0 ;                  VOLLGEN.up(s,y,t,lb,outcomes)  = +inf ;
-TX.lo(paths,y,t,lb,outcomes) = -inf ;                TX.up(paths,y,t,lb,outcomes)  = +inf ;
+GEN.lo(g,y,t,lb,outcomes) = 0 ;                      GEN.up(g,y,t,lb,outcomes) = +inf ;
+VOLLGEN.lo(s,y,t,lb,outcomes) = 0 ;                  VOLLGEN.up(s,y,t,lb,outcomes) = +inf ;
+TX.lo(paths,y,t,lb,outcomes) = -inf ;                TX.up(paths,y,t,lb,outcomes) = +inf ;
 CGEN.lo(g,y) = 0 ;                                   CGEN.up(g,y) = 1 ;
 BGEN.lo(g,y) = 0 ;                                   BGEN.up(g,y) = 1 ;
 TXUPGRADE.lo(validTransitions(paths,ps,pss),y) = 0 ; TXUPGRADE.up(validTransitions(paths,ps,pss),y) = 1 ;
 TXPROJVAR.lo(tupg,y) = 0 ;                           TXPROJVAR.up(tupg,y) = 1 ;
 BTX.lo(paths,ps,y) = 0 ;                             BTX.up(paths,ps,y) = 1 ;
-THETA.lo(r,y,t,lb,outcomes) = -inf ;                 THETA.up(r,y,t,lb,outcomes)  = +inf ;
-RESV.lo(g,rc,y,t,lb,outcomes) = 0 ;                  RESV.up(g,rc,y,t,lb,outcomes)  = +inf ;
-RESVVIOL.lo(rc,ild,y,t,lb,outcomes) = 0 ;            RESVVIOL.up(rc,ild,y,t,lb,outcomes)  = +inf ;
-RESVTRFR.lo(rc,ild1,ild,y,t,lb,outcomes) = 0 ;       RESVTRFR.up(rc,ild1,ild,y,t,lb,outcomes)  = +inf ;
-RESVREQINT.lo(rc,ild,y,t,lb,outcomes) = 0 ;          RESVREQINT.up(rc,ild,y,t,lb,outcomes)  = +inf ;
-NORESVTRFR.lo(ild,ild,y,t,lb,outcomes) = 0 ;         NORESVTRFR.up(ild,ild,y,t,lb,outcomes)  = 1 ;
+THETA.lo(r,y,t,lb,outcomes) = -inf ;                 THETA.up(r,y,t,lb,outcomes) = +inf ;
+RESV.lo(g,rc,y,t,lb,outcomes) = 0 ;                  RESV.up(g,rc,y,t,lb,outcomes) = +inf ;
+RESVVIOL.lo(rc,ild,y,t,lb,outcomes) = 0 ;            RESVVIOL.up(rc,ild,y,t,lb,outcomes) = +inf ;
+RESVTRFR.lo(rc,ild1,ild,y,t,lb,outcomes) = 0 ;       RESVTRFR.up(rc,ild1,ild,y,t,lb,outcomes) = +inf ;
+RESVREQINT.lo(rc,ild,y,t,lb,outcomes) = 0 ;          RESVREQINT.up(rc,ild,y,t,lb,outcomes) = +inf ;
+NORESVTRFR.lo(ild,ild,y,t,lb,outcomes) = 0 ;         NORESVTRFR.up(ild,ild,y,t,lb,outcomes) = 1 ;
 
 * Restrict the build variable (i.e. MW) to be zero depending on input assumptions:
 * a) Don't allow capacity to be built in years outside the valid range of build years.
@@ -187,22 +187,22 @@ ISRETIRED.fx(g)$( not possibleToEndogRetire(g) ) = 0 ;
 * Restrict generation:
 * a) Don't allow generation from units prior to committed date or earliest allowable operation or if plant is retired.
 *    NB: 'validYrOperate embodies the appropriate date for existing, committed, and new units - i.e., all units.
-GEN.fx(g,y,t,lb,outcomes) $( not validYrOperate(g,y,t) ) = 0 ;
+GEN.fx(g,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 
 * b) Force generation from the 'must run' (i.e base load) plant.
 *    Convert MW capacity to GWh in the load block, as in the lim_maxgen constraint. 
-GEN.fx(g,y,t,lb,outcomes) $( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y,t) ) =  1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
+GEN.fx(g,y,t,lb,outcomes)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y,t) ) =  1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
 
 * Place restrictions on VOLL plants:
 * a) Respect the capacity of VOLL plants 
-VOLLGEN.up(s,y,t,lb,outcomes)  = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;
+VOLLGEN.up(s,y,t,lb,outcomes) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;
 
 * b) Don't allow VOLL in user-specified top load blocks 
-VOLLGEN.fx(s,y,t,lb,outcomes) $( ord(lb) <= noVOLLblks ) = 0 ;
+VOLLGEN.fx(s,y,t,lb,outcomes)$( ord(lb) <= noVOLLblks ) = 0 ;
 
 * Fix lower bound on TX to zero if transportation formulation is being used. Reset level to zero each time too.
-TX.l(paths,y,t,lb,outcomes)  = 0 ;
-TX.lo(paths,y,t,lb,outcomes) $(DCloadFlow = 0) = 0 ;
+TX.l(paths,y,t,lb,outcomes) = 0 ;
+TX.lo(paths,y,t,lb,outcomes)$(DCloadFlow = 0) = 0 ;
  
 * Impose upper bound of 1 on continuous 0-1 transmission-related variables.
 TXUPGRADE.up(validTransitions(paths,ps,pss),y) = 1 ;
@@ -222,7 +222,7 @@ loop((transitions(tupg,r,rr,ps,pss),y)$txEarlyComYrSet(tupg,r,rr,ps,pss,y),
 BTX.fx(notAllowedStates,y) = 0 ;
 
 * Fix the reference bus angle to zero.
-THETA.fx(slackBus(r),y,t,lb,outcomes)  = 0 ;
+THETA.fx(slackBus(r),y,t,lb,outcomes) = 0 ;
 
 * Fix reserve variables to zero if they are not needed.
 RESV.fx(g,rc,y,t,lb,outcomes)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
@@ -232,25 +232,25 @@ RESVREQINT.fx(rc,ild,y,t,lb,outcomes)$(      not useReserves ) = 0 ;
 NORESVTRFR.fx(ild,ild1,y,t,lb,outcomes)$(    not useReserves ) = 0 ;
 
 * Fix to zero the intra-island reserve variables.
-RESVTRFR.fx(rc,ild,ild,y,t,lb,outcomes)  = 0 ;
+RESVTRFR.fx(rc,ild,ild,y,t,lb,outcomes) = 0 ;
 NORESVTRFR.fx(ild,ild,y,t,lb,outcomes)  = 0 ;
 
 * Set the lower bound on the reserve requirement if there is an external requirement specified.
-RESVREQINT.lo(rc,ild,y,t,lb,outcomes) $( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
+RESVREQINT.lo(rc,ild,y,t,lb,outcomes)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
 
 * Reserve contribution cannot exceed the specified capability during peak or other periods.
-RESV.up(g,rc,y,t,lb,outcomes) $( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
+RESV.up(g,rc,y,t,lb,outcomes)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
 
 * Don't allow reserves from units prior to committed date or earliest allowable operation or if plant is retired.
 * NB: 'validYrOperate' embodies the appropriate date for existing, committed, and new units - i.e., all units.
-RESV.fx(g,rc,y,t,lb,outcomes) $( not validYrOperate(g,y,t) ) = 0 ;
+RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 
 * Reset all slacks and penalties/violations to zero.
 ANNMWSLACK.l(y) = 0 ;         SEC_NZSLACK.l(y) = 0 ;      SEC_NI1SLACK.l(y) = 0 ;  SEC_NI2SLACK.l(y) = 0 ;
 NOWIND_NZSLACK.l(y) = 0 ;     NOWIND_NISLACK.l(y) = 0 ;   RENCAPSLACK.l(y) = 0 ;
 HYDROSLACK.l(y) = 0 ;         MINUTILSLACK.l(y) = 0 ;     FUELSLACK.l(y) = 0 ;
 RENNRGPENALTY.l(y) = 0 ;
-RESVVIOL.l(rc,ild,y,t,lb,outcomes)  = 0 ;
+RESVVIOL.l(rc,ild,y,t,lb,outcomes) = 0 ;
 
 $set AddUp10Slacks "sum(y, ANNMWSLACK.l(y) + SEC_NZSLACK.l(y) + SEC_NI1SLACK.l(y) + SEC_NI2SLACK.l(y) + NOWIND_NZSLACK.l(y) + NOWIND_NISLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
 
@@ -269,13 +269,13 @@ loop((tmg(rt),hydroYrForTiming(hY)),
   activeSolve(rt,hY) = yes ;
 
 * Select appropriate hydro year(s) in order to do the timing solve.
-  h(outcomes)  = no ;
+  h(outcomes) = no ;
   hydOutput(g,y,t,h) = 0 ;
   if(sameas(hydroYrForTiming,'Multiple'),
-    h(outcomes) $( not sameas(outcomes, 'dum') ) = yes ;
+    h(outcomes)$( not sameas(outcomes,'dum') ) = yes ;
     hydOutput(g,y,t,h) = hydroOutputScalar * sum((mapv_g(v,g),hY1,mapm_t(m,t))$maphd_hY(h,hY1), hydroOutput(v,hY1,m)) ;
     else
-    h(outcomes) $( sameas(outcomes, 'dum') ) = yes ;
+    h(outcomes)$( sameas(outcomes,'dum') ) = yes ;
     hydOutput(g,y,t,h) = hydroOutputScalar * i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
   ) ;
 
@@ -358,8 +358,8 @@ loop((reo(rt),hydroYrForReopt(hY)),
   activeSolve(rt,hY) = yes ;
 
 * Select appropriate hydro year(s) in order to do the re-optimise solve.
-  h(outcomes)  = no ;
-  h(outcomes) $( sameas(outcomes, 'dum') ) = yes ;
+  h(outcomes) = no ;
+  h(outcomes)$( sameas(outcomes,'dum') ) = yes ;
   hydOutput(g,y,t,h) = 0 ;
   hydOutput(g,y,t,h) = hydroOutputScalar * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
 
@@ -489,8 +489,8 @@ $offtext
 $label CarryOn1
 
 * Make sure the only active element of set h is 'dum' and zero out any previously used hydrology output data.
-h(outcomes)  = no ;
-h(outcomes) $( sameas(outcomes, 'dum') ) = yes ;
+h(outcomes) = no ;
+h(outcomes)$( sameas(outcomes,'dum') ) = yes ;
 hydOutput(g,y,t,h) = 0 ;
 
 * Construct hydrology output sequences starting with all hydro years (including the average year but excluding the 'multiple' year) if DInflowYr = 0:
@@ -597,7 +597,7 @@ putclose rep // 'All models in the scenario called "%scenarioName%" have now bee
 ** hY (which to date they have not been). But this may change when we code up Geoff's stochastic stuff. 
 
 * Re-declared and initialised sets.
-Set dum(outcomes)   'The dummy element of set outcomes'   / dum / ;
+Set dum(outcomes)  'The dummy element of outcomes set'   / dum / ;
 
 Parameters
 * Misc params
@@ -615,7 +615,7 @@ numDisYrs = sum(disHydYrs(hY), 1 ) ;
 loop(activeRT(rt),
   if(not sameas(rt,'dis'),
     s2_TOTALCOST(rt)                                = sum(activeSolve(rt,hY), s_TOTALCOST(rt,hY) ) ;
-    s2_TX(rt,paths,y,t,lb,outcomes)                 = sum(activeSolve(rt,hY), s_TX(rt,hY,paths,y,t,lb,outcomes)  ) ;
+    s2_TX(rt,paths,y,t,lb,outcomes)                 = sum(activeSolve(rt,hY), s_TX(rt,hY,paths,y,t,lb,outcomes) ) ;
     s2_BRET(rt,g,y)                                 = sum(activeSolve(rt,hY), s_BRET(rt,hY,g,y) ) ;
     s2_ISRETIRED(rt,g)                              = sum(activeSolve(rt,hY), s_ISRETIRED(rt,hY,g) ) ;
     s2_BTX(rt,paths,ps,y)                           = sum(activeSolve(rt,hY), s_BTX(rt,hY,paths,ps,y) ) ;
@@ -624,15 +624,15 @@ loop(activeRT(rt),
     s2_RETIRE(rt,g,y)                               = sum(activeSolve(rt,hY), s_RETIRE(rt,hY,g,y) ) ;
     s2_CAPACITY(rt,g,y)                             = sum(activeSolve(rt,hY), s_CAPACITY(rt,hY,g,y) ) ;
     s2_TXCAPCHARGES(rt,paths,y)                     = sum(activeSolve(rt,hY), s_TXCAPCHARGES(rt,hY,paths,y) ) ;
-    s2_GEN(rt,g,y,t,lb,outcomes)                    = sum(activeSolve(rt,hY), s_GEN(rt,hY,g,y,t,lb,outcomes)  ) ;
-    s2_VOLLGEN(rt,s,y,t,lb,outcomes)                = sum(activeSolve(rt,hY), s_VOLLGEN(rt,hY,s,y,t,lb,outcomes)  ) ;
-    s2_PUMPEDGEN(rt,g,y,t,lb,outcomes)              = sum(activeSolve(rt,hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,outcomes)  ) ;
-    s2_LOSS(rt,paths,y,t,lb,outcomes)               = sum(activeSolve(rt,hY), s_LOSS(rt,hY,paths,y,t,lb,outcomes)  ) ;
+    s2_GEN(rt,g,y,t,lb,outcomes)                    = sum(activeSolve(rt,hY), s_GEN(rt,hY,g,y,t,lb,outcomes) ) ;
+    s2_VOLLGEN(rt,s,y,t,lb,outcomes)                = sum(activeSolve(rt,hY), s_VOLLGEN(rt,hY,s,y,t,lb,outcomes) ) ;
+    s2_PUMPEDGEN(rt,g,y,t,lb,outcomes)              = sum(activeSolve(rt,hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,outcomes) ) ;
+    s2_LOSS(rt,paths,y,t,lb,outcomes)               = sum(activeSolve(rt,hY), s_LOSS(rt,hY,paths,y,t,lb,outcomes) ) ;
     s2_TXPROJVAR(rt,tupg,y)                         = sum(activeSolve(rt,hY), s_TXPROJVAR(rt,hY,tupg,y) ) ;
     s2_TXUPGRADE(rt,paths,ps,pss,y)                 = sum(activeSolve(rt,hY), s_TXUPGRADE(rt,hY,paths,ps,pss,y) ) ;
-    s2_RESV(rt,g,rc,y,t,lb,outcomes)                = sum(activeSolve(rt,hY), s_RESV(rt,hY,g,rc,y,t,lb,outcomes)  ) ;
-    s2_RESVVIOL(rt,rc,ild,y,t,lb,outcomes)          = sum(activeSolve(rt,hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,outcomes)  ) ;
-    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)     = sum(activeSolve(rt,hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,outcomes)  ) ;
+    s2_RESV(rt,g,rc,y,t,lb,outcomes)                = sum(activeSolve(rt,hY), s_RESV(rt,hY,g,rc,y,t,lb,outcomes) ) ;
+    s2_RESVVIOL(rt,rc,ild,y,t,lb,outcomes)          = sum(activeSolve(rt,hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,outcomes) ) ;
+    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)     = sum(activeSolve(rt,hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,outcomes) ) ;
     s2_RENNRGPENALTY(rt,y)                          = sum(activeSolve(rt,hY), s_RENNRGPENALTY(rt,hY,y) ) ;
     s2_ANNMWSLACK(rt,y)                             = sum(activeSolve(rt,hY), s_ANNMWSLACK(rt,hY,y) ) ;
     s2_SEC_NZSLACK(rt,y)                            = sum(activeSolve(rt,hY), s_SEC_NZSLACK(rt,hY,y) ) ;
@@ -644,10 +644,10 @@ loop(activeRT(rt),
     s2_HYDROSLACK(rt,y)                             = sum(activeSolve(rt,hY), s_HYDROSLACK(rt,hY,y) ) ;
     s2_MINUTILSLACK(rt,y)                           = sum(activeSolve(rt,hY), s_MINUTILSLACK(rt,hY,y) ) ;
     s2_FUELSLACK(rt,y)                              = sum(activeSolve(rt,hY), s_FUELSLACK(rt,hY,y) ) ;
-    s2_bal_supdem(rt,r,y,t,lb,outcomes)             = sum(activeSolve(rt,hY), s_bal_supdem(rt,hY,r,y,t,lb,outcomes)  ) ;
+    s2_bal_supdem(rt,r,y,t,lb,outcomes)             = sum(activeSolve(rt,hY), s_bal_supdem(rt,hY,r,y,t,lb,outcomes) ) ;
 *++++++++++
 *   More non-free reserves code.
-    s2_RESVCOMPONENTS(rt,paths,y,t,lb,outcomes,stp) = sum(activeSolve(rt,hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,outcomes, stp) ) ;
+    s2_RESVCOMPONENTS(rt,paths,y,t,lb,outcomes,stp) = sum(activeSolve(rt,hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,outcomes,stp) ) ;
 *++++++++++
     else
     if(numDisYrs < 1, numDisYrs = 1 ) ; ! DInflowYr must have been 1 in which case only the average year was used and numDisYrs = 1
