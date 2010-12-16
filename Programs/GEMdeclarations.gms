@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 06/12/2010 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/12/2010 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -51,7 +51,7 @@ Sets
   rc           'Reserve classes'
   hY           'Hydrology output years'
   v            'Hydro reservoirs or river systems'
-  hd           'Hydrology domain for multiple hydro years'
+  outcomes     'Stochastic outcomes or uncertainty states'
   m            '12 months'
   geo          'Geographic co-ordinate types'
   col          'RGB color codes'
@@ -108,7 +108,7 @@ Sets
   mapm_t(m,t)                                   'Map months into time periods'
 * 0 reserves and security
 * 2 hydrology
-  maphd_hY(hd,hY)                               'Map hydrology output years to the hydrology domain years'
+  maphd_hY(outcomes,hY)                         'Map hydrology output years to outcomes'
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
@@ -208,7 +208,7 @@ Parameters
 * 4 hydrology
   i_firstHydroYear                              'First year of hydrology output data (ignoring the 1st two elements of hY - multiple and average)'
   i_hydroOutput(v,hY,m)                         'Historical hydro output sequences by reservoir and month, GWh'
-  i_hydroWeight(hd)                             'Weights on hydro outflows when multiple hydro outputs is used'
+  i_hydroWeight(outcomes)                       'Weights on hydro outflows when multiple hydro outputs are used'
   i_hydroOutputAdj(y)                           'Schedulable hydro output adjuster by year (default = 1)'
   ;
 
@@ -237,11 +237,11 @@ Sets
   hydroYrForTiming(hY)                          'Hydro year used to determine investment timing. Choices are Multiple, Average, 1932, 1933, ... 2007'
   hydroYrForReopt(hY)                           'Hydro year used to re-optimise investment timing. Choices are Multiple, Average, 1932, 1933, ... 2007'
 * Initialised in GEMsolve
-  h(hd)                                         'Selected elements of HD - used to control multiple versus single hydro years to determine build timing'
+  h(outcomes)                                   'Selected elements of outcomes'
   hydroYrForDispatch(hY)                        'Hydro years used to loop over when solving DISpatch'
   activeSolve(rt,hY)                            'Collect the rt-hY index used for each solve' 
-  activeHD(rt,hY,hd)                            'Collect the rt-hY-hd index used for each solve'
-  dum(hd)                                       'The dummy element of set hd'
+  activeHD(rt,hY,outcomes)                      'Collect the rt-hY-outcomes index used for each solve'
+  dum(outcomes)                                 'The dummy element from the set called outcomes'
   activeRT(rt)                                  'Identify the run types actually employed in this model run'
   disHydYrs(hY)                                 'Hydro years for which DISpatch model was solved or looped over - excludes multiple and average hydro years'
   ;
@@ -273,7 +273,7 @@ Parameters
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
 * Initialised in GEMsolve
-  hydOutput(g,y,t,hd)                           'Hydro output used in each modelled year by scheduleable hydro plant'
+  hydOutput(g,y,t,outcomes)                     'Hydro output used in each modelled year by scheduleable hydro plant'
   slacks                                        'A flag indicating slacks or penalty variables exist in at least one solution'
   timeAllowed(goal)                             'CPU seconds available for solver to spend solving the model'
   solveReport(rt,hY,*,*)                        'Collect various details about each solve of the models (both GEM and DISP)'
@@ -451,26 +451,26 @@ Parameters
   ;
 
 Positive Variables
-  RESVCOMPONENTS(r,rr,y,t,lb,hd,stp)            'Non-free reserve components, MW'
+  RESVCOMPONENTS(r,rr,y,t,lb,outcomes,stp)      'Non-free reserve components, MW'
   ;
 Equations
-  calc_nfreserves(r,rr,y,t,lb,hd)               'Calculate non-free reserve components' 
-  resv_capacity(r,rr,y,t,lb,hd,stp)             'Calculate and impose the relevant capacity on each step of free reserves'
+  calc_nfreserves(r,rr,y,t,lb,outcomes)         'Calculate non-free reserve components' 
+  resv_capacity(r,rr,y,t,lb,outcomes,stp)       'Calculate and impose the relevant capacity on each step of free reserves'
   ;
 *+++++++++++++++++++++++++
 
 
 Free Variables
   TOTALCOST                                     'Discounted total system costs over all modelled years, $m (objective function value)'
-  TX(r,rr,y,t,lb,hd)                            'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
-  THETA(r,y,t,lb,hd)                            'Bus voltage angle'
+  TX(r,rr,y,t,lb,outcomes)                      'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  THETA(r,y,t,lb,outcomes)                      'Bus voltage angle'
 
 Binary Variables
   BGEN(g,y)                                     'Binary variable to identify build year for new generation plant'
   BRET(g,y)                                     'Binary variable to identify endogenous retirement year for the eligble generation plant'
   ISRETIRED(g)                                  'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
   BTX(r,rr,ps,y)                                'Binary variable indicating the current state of a transmission path'
-  NORESVTRFR(ild,ild1,y,t,lb,hd)                'Is there available capacity on the HVDC link to transfer energy reserves (0 = Yes, 1 = No)'
+  NORESVTRFR(ild,ild1,y,t,lb,outcomes)          'Is there available capacity on the HVDC link to transfer energy reserves (0 = Yes, 1 = No)'
 
 Positive Variables
   REFURBCOST(g,y)                               'Annualised generation plant refurbishment expenditure charge, $'
@@ -480,18 +480,18 @@ Positive Variables
   RETIRE(g,y)                                   'Capacity endogenously retired by generating plant and year, MW'
   CAPACITY(g,y)                                 'Cumulative nameplate capacity at each generating plant in each year, MW'
   TXCAPCHARGES(r,rr,y)                          'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  GEN(g,y,t,lb,hd)                              'Generation by generating plant and block, GWh'
-  VOLLGEN(s,y,t,lb,hd)                          'Generation by VOLL plant and block, GWh'
-  PUMPEDGEN(g,y,t,lb,hd)                        'Energy from pumped hydro (treated like demand), GWh'
-  SPILL(g,y,t,hd)                               'Hydro spill, GWh'
-  LOSS(r,rr,y,t,lb,hd)                          'Transmission losses along each path, MW'
+  GEN(g,y,t,lb,outcomes)                        'Generation by generating plant and block, GWh'
+  VOLLGEN(s,y,t,lb,outcomes)                    'Generation by VOLL plant and block, GWh'
+  PUMPEDGEN(g,y,t,lb,outcomes)                  'Energy from pumped hydro (treated like demand), GWh'
+  SPILL(g,y,t,outcomes)                         'Hydro spill, GWh'
+  LOSS(r,rr,y,t,lb,outcomes)                    'Transmission losses along each path, MW'
   TXPROJVAR(tupg,y)                             'Continuous 0-1 variable indicating whether an upgrade project is applied'
   TXUPGRADE(r,rr,ps,pss,y)                      'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
 * Reserve variables
-  RESV(g,rc,y,t,lb,hd)                          'Reserve energy supplied, MWh'
-  RESVVIOL(rc,ild,y,t,lb,hd)                    'Reserve energy supply violations, MWh'
-  RESVTRFR(rc,ild,ild1,y,t,lb,hd)               'Reserve energy transferred from one island to another, MWh'
-  RESVREQINT(rc,ild,y,t,lb,hd)                  'Internally determined energy reserve requirement, MWh'
+  RESV(g,rc,y,t,lb,outcomes)                    'Reserve energy supplied, MWh'
+  RESVVIOL(rc,ild,y,t,lb,outcomes)              'Reserve energy supply violations, MWh'
+  RESVTRFR(rc,ild,ild1,y,t,lb,outcomes)         'Reserve energy transferred from one island to another, MWh'
+  RESVREQINT(rc,ild,y,t,lb,outcomes)            'Internally determined energy reserve requirement, MWh'
 * Penalty variables
   RENNRGPENALTY(y)                              'Penalty used to make renewable energy constraint feasible, GWh'
 * Slack variables
@@ -517,45 +517,45 @@ Equations
   endogpltretire(g,y)                           'Calculate the MW to endogenously retire'
   endogretonce(g)                               'Can only endogenously retire a plant once'
   balance_capacity(g,y)                         'Year to year capacity balance relationship for all plant, MW'
-  bal_supdem(r,y,t,lb,hd)                       'Balance supply and demand in each region, year, time period and load block'
+  bal_supdem(r,y,t,lb,outcomes)                 'Balance supply and demand in each region, year, time period and load block'
   security_nz(y)                                'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
   security_ni1(y)                               'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
   security_ni2(y)                               'Ensure enough capacity to meet peak demand in NI if tx capacity is out'
   nowind_nz(y)                                  'Ensure enough capacity to meet peak demand in NZ when all wind is off'
   nowind_ni(y)                                  'Ensure enough capacity to meet peak demand in NI when all wind is off'
-  limit_maxgen(g,y,t,lb,hd)                     'Ensure generation in each block does not exceed capacity implied by max capacity factors'
-  limit_mingen(g,y,t,lb,hd)                     'Ensure generation in each block exceeds capacity implied by min capacity factors'
-  minutil(g,k,y,hd)                             'Ensure generation by certain technology type meets a minimum utilisation'
-  limit_fueluse(f,y,hd)                         'Quantum of each fuel used and possibly constrained, PJ'
-  limit_nrg(f,y,hd)                             'Impose a limit on total energy generated by any one fuel type'
-  minreq_rennrg(y,hd)                           'Impose a minimum requirement on total energy generated from all renewable sources'
+  limit_maxgen(g,y,t,lb,outcomes)               'Ensure generation in each block does not exceed capacity implied by max capacity factors'
+  limit_mingen(g,y,t,lb,outcomes)               'Ensure generation in each block exceeds capacity implied by min capacity factors'
+  minutil(g,k,y,outcomes)                       'Ensure generation by certain technology type meets a minimum utilisation'
+  limit_fueluse(f,y,outcomes)                   'Quantum of each fuel used and possibly constrained, PJ'
+  limit_nrg(f,y,outcomes)                       'Impose a limit on total energy generated by any one fuel type'
+  minreq_rennrg(y,outcomes)                     'Impose a minimum requirement on total energy generated from all renewable sources'
   minreq_rencap(y)                              'Impose a minimum requirement on installed renewable capacity'
-  limit_hydro(g,y,t,hd)                         'Limit hydro generation to according to inflows and spill'
-  limit_pumpgen1(g,y,t,hd)                      'Limit output from pumped hydro in a period to the quantity pumped'
-  limit_pumpgen2(g,y,t,hd)                      'Limit output from pumped hydro in a period to the assumed storage'
-  limit_pumpgen3(g,y,t,lb,hd)                   "Pumped MW can be no more than the scheme's installed MW"
-  boundtxloss(r,rr,ps,y,t,lb,n,hd)              'Sort out which segment of the loss function to operate on'
-  tx_capacity(r,rr,y,t,lb,hd)                   'Calculate the relevant transmission capacity'
+  limit_hydro(g,y,t,outcomes)                   'Limit hydro generation to according to inflows and spill'
+  limit_pumpgen1(g,y,t,outcomes)                'Limit output from pumped hydro in a period to the quantity pumped'
+  limit_pumpgen2(g,y,t,outcomes)                'Limit output from pumped hydro in a period to the assumed storage'
+  limit_pumpgen3(g,y,t,lb,outcomes)             "Pumped MW can be no more than the scheme's installed MW"
+  boundtxloss(r,rr,ps,y,t,lb,n,outcomes)        'Sort out which segment of the loss function to operate on'
+  tx_capacity(r,rr,y,t,lb,outcomes)             'Calculate the relevant transmission capacity'
   tx_projectdef(tupg,r,rr,ps,pss,y)             'Associate projects to individual upgrades'
   tx_onestate(r,rr,y)                           'A link must be in exactly one state in any given year'
   tx_upgrade(r,rr,ps,y)                         'Make sure the upgrade of a link corresponds to a legitimate state-to-state transition'
   tx_oneupgrade(r,rr,y)                         'Only one upgrade per path in a single year'
-  tx_dcflow(r,rr,y,t,lb,hd)                     'DC load flow equation'
-  tx_dcflow0(r,rr,y,t,lb,hd)                    'DC load flow equation'
-  equatetxloss(r,rr,y,t,lb,hd)                  'Ensure that losses in both directions are equal'
-  txGrpConstraint(tgc,y,t,lb,hd)                'Group transmission constraints'
-  resvsinglereq1(rc,ild,y,t,lb,hd)              'Single reserve energy requirement constraint 1'
-  genmaxresv1(g,y,t,lb,hd)                      'Limit the amount of energy reserves per generator'
-  resvtrfr1(ild,ild1,y,t,lb,hd)                 'Limit on the amount of reserve energy transfer - constraint 1'
-  resvtrfr2(rc,ild,ild1,y,t,lb,hd)              'Limit on the amount of reserve energy transfer - constraint 2'
-  resvtrfr3(rc,ild,ild1,y,t,lb,hd)              'Limit on the amount of reserve energy transfer - constraint 3'
-  resvrequnit(g,rc,ild,y,t,lb,hd)               'Reserve energy requirement based on the largest dispatched unit'
-  resvreq2(rc,ild,y,t,lb,hd)                    'Island reserve energy requirement - constraint 2'
-  resvreqhvdc(rc,ild,y,t,lb,hd)                 'Reserve energy requirement based on the HVDC transfer taking into account self-cover'
-  resvtrfr4(ild1,ild,y,t,lb,hd)                 'Limit on the amount of reserve energy transfer - constraint 4'
-  resvtrfrdef(ild,ild1,y,t,lb,hd)               'Constraint that defines if reserve energy transfer is available'
-  resvoffcap(g,y,t,lb,hd)                       'Offline energy reserve capability'
-  resvreqwind(rc,ild,y,t,lb,hd)                 'Reserve energy requirement based on a specified proportion of dispatched wind generation'
+  tx_dcflow(r,rr,y,t,lb,outcomes)               'DC load flow equation'
+  tx_dcflow0(r,rr,y,t,lb,outcomes)              'DC load flow equation'
+  equatetxloss(r,rr,y,t,lb,outcomes)            'Ensure that losses in both directions are equal'
+  txGrpConstraint(tgc,y,t,lb,outcomes)          'Group transmission constraints'
+  resvsinglereq1(rc,ild,y,t,lb,outcomes)        'Single reserve energy requirement constraint 1'
+  genmaxresv1(g,y,t,lb,outcomes)                'Limit the amount of energy reserves per generator'
+  resvtrfr1(ild,ild1,y,t,lb,outcomes)           'Limit on the amount of reserve energy transfer - constraint 1'
+  resvtrfr2(rc,ild,ild1,y,t,lb,outcomes)        'Limit on the amount of reserve energy transfer - constraint 2'
+  resvtrfr3(rc,ild,ild1,y,t,lb,outcomes)        'Limit on the amount of reserve energy transfer - constraint 3'
+  resvrequnit(g,rc,ild,y,t,lb,outcomes)         'Reserve energy requirement based on the largest dispatched unit'
+  resvreq2(rc,ild,y,t,lb,outcomes)              'Island reserve energy requirement - constraint 2'
+  resvreqhvdc(rc,ild,y,t,lb,outcomes)           'Reserve energy requirement based on the HVDC transfer taking into account self-cover'
+  resvtrfr4(ild1,ild,y,t,lb,outcomes)           'Limit on the amount of reserve energy transfer - constraint 4'
+  resvtrfrdef(ild,ild1,y,t,lb,outcomes)         'Constraint that defines if reserve energy transfer is available'
+  resvoffcap(g,y,t,lb,outcomes)                 'Offline energy reserve capability'
+  resvreqwind(rc,ild,y,t,lb,outcomes)           'Reserve energy requirement based on a specified proportion of dispatched wind generation'
   ;
 
 
@@ -900,21 +900,21 @@ Parameters
 *+++++++++++++++++++++++++
 * More non-free reserves code.
 * Positive Variables
-  s_RESVCOMPONENTS(rt,hY,r,rr,y,t,lb,hd,stp)    'Non-free reserve components, MW'
+  s_RESVCOMPONENTS(rt,hY,r,rr,y,t,lb,outcomes,stp) 'Non-free reserve components, MW'
 * Equations
-  s_calc_nfreserves(rt,hY,r,rr,y,t,lb,hd)       'Calculate non-free reserve components' 
-  s_resv_capacity(rt,hY,r,rr,y,t,lb,hd,stp)     'Calculate and impose the relevant capacity on each step of free reserves'
+  s_calc_nfreserves(rt,hY,r,rr,y,t,lb,outcomes)    'Calculate non-free reserve components' 
+  s_resv_capacity(rt,hY,r,rr,y,t,lb,outcomes,stp)  'Calculate and impose the relevant capacity on each step of free reserves'
 *+++++++++++++++++++++++++
 * Free Variables
   s_TOTALCOST(rt,hY)                            'Discounted total system costs over all modelled years, $m (objective function value)'
-  s_TX(rt,hY,r,rr,y,t,lb,hd)                    'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice)'
-  s_THETA(rt,hY,r,y,t,lb,hd)                    'Bus voltage angle'
+  s_TX(rt,hY,r,rr,y,t,lb,outcomes)              'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice)'
+  s_THETA(rt,hY,r,y,t,lb,outcomes)              'Bus voltage angle'
 * Binary Variables
   s_BGEN(rt,hY,g,y)                             'Binary variable to identify build year for new generation plant'
   s_BRET(rt,hY,g,y)                             'Binary variable to identify endogenous retirement year for the eligble generation plant'
   s_ISRETIRED(rt,hY,g)                          'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
   s_BTX(rt,hY,r,rr,ps,y)                        'Binary variable indicating the current state of a transmission path'
-  s_NORESVTRFR(rt,hY,ild,ild1,y,t,lb,hd)        'Is there available capacity on the HVDC link to transfer energy reserves (0 = Yes, 1 = No)'
+  s_NORESVTRFR(rt,hY,ild,ild1,y,t,lb,outcomes)  'Is there available capacity on the HVDC link to transfer energy reserves (0 = Yes, 1 = No)'
 * Positive Variables
   s_REFURBCOST(rt,hY,g,y)                       'Annualised generation plant refurbishment expenditure charge, $'
   s_GENBLDCONT(rt,hY,g,y)                       'Continuous variable to identify build year for new scalable generation plant - for plant in linearPlantBuild set'
@@ -923,18 +923,18 @@ Parameters
   s_RETIRE(rt,hY,g,y)                           'Capacity endogenously retired by generating plant and year, MW'
   s_CAPACITY(rt,hY,g,y)                         'Cumulative nameplate capacity at each generating plant in each year, MW'
   s_TXCAPCHARGES(rt,hY,r,rr,y)                  'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s_GEN(rt,hY,g,y,t,lb,hd)                      'Generation by generating plant and block, GWh'
-  s_VOLLGEN(rt,hY,s,y,t,lb,hd)                  'Generation by VOLL plant and block, GWh'
-  s_PUMPEDGEN(rt,hY,g,y,t,lb,hd)                'Energy from pumped hydro (treated like demand), GWh'
-  s_SPILL(rt,hY,g,y,t,hd)                       'Hydro spill, GWh'
-  s_LOSS(rt,hY,r,rr,y,t,lb,hd)                  'Transmission losses along each path, MW'
+  s_GEN(rt,hY,g,y,t,lb,outcomes)                'Generation by generating plant and block, GWh'
+  s_VOLLGEN(rt,hY,s,y,t,lb,outcomes)            'Generation by VOLL plant and block, GWh'
+  s_PUMPEDGEN(rt,hY,g,y,t,lb,outcomes)          'Energy from pumped hydro (treated like demand), GWh'
+  s_SPILL(rt,hY,g,y,t,outcomes)                 'Hydro spill, GWh'
+  s_LOSS(rt,hY,r,rr,y,t,lb,outcomes)            'Transmission losses along each path, MW'
   s_TXPROJVAR(rt,hY,tupg,y)                     'Continuous 0-1 variable indicating whether an upgrade project is applied'
   s_TXUPGRADE(rt,hY,r,rr,ps,pss,y)              'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
 * Reserve variables
-  s_RESV(rt,hY,g,rc,y,t,lb,hd)                  'Reserve energy supplied, MWh'
-  s_RESVVIOL(rt,hY,rc,ild,y,t,lb,hd)            'Reserve energy supply violations, MWh'
-  s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,hd)       'Reserve energy transferred from one island to another, MWh'
-  s_RESVREQINT(rt,hY,rc,ild,y,t,lb,hd)          'Internally determined energy reserve requirement, MWh'
+  s_RESV(rt,hY,g,rc,y,t,lb,outcomes)            'Reserve energy supplied, MWh'
+  s_RESVVIOL(rt,hY,rc,ild,y,t,lb,outcomes)      'Reserve energy supply violations, MWh'
+  s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,outcomes) 'Reserve energy transferred from one island to another, MWh'
+  s_RESVREQINT(rt,hY,rc,ild,y,t,lb,outcomes)    'Internally determined energy reserve requirement, MWh'
 * Penalty variables
   s_RENNRGPENALTY(rt,hY,y)                      'Penalty used to make renewable energy constraint feasible, GWh'
 * Slack variables
@@ -958,45 +958,45 @@ Parameters
   s_endogpltretire(rt,hY,g,y)                   'Calculate the MW to endogenously retire'
   s_endogretonce(rt,hY,g)                       'Can only endogenously retire a plant once'
   s_balance_capacity(rt,hY,g,y)                 'Year to year capacity balance relationship for all plant, MW'
-  s_bal_supdem(rt,hY,r,y,t,lb,hd)               'Balance supply and demand in each region, year, time period and load block'
+  s_bal_supdem(rt,hY,r,y,t,lb,outcomes)         'Balance supply and demand in each region, year, time period and load block'
   s_security_nz(rt,hY,y)                        'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
   s_security_ni1(rt,hY,y)                       'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
   s_security_ni2(rt,hY,y)                       'Ensure enough capacity to meet peak demand in NI if tx capacity is out'
   s_nowind_nz(rt,hY,y)                          'Ensure enough capacity to meet peak demand in NZ when all wind is off'
   s_nowind_ni(rt,hY,y)                          'Ensure enough capacity to meet peak demand in NI when all wind is off'
-  s_limit_maxgen(rt,hY,g,y,t,lb,hd)             'Ensure generation in each block does not exceed capacity implied by max capacity factors'
-  s_limit_mingen(rt,hY,g,y,t,lb,hd)             'Ensure generation in each block exceeds capacity implied by min capacity factors'
-  s_minutil(rt,hY,g,k,y,hd)                     'Ensure generation by certain technology type meets a minimum utilisation'
-  s_limit_fueluse(rt,hY,f,y,hd)                 'Quantum of each fuel used and possibly constrained, PJ'
-  s_limit_nrg(rt,hY,f,y,hd)                     'Impose a limit on total energy generated by any one fuel type'
-  s_minreq_rennrg(rt,hY,y,hd)                   'Impose a minimum requirement on total energy generated from all renewable sources'
+  s_limit_maxgen(rt,hY,g,y,t,lb,outcomes)       'Ensure generation in each block does not exceed capacity implied by max capacity factors'
+  s_limit_mingen(rt,hY,g,y,t,lb,outcomes)       'Ensure generation in each block exceeds capacity implied by min capacity factors'
+  s_minutil(rt,hY,g,k,y,outcomes)               'Ensure generation by certain technology type meets a minimum utilisation'
+  s_limit_fueluse(rt,hY,f,y,outcomes)           'Quantum of each fuel used and possibly constrained, PJ'
+  s_limit_nrg(rt,hY,f,y,outcomes)               'Impose a limit on total energy generated by any one fuel type'
+  s_minreq_rennrg(rt,hY,y,outcomes)             'Impose a minimum requirement on total energy generated from all renewable sources'
   s_minreq_rencap(rt,hY,y)                      'Impose a minimum requirement on installed renewable capacity'
-  s_limit_hydro(rt,hY,g,y,t,hd)                 'Limit hydro generation to according to inflows and spill'
-  s_limit_pumpgen1(rt,hY,g,y,t,hd)              'Limit output from pumped hydro in a period to the quantity pumped'
-  s_limit_pumpgen2(rt,hY,g,y,t,hd)              'Limit output from pumped hydro in a period to the assumed storage'
-  s_limit_pumpgen3(rt,hY,g,y,t,lb,hd)           "Pumped MW can be no more than the scheme's installed MW"
-  s_boundtxloss(rt,hY,r,rr,ps,y,t,lb,n,hd)      'Sort out which segment of the loss function to operate on'
-  s_tx_capacity(rt,hY,r,rr,y,t,lb,hd)           'Calculate the relevant transmission capacity'
+  s_limit_hydro(rt,hY,g,y,t,outcomes)           'Limit hydro generation to according to inflows and spill'
+  s_limit_pumpgen1(rt,hY,g,y,t,outcomes)        'Limit output from pumped hydro in a period to the quantity pumped'
+  s_limit_pumpgen2(rt,hY,g,y,t,outcomes)        'Limit output from pumped hydro in a period to the assumed storage'
+  s_limit_pumpgen3(rt,hY,g,y,t,lb,outcomes)     "Pumped MW can be no more than the scheme's installed MW"
+  s_boundtxloss(rt,hY,r,rr,ps,y,t,lb,n,outcomes)'Sort out which segment of the loss function to operate on'
+  s_tx_capacity(rt,hY,r,rr,y,t,lb,outcomes)     'Calculate the relevant transmission capacity'
   s_tx_projectdef(rt,hY,tupg,r,rr,ps,pss,y)     'Associate projects to individual upgrades'
   s_tx_onestate(rt,hY,r,rr,y)                   'A link must be in exactly one state in any given year'
   s_tx_upgrade(rt,hY,r,rr,ps,y)                 'Make sure the upgrade of a link corresponds to a legitimate state-to-state transition'
   s_tx_oneupgrade(rt,hY,r,rr,y)                 'Only one upgrade per path in a single year'
-  s_tx_dcflow(rt,hY,r,rr,y,t,lb,hd)             'DC load flow equation'
-  s_tx_dcflow0(rt,hY,r,rr,y,t,lb,hd)            'DC load flow equation'
-  s_equatetxloss(rt,hY,r,rr,y,t,lb,hd)          'Ensure that losses in both directions are equal'
-  s_txGrpConstraint(rt,hY,tgc,y,t,lb,hd)        'Group transmission constraints'
-  s_resvsinglereq1(rt,hY,rc,ild,y,t,lb,hd)      'Single reserve energy requirement constraint 1'
-  s_genmaxresv1(rt,hY,g,y,t,lb,hd)              'Limit the amount of energy reserves per generator'
-  s_resvtrfr1(rt,hY,ild,ild1,y,t,lb,hd)         'Limit on the amount of reserve energy transfer - constraint 1'
-  s_resvtrfr2(rt,hY,rc,ild,ild1,y,t,lb,hd)      'Limit on the amount of reserve energy transfer - constraint 2'
-  s_resvtrfr3(rt,hY,rc,ild,ild1,y,t,lb,hd)      'Limit on the amount of reserve energy transfer - constraint 3'
-  s_resvrequnit(rt,hY,g,rc,ild,y,t,lb,hd)       'Reserve energy requirement based on the largest dispatched unit'
-  s_resvreq2(rt,hY,rc,ild,y,t,lb,hd)            'Island reserve energy requirement - constraint 2'
-  s_resvreqhvdc(rt,hY,rc,ild,y,t,lb,hd)         'Reserve energy requirement based on the HVDC transfer taking into account self-cover'
-  s_resvtrfr4(rt,hY,ild1,ild,y,t,lb,hd)         'Limit on the amount of reserve energy transfer - constraint 4'
-  s_resvtrfrdef(rt,hY,ild,ild1,y,t,lb,hd)       'Constraint that defines if reserve energy transfer is available'
-  s_resvoffcap(rt,hY,g,y,t,lb,hd)               'Offline energy reserve capability'
-  s_resvreqwind(rt,hY,rc,ild,y,t,lb,hd)         'Reserve energy requirement based on a specified proportion of dispatched wind generation'
+  s_tx_dcflow(rt,hY,r,rr,y,t,lb,outcomes)       'DC load flow equation'
+  s_tx_dcflow0(rt,hY,r,rr,y,t,lb,outcomes)      'DC load flow equation'
+  s_equatetxloss(rt,hY,r,rr,y,t,lb,outcomes)    'Ensure that losses in both directions are equal'
+  s_txGrpConstraint(rt,hY,tgc,y,t,lb,outcomes)  'Group transmission constraints'
+  s_resvsinglereq1(rt,hY,rc,ild,y,t,lb,outcomes)'Single reserve energy requirement constraint 1'
+  s_genmaxresv1(rt,hY,g,y,t,lb,outcomes)        'Limit the amount of energy reserves per generator'
+  s_resvtrfr1(rt,hY,ild,ild1,y,t,lb,outcomes)   'Limit on the amount of reserve energy transfer - constraint 1'
+  s_resvtrfr2(rt,hY,rc,ild,ild1,y,t,lb,outcomes)'Limit on the amount of reserve energy transfer - constraint 2'
+  s_resvtrfr3(rt,hY,rc,ild,ild1,y,t,lb,outcomes)'Limit on the amount of reserve energy transfer - constraint 3'
+  s_resvrequnit(rt,hY,g,rc,ild,y,t,lb,outcomes) 'Reserve energy requirement based on the largest dispatched unit'
+  s_resvreq2(rt,hY,rc,ild,y,t,lb,outcomes)      'Island reserve energy requirement - constraint 2'
+  s_resvreqhvdc(rt,hY,rc,ild,y,t,lb,outcomes)   'Reserve energy requirement based on the HVDC transfer taking into account self-cover'
+  s_resvtrfr4(rt,hY,ild1,ild,y,t,lb,outcomes)   'Limit on the amount of reserve energy transfer - constraint 4'
+  s_resvtrfrdef(rt,hY,ild,ild1,y,t,lb,outcomes) 'Constraint that defines if reserve energy transfer is available'
+  s_resvoffcap(rt,hY,g,y,t,lb,outcomes)         'Offline energy reserve capability'
+  s_resvreqwind(rt,hY,rc,ild,y,t,lb,outcomes)   'Reserve energy requirement based on a specified proportion of dispatched wind generation'
   ;
 
 * Now push the statements that collect up results into a file called CollectResults.txt. This file gets $include'd into GEMsolve.gms
@@ -1125,7 +1125,7 @@ $offecho
 Parameters
 * Free variables
   s2_TOTALCOST(rt)                              'Discounted total system costs over all modelled years, $m (objective function value)'
-  s2_TX(rt,r,rr,y,t,lb,hd)                      'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s2_TX(rt,r,rr,y,t,lb,outcomes)                'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
 * Binary Variables
   s2_BRET(rt,g,y)                               'Binary variable to identify endogenous retirement year for the eligble generation plant'
   s2_ISRETIRED(rt,g)                            'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
@@ -1136,15 +1136,15 @@ Parameters
   s2_RETIRE(rt,g,y)                             'Capacity endogenously retired by generating plant and year, MW'
   s2_CAPACITY(rt,g,y)                           'Cumulative nameplate capacity at each generating plant in each year, MW'
   s2_TXCAPCHARGES(rt,r,rr,y)                    'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s2_GEN(rt,g,y,t,lb,hd)                        'Generation by generating plant and block, GWh'
-  s2_VOLLGEN(rt,s,y,t,lb,hd)                    'Generation by VOLL plant and block, GWh'
-  s2_PUMPEDGEN(rt,g,y,t,lb,hd)                  'Energy from pumped hydro (treated like demand), GWh'
-  s2_LOSS(rt,r,rr,y,t,lb,hd)                    'Transmission losses along each path, MW'
+  s2_GEN(rt,g,y,t,lb,outcomes)                  'Generation by generating plant and block, GWh'
+  s2_VOLLGEN(rt,s,y,t,lb,outcomes)              'Generation by VOLL plant and block, GWh'
+  s2_PUMPEDGEN(rt,g,y,t,lb,outcomes)            'Energy from pumped hydro (treated like demand), GWh'
+  s2_LOSS(rt,r,rr,y,t,lb,outcomes)              'Transmission losses along each path, MW'
   s2_TXPROJVAR(rt,tupg,y)                       'Continuous 0-1 variable indicating whether an upgrade project is applied'
   s2_TXUPGRADE(rt,r,rr,ps,pss,y)                'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
-  s2_RESV(rt,g,rc,y,t,lb,hd)                    'Reserve energy supplied, MWh'
-  s2_RESVVIOL(rt,rc,ild,y,t,lb,hd)              'Reserve energy supply violations, MWh'
-  s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,hd)         'Reserve energy transferred from one island to another, MWh'
+  s2_RESV(rt,g,rc,y,t,lb,outcomes)              'Reserve energy supplied, MWh'
+  s2_RESVVIOL(rt,rc,ild,y,t,lb,outcomes)        'Reserve energy supply violations, MWh'
+  s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)   'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
   s2_RENNRGPENALTY(rt,y)                        'Penalty used to make renewable energy constraint feasible, GWh'
 * Slack variables
@@ -1159,10 +1159,10 @@ Parameters
   s2_MINUTILSLACK(rt,y)                         'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
   s2_FUELSLACK(rt,y)                            'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations, i.e. marginal values. (ignore the objective function)
-  s2_bal_supdem(rt,r,y,t,lb,hd)                 'Balance supply and demand in each region, year, time period and load block'
+  s2_bal_supdem(rt,r,y,t,lb,outcomes)           'Balance supply and demand in each region, year, time period and load block'
 *++++++++++
 * More non-free reserves code.
-  s2_RESVCOMPONENTS(rt,r,rr,y,t,lb,hd,stp)      'Non-free reserve components, MW'
+  s2_RESVCOMPONENTS(rt,r,rr,y,t,lb,outcomes,stp)'Non-free reserve components, MW'
 *++++++++++
   ;
 
