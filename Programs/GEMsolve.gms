@@ -295,6 +295,7 @@ loop((tmg(rt),hydroYrForTiming(hY)),
     if(sameas(solveGoal,'VGsol'),  gem.optfile = 3 ) ;
     if(sameas(solveGoal,'MinGap'), gem.optfile = 4 ) ;
 
+    if(%LimitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ;) ; 
     Solve GEM using %GEMtype% minimizing TOTALCOST ;
 
 *   Figure out if run is to be aborted and report that fact before aborting.
@@ -396,6 +397,7 @@ loop((reo(rt),hydroYrForReopt(hY)),
     if(sameas(solveGoal,'VGsol'),  gem.optfile = 3 ) ;
     if(sameas(solveGoal,'MinGap'), gem.optfile = 4 ) ;
 
+    if(%LimitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ;) ; 
     Solve GEM using %GEMtype% minimizing TOTALCOST ;
 
 *   Figure out if run is to be aborted and report that fact before aborting.
@@ -543,6 +545,7 @@ loop(hY$( hydroYrForDispatch(hY) and (ord(hY) <= %LimHydYr%) ),
   ) ;
 
 * Solve the RMIP (i.e. DISP):
+  if(%LimitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ;) ; 
   Solve DISP using %DISPtype% minimizing TOTALCOST ;
 
 * Figure out if run is to be aborted and report that fact before aborting.

@@ -117,6 +117,8 @@ $setglobal Threads 4
 * Number of threads your MIP solver is licensed to use.
 $setglobal MinGapSecs 10800
 * CPU seconds available for solver to spend solving GEM for solve goal MinGap.
+$setglobal LimitOutput 1
+* Set to 1 to limit output files from solve 
 
 
 *** Plots ***
