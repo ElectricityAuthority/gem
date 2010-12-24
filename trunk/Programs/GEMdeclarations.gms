@@ -237,7 +237,7 @@ Sets
   hydroYrForTiming(hY)                          'Hydro year used to determine investment timing. Choices are Multiple, Average, 1932, 1933, ... 2007'
   hydroYrForReopt(hY)                           'Hydro year used to re-optimise investment timing. Choices are Multiple, Average, 1932, 1933, ... 2007'
 * Initialised in GEMsolve
-  h(outcomes)                                   'Selected elements of outcomes'
+  oc(outcomes)                                  'Selected elements of outcomes'
   hydroYrForDispatch(hY)                        'Hydro years used to loop over when solving DISpatch'
   activeSolve(rt,hY)                            'Collect the rt-hY index used for each solve' 
   activeHD(rt,hY,outcomes)                      'Collect the rt-hY-outcomes index used for each solve'
@@ -576,15 +576,15 @@ objectivefn..
   9994 * sum(y, MINUTILSLACK(y) ) +
   9993 * sum(y, FUELSLACK(y) ) +
 * Reserve violation costs (really a 'slack' but not called a slack), $m
-  1e-6 * sum((rc,ild,y,t,lb,h), i_hydroWeight(h) * RESVVIOL(rc,ild,y,t,lb,h) * reserveViolationPenalty(ild,rc) ) +
+  1e-6 * sum((rc,ild,y,t,lb,oc), i_hydroWeight(oc) * RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
 * Add in penalties at high but not arbitrarily high cost.
   penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
 * Fixed, variable and HVDC costs - discounted and adjusted for tax
 * NB: Fixed costs are scaled by 1/card(t) to convert annual costs to a periodic basis coz discounting is done by period.
 * NB: The HVDC charge applies only to committed and new SI projects.
   1e-6 * sum((y,t), PVfacG(y,t) * (1 - taxRate) * (
-           sum(h, sum((s,lb), 1e3 * i_hydroWeight(h) * VOLLGEN(s,y,t,lb,h) * i_VOLLcost(s) ) ) +
-           sum(h, sum((g,lb)$validYrOperate(g,y,t), 1e3 * i_hydroWeight(h) * GEN(g,y,t,lb,h) * srmc(g,y) * sum(mapg_e(g,e), locFac_Recip(e)) ) ) +
+           sum(oc, sum((s,lb), 1e3 * i_hydroWeight(oc) * VOLLGEN(s,y,t,lb,oc) * i_VOLLcost(s) ) ) +
+           sum(oc, sum((g,lb)$validYrOperate(g,y,t), 1e3 * i_hydroWeight(oc) * GEN(g,y,t,lb,oc) * srmc(g,y) * sum(mapg_e(g,e), locFac_Recip(e)) ) ) +
            ( 1/card(t) ) * 1e3 * (
            sum(g, i_fixedOM(g) * CAPACITY(g,y)) +
            sum((g,k,o)$((not demandGen(k)) * sigen(g) * possibleToBuild(g) * mapg_k(g,k) * mapg_o(g,o)), i_HVDCshr(o) * i_HVDClevy(y) * CAPACITY(g,y))
@@ -597,20 +597,20 @@ objectivefn..
 * Transmission capital expenditure - discounted
   sum((paths,y,firstPeriod(t)),   PVfacT(y,t) * TXCAPCHARGES(paths,y) ) +
 * Cost of providing reserves ($m) - discounted and adjusted for tax.
-  1e-6 * sum((g,rc,y,t,lb,h), PVfacG(y,t) * (1 - taxRate) * i_hydroWeight(h) * RESV(g,rc,y,t,lb,h) *  i_plantreservescost(g,rc) ) +
+  1e-6 * sum((g,rc,y,t,lb,oc), PVfacG(y,t) * (1 - taxRate) * i_hydroWeight(oc) * RESV(g,rc,y,t,lb,oc) * i_plantreservescost(g,rc) ) +
 *+++++++++++++++++
 * More non-free reserves code.
 * Cost of providing reserves ($m) - discounted and adjusted for tax (last term of objective function).
-  1e-6 * sum((paths,y,t,lb,h,stp)$( nwd(paths) or swd(paths) ),
-                               PVfacG(y,t) * (1 - taxRate) * i_hydroWeight(h) * (hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,h,stp)) * pnfresvcost(paths,stp) ) ;
+  1e-6 * sum((paths,y,t,lb,oc,stp)$( nwd(paths) or swd(paths) ),
+                               PVfacG(y,t) * (1 - taxRate) * i_hydroWeight(oc) * (hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp)) * pnfresvcost(paths,stp) ) ;
 
 * Calculate non-free reserve components. 
-calc_nfreserves(paths(r,rr),y,t,lb,h)$( nwd(r,rr) or swd(r,rr) )..
-  sum(stp, RESVCOMPONENTS(r,rr,y,t,lb,h,stp)) =g= TX(r,rr,y,t,lb,h) - sum(allowedStates(r,rr,ps), BTX(r,rr,ps,y) * freereserves(r,rr,ps)) ;
+calc_nfreserves(paths(r,rr),y,t,lb,oc)$( nwd(r,rr) or swd(r,rr) )..
+  sum(stp, RESVCOMPONENTS(r,rr,y,t,lb,oc,stp)) =g= TX(r,rr,y,t,lb,oc) - sum(allowedStates(r,rr,ps), BTX(r,rr,ps,y) * freereserves(r,rr,ps)) ;
 
 * Calculate and impose the relevant capacity on each step of free reserves.
-resv_capacity(paths,y,t,lb,h,stp)$( nwd(paths) or swd(paths) )..
-  RESVCOMPONENTS(paths,y,t,lb,h,stp) =l= pnfresvcap(paths,stp) ;
+resv_capacity(paths,y,t,lb,oc,stp)$( nwd(paths) or swd(paths) )..
+  RESVCOMPONENTS(paths,y,t,lb,oc,stp) =l= pnfresvcap(paths,stp) ;
 *++++++++++++++++++
 
 * Compute the annualised generation plant refurbishment expenditure charge in each year.
@@ -650,17 +650,17 @@ balance_capacity(g,y)..
   CAPACITY(g,y) =e= InitialCapacity(g)$firstYr(y) + CAPACITY(g,y-1)$allButFirstYr(y) + BUILD(g,y)$possibleToBuild(g) - RETIRE(g,y)$endogenousRetireYrs(g,y) - exogMWretired(g,y) ;
 
 * VOLL + Supply + net imports = demand in each block + any pumped generation.
-bal_supdem(r,y,t,lb,h)..
-  sum(maps_r(s,r), VOLLGEN(s,y,t,lb,h)) +
-  sum(mapg_r(g,r)$validYrOperate(g,y,t), GEN(g,y,t,lb,h)) +
+bal_supdem(r,y,t,lb,oc)..
+  sum(maps_r(s,r), VOLLGEN(s,y,t,lb,oc)) +
+  sum(mapg_r(g,r)$validYrOperate(g,y,t), GEN(g,y,t,lb,oc)) +
 * Transmission and losses with transportation formulation
- (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,h) - LOSS(rr,r,y,t,lb,h) ) * hoursPerBlock(t,lb) * 0.001 ) ) -
-  sum(rr$paths(r,rr),   ( TX(r,rr,y,t,lb,h) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 0 ) +
+ (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,oc) - LOSS(rr,r,y,t,lb,oc) ) * hoursPerBlock(t,lb) * 0.001 ) ) -
+  sum(rr$paths(r,rr),   ( TX(r,rr,y,t,lb,oc) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 0 ) +
 * Transmission and losses with DC load flow formulation
- (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,h) - 0.5 * LOSS(rr,r,y,t,lb,h) ) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 1 )
+ (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,oc) - 0.5 * LOSS(rr,r,y,t,lb,oc) ) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 1 )
   =g=
   ldcMW(r,y,t,lb) * hoursPerBlock(t,lb) * 0.001 +
-  sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y,t) ), PUMPEDGEN(g,y,t,lb,h)) ;
+  sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y,t) ), PUMPEDGEN(g,y,t,lb,oc)) ;
 
 * Ensure reserve requirements can be met at peak in both islands with largest NI unit out.
 security_NZ(y)$(gridSecurity > -1)..
@@ -703,29 +703,29 @@ noWind_NI(y)$(gridSecurity > -1)..
   =g= peakLoadNI(y) ;
 
 * Ensure generation is less than capacity times max capacity factor in each block.
-limit_maxgen(validYrOperate(g,y,t),lb,h)$( ( exist(g) or possibleToBuild(g) ) * ( not useReserves ) )..
-  GEN(g,y,t,lb,h) =l= 0.001 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
+limit_maxgen(validYrOperate(g,y,t),lb,oc)$( ( exist(g) or possibleToBuild(g) ) * ( not useReserves ) )..
+  GEN(g,y,t,lb,oc) =l= 0.001 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Ensure generation is greater than capacity times min capacity factor in each block.
-limit_mingen(validYrOperate(g,y,t),lb,h)$minCapFactPlant(g,y,t)..
-  GEN(g,y,t,lb,h) =g= 0.001 * CAPACITY(g,y) * minCapFactPlant(g,y,t) * hoursPerBlock(t,lb) ;
+limit_mingen(validYrOperate(g,y,t),lb,oc)$minCapFactPlant(g,y,t)..
+  GEN(g,y,t,lb,oc) =g= 0.001 * CAPACITY(g,y) * minCapFactPlant(g,y,t) * hoursPerBlock(t,lb) ;
 
 * Minimum ultilisation of plant by technology.
-minutil(g,k,y,h)$( i_minutilisation(g) * i_minUtilByTech(y,k) * mapg_k(g,k) )..
-  sum((t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,h)) + MINUTILSLACK(y) =g= i_minUtilByTech(y,k) * 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ;
+minutil(g,k,y,oc)$( i_minutilisation(g) * i_minUtilByTech(y,k) * mapg_k(g,k) )..
+  sum((t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,oc)) + MINUTILSLACK(y) =g= i_minUtilByTech(y,k) * 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ;
 
 * Thermal fuel limits.
-limit_fueluse(thermalfuel(f),y,h)$( ( gas(f) * (i_fuelQuantities(f,y) > 0) * (i_fuelQuantities(f,y) < 999) ) or ( diesel(f) * (i_fuelQuantities(f,y) > 0) ) )..
-  1e-6 * sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y,t) ), i_heatrate(g) * GEN(g,y,t,lb,h) ) =l= i_fuelQuantities(f,y) + FUELSLACK(y) ;
+limit_fueluse(thermalfuel(f),y,oc)$( ( gas(f) * (i_fuelQuantities(f,y) > 0) * (i_fuelQuantities(f,y) < 999) ) or ( diesel(f) * (i_fuelQuantities(f,y) > 0) ) )..
+  1e-6 * sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y,t) ), i_heatrate(g) * GEN(g,y,t,lb,oc) ) =l= i_fuelQuantities(f,y) + FUELSLACK(y) ;
 
 * Impose a limit on total energy generated from any one fuel type.
-limit_Nrg(f,y,h)$i_maxNrgByFuel(f)..
-  sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y,t) ), GEN(g,y,t,lb,h)) =l= i_maxNrgByFuel(f) * sum((g,t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,h)) ;
+limit_Nrg(f,y,oc)$i_maxNrgByFuel(f)..
+  sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y,t) ), GEN(g,y,t,lb,oc)) =l= i_maxNrgByFuel(f) * sum((g,t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,oc)) ;
 
 * Impose a minimum requirement on total energy generated from all renewable sources.
-minReq_RenNrg(y,h)$renNrgShrOn..
-  i_renewNrgShare(y) * ( sum((g,t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,h)) + i_distdGenRenew(y) + i_distdGenFossil(y) ) =l=
-  sum((g,k,t,lb)$( mapg_k(g,k) * renew(k) * validYrOperate(g,y,t)), GEN(g,y,t,lb,h)) + i_distdGenRenew(y) +
+minReq_RenNrg(y,oc)$renNrgShrOn..
+  i_renewNrgShare(y) * ( sum((g,t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,oc)) + i_distdGenRenew(y) + i_distdGenFossil(y) ) =l=
+  sum((g,k,t,lb)$( mapg_k(g,k) * renew(k) * validYrOperate(g,y,t)), GEN(g,y,t,lb,oc)) + i_distdGenRenew(y) +
   RENNRGPENALTY(y) ;
 
 * Impose a minimum requirement on installed renewable capacity.
@@ -735,29 +735,29 @@ minReq_RenCap(y)$i_renewCapShare(y)..
   RENCAPSLACK(y) ;
 
 * Limit hydro according to energy available in inflows less spill (needs to be =e= if SPILL is costless).
-limit_hydro(validYrOperate(g,y,t),h)$schedHydroPlant(g)..
-  sum(lb, GEN(g,y,t,lb,h)) + SPILL(g,y,t,h) =l= hydOutput(g,y,t,h) + HYDROSLACK(y) ;
+limit_hydro(validYrOperate(g,y,t),oc)$schedHydroPlant(g)..
+  sum(lb, GEN(g,y,t,lb,oc)) + SPILL(g,y,t,oc) =l= hydOutput(g,y,t,oc) + HYDROSLACK(y) ;
 
 * Over the period, ensure that generation from pumped hydro is less than the energy pumped.
-limit_pumpgen1(validYrOperate(g,y,t),h)$pumpedHydroPlant(g)..
-  sum(lb, GEN(g,y,t,lb,h)) =l= i_PumpedHydroEffic(g) * sum(lb, PUMPEDGEN(g,y,t,lb,h) ) ;
+limit_pumpgen1(validYrOperate(g,y,t),oc)$pumpedHydroPlant(g)..
+  sum(lb, GEN(g,y,t,lb,oc)) =l= i_PumpedHydroEffic(g) * sum(lb, PUMPEDGEN(g,y,t,lb,oc) ) ;
 
 * Over the period, ensure that the energy pumped is less than the storage capacity.
-limit_pumpgen2(validYrOperate(g,y,t),h)$pumpedHydroPlant(g)..
-  i_PumpedHydroEffic(g) * sum(lb, PUMPEDGEN(g,y,t,lb,h) ) =l= sum(mapm_t(m,t), 1) * i_PumpedHydroMonth(g) ;
+limit_pumpgen2(validYrOperate(g,y,t),oc)$pumpedHydroPlant(g)..
+  i_PumpedHydroEffic(g) * sum(lb, PUMPEDGEN(g,y,t,lb,oc) ) =l= sum(mapm_t(m,t), 1) * i_PumpedHydroMonth(g) ;
 
 * The MW pumped can be no greater than the capacity of the project.
-limit_pumpgen3(validYrOperate(g,y,t),lb,h)$pumpedHydroPlant(g)..
-  PUMPEDGEN(g,y,t,lb,h) =l= 0.001 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
+limit_pumpgen3(validYrOperate(g,y,t),lb,oc)$pumpedHydroPlant(g)..
+  PUMPEDGEN(g,y,t,lb,oc) =l= 0.001 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Piecewise linear transmission losses.
-boundTxloss(paths(r,rr),ps,y,t,lb,nsegment(n),h)$( allowedStates(paths,ps) * bigloss(paths,ps) )..
-  LOSS(paths,y,t,lb,h) =g=
-  intercept(paths,ps,n) + slope(paths,ps,n) * TX(paths,y,t,lb,h) - bigloss(paths,ps) * ( 1 - BTX(paths,ps,y) ) ;
+boundTxloss(paths(r,rr),ps,y,t,lb,nsegment(n),oc)$( allowedStates(paths,ps) * bigloss(paths,ps) )..
+  LOSS(paths,y,t,lb,oc) =g=
+  intercept(paths,ps,n) + slope(paths,ps,n) * TX(paths,y,t,lb,oc) - bigloss(paths,ps) * ( 1 - BTX(paths,ps,y) ) ;
 
 * Calculate the relevant transmission capacity and impose it.
-tx_capacity(paths,y,t,lb,h)..
-  TX(paths,y,t,lb,h) =l= sum(allowedStates(paths,ps), i_txCapacity(paths,ps) * BTX(paths,ps,y)) ;
+tx_capacity(paths,y,t,lb,oc)..
+  TX(paths,y,t,lb,oc) =l= sum(allowedStates(paths,ps), i_txCapacity(paths,ps) * BTX(paths,ps,y)) ;
 
 * Associate projects to individual upgrades (also ensures both directions of a path get upgraded together).
 tx_projectdef(transitions(tupg,paths,ps,pss),y)..
@@ -777,82 +777,82 @@ tx_oneupgrade(paths,y)..
   sum(upgradedStates(paths,ps), sum(validTransitions(paths,pss,ps), TXUPGRADE(paths,pss,ps,y) )) =l= 1 ;
 
 * DC load flow equation for all paths.
-tx_dcflow(r,rr,y,t,lb,h)$( DCloadFlow * susceptanceyr(r,rr,y) * regLower(r,rr) )..
-  TX(r,rr,y,t,lb,h) =e= susceptanceyr(r,rr,y) * ( THETA(r,y,t,lb,h) - THETA(rr,y,t,lb,h) ) ;
+tx_dcflow(r,rr,y,t,lb,oc)$( DCloadFlow * susceptanceyr(r,rr,y) * regLower(r,rr) )..
+  TX(r,rr,y,t,lb,oc) =e= susceptanceyr(r,rr,y) * ( THETA(r,y,t,lb,oc) - THETA(rr,y,t,lb,oc) ) ;
 
 * Ensure that for flow on links without reactance the flow from r to rr = - flow from rr to r
-tx_dcflow0(r,rr,y,t,lb,h)$( DCloadFlow * paths(r,rr) * regLower(r,rr) )..
-  TX(r,rr,y,t,lb,h) + TX(rr,r,y,t,lb,h) =e= 0 ;
+tx_dcflow0(r,rr,y,t,lb,oc)$( DCloadFlow * paths(r,rr) * regLower(r,rr) )..
+  TX(r,rr,y,t,lb,oc) + TX(rr,r,y,t,lb,oc) =e= 0 ;
 
 * Ensure equality of losses in both directions for the DC load flow representation
 * NB: No need for this constraint if the maximum losses on a link = 0 since then the loss variable is fixed in GEMsolve
-equatetxloss(r,rr,y,t,lb,h)$( DCloadFlow * paths(r,rr) * regLower(r,rr) * sum(ps, bigloss(r,rr,ps)) )..
-  LOSS(r,rr,y,t,lb,h) =e=  LOSS(rr,r,y,t,lb,h) ;
+equatetxloss(r,rr,y,t,lb,oc)$( DCloadFlow * paths(r,rr) * regLower(r,rr) * sum(ps, bigloss(r,rr,ps)) )..
+  LOSS(r,rr,y,t,lb,oc) =e= LOSS(rr,r,y,t,lb,oc) ;
 
 * Transmission group constraints, i.e. in addition to individual branch limits. Use to cater for contingencies, stability limits, etc.
-***txGrpConstraint(vtgc,y,t,lb,h)$txconstraintactive(y,t,vtgc)..
-txGrpConstraint(vtgc,y,t,lb,h)$DCloadFlow..
-  sum((p,paths(r,rr))$( (bbincidence(p,r) = 1) * (bbincidence(p,rr) = -1) ), i_txGrpConstraintsLHS(vtgc,p) * TX(paths,y,t,lb,h) )
+***txGrpConstraint(vtgc,y,t,lb,oc)$txconstraintactive(y,t,vtgc)..
+txGrpConstraint(vtgc,y,t,lb,oc)$DCloadFlow..
+  sum((p,paths(r,rr))$( (bbincidence(p,r) = 1) * (bbincidence(p,rr) = -1) ), i_txGrpConstraintsLHS(vtgc,p) * TX(paths,y,t,lb,oc) )
   =l= i_txGrpConstraintsRHS(vtgc) ;
 
 * Meet the single reserve requirement.
-resvsinglereq1(rc,ild,y,t,lb,h)$( useReserves * singleReservesReqF(rc) )..
-  sum(g, RESV(g,rc,y,t,lb,h)) + RESVVIOL(rc,ild,y,t,lb,h) =g= RESVREQINT(rc,ild,y,t,lb,h) ;
+resvsinglereq1(rc,ild,y,t,lb,oc)$( useReserves * singleReservesReqF(rc) )..
+  sum(g, RESV(g,rc,y,t,lb,oc)) + RESVVIOL(rc,ild,y,t,lb,oc) =g= RESVREQINT(rc,ild,y,t,lb,oc) ;
 
 * Generator energy constraint - substitute for limit_maxgen when reserves are used.
-genmaxresv1(validYrOperate(g,y,t),lb,h)$( useReserves * ( exist(g) or possibleToBuild(g) ) )..
-  1000 * GEN(g,y,t,lb,h) + sum(rc, RESV(g,rc,y,t,lb,h)) =l= CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
+genmaxresv1(validYrOperate(g,y,t),lb,oc)$( useReserves * ( exist(g) or possibleToBuild(g) ) )..
+  1000 * GEN(g,y,t,lb,oc) + sum(rc, RESV(g,rc,y,t,lb,oc)) =l= CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Reserve transfers - Constraint 1.
-resvtrfr1(ild1,ild,y,t,lb,h)$( useReserves * interIsland(ild1,ild) )..
-  sum( rc, RESVTRFR(rc,ild1,ild,y,t,lb,h) ) +
-  hoursPerBlock(t,lb) * sum((r,rr)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr)), TX(r,rr,y,t,lb,h) )
+resvtrfr1(ild1,ild,y,t,lb,oc)$( useReserves * interIsland(ild1,ild) )..
+  sum( rc, RESVTRFR(rc,ild1,ild,y,t,lb,oc) ) +
+  hoursPerBlock(t,lb) * sum((r,rr)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr)), TX(r,rr,y,t,lb,oc) )
   =l= hoursPerBlock(t,lb) * sum((r,rr,ps)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacity(r,rr,ps) * BTX(r,rr,ps,y) ) ;
 
 * Reserve transfers - Constraint 2.
-resvtrfr2(rc,ild1,ild,y,t,lb,h)$( useReserves * interIsland(ild1,ild) * ( not singleReservesReqF(rc) ) )..
-  RESVTRFR(rc,ild1,ild,y,t,lb,h)
+resvtrfr2(rc,ild1,ild,y,t,lb,oc)$( useReserves * interIsland(ild1,ild) * ( not singleReservesReqF(rc) ) )..
+  RESVTRFR(rc,ild1,ild,y,t,lb,oc)
   =l= hoursPerBlock(t,lb) * sum((r,rr,ps)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), i_maxReservesTrnsfr(r,rr,ps,rc) * BTX(r,rr,ps,y) ) ;
 
 * Reserve transfers - Constraint 3.
-resvtrfr3(rc,ild1,ild,y,t,lb,h)$( useReserves * interIsland(ild1,ild) * ( not singleReservesReqF(rc) ) )..
-  RESVTRFR(rc,ild1,ild,y,t,lb,h) =l= sum(mapg_ild(g,ild1), RESV(g,rc,y,t,lb,h) ) ;
+resvtrfr3(rc,ild1,ild,y,t,lb,oc)$( useReserves * interIsland(ild1,ild) * ( not singleReservesReqF(rc) ) )..
+  RESVTRFR(rc,ild1,ild,y,t,lb,oc) =l= sum(mapg_ild(g,ild1), RESV(g,rc,y,t,lb,oc) ) ;
 
 * Internal reserve requirement determined by the largest dispatched unit during each period.
-resvrequnit(g,rc,ild,y,t,lb,h)$( validYrOperate(g,y,t) * useReserves * ( exist(g) or possibleToBuild(g) ) * mapg_ild(g,ild) *
+resvrequnit(g,rc,ild,y,t,lb,oc)$( validYrOperate(g,y,t) * useReserves * ( exist(g) or possibleToBuild(g) ) * mapg_ild(g,ild) *
                                   ( (i_reserveReqMW(y,ild,rc) = -1) or (i_reserveReqMW(y,ild,rc) = -3) )  )..
-  RESVREQINT(rc,ild,y,t,lb,h) =g= 1000 * GEN(g,y,t,lb,h) * i_UnitLargestProp(g) ;
+  RESVREQINT(rc,ild,y,t,lb,oc) =g= 1000 * GEN(g,y,t,lb,oc) * i_UnitLargestProp(g) ;
 
 * Internal island reserve requirement.
-resvreq2(rc,ild,y,t,lb,h)$( useReserves * ( not singleReservesReqF(rc) ) )..
-  sum(mapg_ild(g,ild), RESV(g,rc,y,t,lb,h) ) + sum(interIsland(ild1,ild), RESVTRFR(rc,ild1,ild,y,t,lb,h) ) +
-  RESVVIOL(rc,ild,y,t,lb,h) =g= RESVREQINT(rc,ild,y,t,lb,h) ;
+resvreq2(rc,ild,y,t,lb,oc)$( useReserves * ( not singleReservesReqF(rc) ) )..
+  sum(mapg_ild(g,ild), RESV(g,rc,y,t,lb,oc) ) + sum(interIsland(ild1,ild), RESVTRFR(rc,ild1,ild,y,t,lb,oc) ) +
+  RESVVIOL(rc,ild,y,t,lb,oc) =g= RESVREQINT(rc,ild,y,t,lb,oc) ;
 
 * Internal reserve requirement determined by the HVDC transfer taking into account self-cover.
-resvreqhvdc(rc,ild,y,t,lb,h)$( useReserves * ( not singleReservesReqF(rc) ) )..
-  RESVREQINT(rc,ild,y,t,lb,h) =g=
-  hoursPerBlock(t,lb) * sum((r,rr,ild1)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) * interIsland(ild,ild1) ), TX(r,rr,y,t,lb,h) ) -
+resvreqhvdc(rc,ild,y,t,lb,oc)$( useReserves * ( not singleReservesReqF(rc) ) )..
+  RESVREQINT(rc,ild,y,t,lb,oc) =g=
+  hoursPerBlock(t,lb) * sum((r,rr,ild1)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) * interIsland(ild,ild1) ), TX(r,rr,y,t,lb,oc) ) -
   hoursPerBlock(t,lb) * sum((r,rr,ps,ild1)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) * interIsland(ild,ild1) ), i_txCapacityPO(r,rr,ps) * BTX(r,rr,ps,y) ) ;
 
 * Reserve energy transfer - Constraint 4.
-resvtrfr4(interIsland(ild1,ild),y,t,lb,h)$useReserves..
-  sum(rc, RESVTRFR(rc,ild1,ild,y,t,lb,h) )
-  =l= hoursPerBlock(t,lb) * sum((r,rr,ps)$(paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr)) , i_txCapacity(r,rr,ps)) * ( 1 - NORESVTRFR(ild1,ild,y,t,lb,h) ) ;
+resvtrfr4(interIsland(ild1,ild),y,t,lb,oc)$useReserves..
+  sum(rc, RESVTRFR(rc,ild1,ild,y,t,lb,oc) )
+  =l= hoursPerBlock(t,lb) * sum((r,rr,ps)$(paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr)) , i_txCapacity(r,rr,ps)) * ( 1 - NORESVTRFR(ild1,ild,y,t,lb,oc) ) ;
 
 * Constraint that defines the reserve transfer capability.
-resvtrfrdef(interIsland(ild1,ild),y,t,lb,h)$useReserves..
-  sum((r,rr)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), TX(r,rr,y,t,lb,h) ) -
+resvtrfrdef(interIsland(ild1,ild),y,t,lb,oc)$useReserves..
+  sum((r,rr)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), TX(r,rr,y,t,lb,oc) ) -
   sum((r,rr,ps)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacityPO(r,rr,ps) * BTX(r,rr,ps,y) )
-  =l= NORESVTRFR(ild1,ild,y,t,lb,h) * bigm(ild1,ild) ;
+  =l= NORESVTRFR(ild1,ild,y,t,lb,oc) * bigm(ild1,ild) ;
 
 * Constraint to define the offline reserve capability.
-resvoffcap(validYrOperate(g,y,t),lb,h)$( useReserves * ( exist(g) or possibleToBuild(g) ) * (sum(rc, reservesCapability(g,rc))) * ( not i_offlineReserve(g) ) )..
-  sum(rc, RESV(g,rc,y,t,lb,h)) =l= 1000 * GEN(g,y,t,lb,h) ;
+resvoffcap(validYrOperate(g,y,t),lb,oc)$( useReserves * ( exist(g) or possibleToBuild(g) ) * (sum(rc, reservesCapability(g,rc))) * ( not i_offlineReserve(g) ) )..
+  sum(rc, RESV(g,rc,y,t,lb,oc)) =l= 1000 * GEN(g,y,t,lb,oc) ;
 
 * Constraint to ensure that reserves cover a certain proportion of wind generation.
-resvreqwind(rc,ild,y,t,lb,h)$( useReserves * ( (i_reserveReqMW(y,ild,rc) = -2) or (i_reserveReqMW(y,ild,rc) = -3) ) * windCoverPropn(rc) )..
-  RESVREQINT(rc,ild,y,t,lb,h)
-  =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y,t) ), 1000 * GEN(g,y,t,lb,h) ) ;
+resvreqwind(rc,ild,y,t,lb,oc)$( useReserves * ( (i_reserveReqMW(y,ild,rc) = -2) or (i_reserveReqMW(y,ild,rc) = -3) ) * windCoverPropn(rc) )..
+  RESVREQINT(rc,ild,y,t,lb,oc)
+  =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y,t) ), 1000 * GEN(g,y,t,lb,oc) ) ;
 
 Model GEM Generation expansion model  /
   objectivefn, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
@@ -1004,44 +1004,44 @@ $onecho > CollectResults.txt
 *++++++++++
 * More non-free reserves code.
 * Positive Variables
-  s_RESVCOMPONENTS(rt,hY,r,rr,y,t,lb,h,stp)  = RESVCOMPONENTS.l(r,rr,y,t,lb,h,stp) ;
+  s_RESVCOMPONENTS(rt,hY,r,rr,y,t,lb,oc,stp) = RESVCOMPONENTS.l(r,rr,y,t,lb,oc,stp) ;
 * Equations
-  s_calc_nfreserves(rt,hY,r,rr,y,t,lb,h)     = calc_nfreserves.m(r,rr,y,t,lb,h) ;
-  s_resv_capacity(rt,hY,r,rr,y,t,lb,h,stp)   = resv_capacity.m(r,rr,y,t,lb,h,stp) ;
+  s_calc_nfreserves(rt,hY,r,rr,y,t,lb,oc)    = calc_nfreserves.m(r,rr,y,t,lb,oc) ;
+  s_resv_capacity(rt,hY,r,rr,y,t,lb,oc,stp)  = resv_capacity.m(r,rr,y,t,lb,oc,stp) ;
 *++++++++++
 * Misc params
-*  s_hydOutput(rt,hY,g,y,t,h)                = hydOutput(g,y,t,h) ;
+*  s_hydOutput(rt,hY,g,y,t,oc)               = hydOutput(g,y,t,oc) ;
 * Free variables.
   s_TOTALCOST(rt,hY)                         = TOTALCOST.l ;
   if(DCloadFlow = 1,
-    s_TX(rt,hY,r,rr,y,t,lb,h)$( TX.l(r,rr,y,t,lb,h) > 0 ) = TX.l(r,rr,y,t,lb,h) ;
+    s_TX(rt,hY,r,rr,y,t,lb,oc)$( TX.l(r,rr,y,t,lb,oc) > 0 ) = TX.l(r,rr,y,t,lb,oc) ;
     else
-    s_TX(rt,hY,r,rr,y,t,lb,h) = TX.l(r,rr,y,t,lb,h) ;
+    s_TX(rt,hY,r,rr,y,t,lb,oc) = TX.l(r,rr,y,t,lb,oc) ;
   ) ;
-  s_THETA(rt,hY,r,y,t,lb,h)                  = THETA.l(r,y,t,lb,h) ;
+  s_THETA(rt,hY,r,y,t,lb,oc)                 = THETA.l(r,y,t,lb,oc) ;
 * Binary Variables
   s_BRET(rt,hY,g,y)                          = BRET.l(g,y) ;
   s_ISRETIRED(rt,hY,g)                       = ISRETIRED.l(g) ;
   s_BTX(rt,hY,r,rr,ps,y)                     = BTX.l(r,rr,ps,y) ;
-  s_NORESVTRFR(rt,hY,ild,ild1,y,t,lb,h)      = NORESVTRFR.l(ild,ild1,y,t,lb,h) ;
+  s_NORESVTRFR(rt,hY,ild,ild1,y,t,lb,oc)     = NORESVTRFR.l(ild,ild1,y,t,lb,oc) ;
 * Positive Variables
   s_REFURBCOST(rt,hY,g,y)                    = REFURBCOST.l(g,y) ;
   s_BUILD(rt,hY,g,y)                         = BUILD.l(g,y) ;
   s_RETIRE(rt,hY,g,y)                        = RETIRE.l(g,y) ;
   s_CAPACITY(rt,hY,g,y)                      = CAPACITY.l(g,y) ;
   s_TXCAPCHARGES(rt,hY,paths,y)              = TXCAPCHARGES.l(paths,y) ;
-  s_GEN(rt,hY,g,y,t,lb,h)                    = GEN.l(g,y,t,lb,h) ;
-  s_VOLLGEN(rt,hY,s,y,t,lb,h)                = VOLLGEN.l(s,y,t,lb,h) ;
-  s_PUMPEDGEN(rt,hY,g,y,t,lb,h)              = PUMPEDGEN.l(g,y,t,lb,h) ;
-  s_SPILL(rt,hY,g,y,t,h)                     = SPILL.l(g,y,t,h) ;
-  s_LOSS(rt,hY,r,rr,y,t,lb,h)                = LOSS.l(r,rr,y,t,lb,h) ;
+  s_GEN(rt,hY,g,y,t,lb,oc)                   = GEN.l(g,y,t,lb,oc) ;
+  s_VOLLGEN(rt,hY,s,y,t,lb,oc)               = VOLLGEN.l(s,y,t,lb,oc) ;
+  s_PUMPEDGEN(rt,hY,g,y,t,lb,oc)             = PUMPEDGEN.l(g,y,t,lb,oc) ;
+  s_SPILL(rt,hY,g,y,t,oc)                    = SPILL.l(g,y,t,oc) ;
+  s_LOSS(rt,hY,r,rr,y,t,lb,oc)               = LOSS.l(r,rr,y,t,lb,oc) ;
   s_TXPROJVAR(rt,hY,tupg,y)                  = TXPROJVAR.l(tupg,y) ;
   s_TXUPGRADE(rt,hY,r,rr,ps,pss,y)           = TXUPGRADE.l(r,rr,ps,pss,y) ;
 * Reserve variables
-  s_RESV(rt,hY,g,rc,y,t,lb,h)                = RESV.l(g,rc,y,t,lb,h) ;
-  s_RESVVIOL(rt,hY,rc,ild,y,t,lb,h)          = RESVVIOL.l(RC,ILD,y,t,lb,h) ;
-  s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,h)     = RESVTRFR.l(rc,ild1,ild,y,t,lb,h) ;
-  s_RESVREQINT(rt,hY,rc,ild,y,t,lb,h)        = RESVREQINT.l(rc,ild,y,t,lb,h) ;
+  s_RESV(rt,hY,g,rc,y,t,lb,oc)               = RESV.l(g,rc,y,t,lb,oc) ;
+  s_RESVVIOL(rt,hY,rc,ild,y,t,lb,oc)         = RESVVIOL.l(RC,ILD,y,t,lb,oc) ;
+  s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,oc)    = RESVTRFR.l(rc,ild1,ild,y,t,lb,oc) ;
+  s_RESVREQINT(rt,hY,rc,ild,y,t,lb,oc)       = RESVREQINT.l(rc,ild,y,t,lb,oc) ;
 * Penalty variables
   s_RENNRGPENALTY(rt,hY,y)                   = RENNRGPENALTY.l(y) ;
 * Slack variables
@@ -1059,45 +1059,45 @@ $onecho > CollectResults.txt
   s_calc_refurbcost(rt,hY,g,y)               = calc_refurbcost.m(g,y) ;
   s_calc_txcapcharges(rt,hY,paths,y)         = calc_txcapcharges.m(paths,y) ;
   s_balance_capacity(rt,hY,g,y)              = balance_capacity.m(g,y) ;
-  s_bal_supdem(rt,hY,r,y,t,lb,h)             = bal_supdem.m(r,y,t,lb,h) ;
+  s_bal_supdem(rt,hY,r,y,t,lb,oc)            = bal_supdem.m(r,y,t,lb,oc) ;
   s_security_nz(rt,hY,y)                     = security_NZ.m(y) ;
   s_security_ni1(rt,hY,y)                    = security_NI1.m(y) ;
   s_security_ni2(rt,hY,y)                    = security_NI2.m(y) ;
   s_nowind_nz(rt,hY,y)                       = noWind_NZ.m(y) ;
   s_nowind_ni(rt,hY,y)                       = noWind_NI.m(y) ;
-  s_limit_maxgen(rt,hY,g,y,t,lb,h)           = limit_maxgen.m(g,y,t,lb,h) ;
-  s_limit_mingen(rt,hY,g,y,t,lb,h)           = limit_mingen.m(g,y,t,lb,h) ;
-  s_minutil(rt,hY,g,k,y,h)                   = minutil.m(g,k,y,h) ;
-  s_limit_fueluse(rt,hY,f,y,h)               = limit_fueluse.m(f,y,h) ;
-  s_limit_nrg(rt,hY,f,y,h)                   = limit_nrg.m(f,y,h) ;
-  s_minreq_rennrg(rt,hY,y,h)                 = minReq_renNrg.m(y,h) ;
+  s_limit_maxgen(rt,hY,g,y,t,lb,oc)          = limit_maxgen.m(g,y,t,lb,oc) ;
+  s_limit_mingen(rt,hY,g,y,t,lb,oc)          = limit_mingen.m(g,y,t,lb,oc) ;
+  s_minutil(rt,hY,g,k,y,oc)                  = minutil.m(g,k,y,oc) ;
+  s_limit_fueluse(rt,hY,f,y,oc)              = limit_fueluse.m(f,y,oc) ;
+  s_limit_nrg(rt,hY,f,y,oc)                  = limit_nrg.m(f,y,oc) ;
+  s_minreq_rennrg(rt,hY,y,oc)                = minReq_renNrg.m(y,oc) ;
   s_minreq_rencap(rt,hY,y)                   = minReq_renCap.m(y) ;
-  s_limit_hydro(rt,hY,g,y,t,h)               = limit_hydro.m(g,y,t,h) ;
-  s_limit_pumpgen1(rt,hY,g,y,t,h)            = limit_pumpgen1.m(g,y,t,h) ;
-  s_limit_pumpgen2(rt,hY,g,y,t,h)            = limit_pumpgen2.m(g,y,t,h) ;
-  s_limit_pumpgen3(rt,hY,g,y,t,lb,h)         = limit_pumpgen3.m(g,y,t,lb,h) ;
-  s_boundtxloss(rt,hY,r,rr,ps,y,t,lb,n,h)    = boundtxloss.m(r,rr,ps,y,t,lb,n,h) ;
-  s_tx_capacity(rt,hY,r,rr,y,t,lb,h)         = tx_capacity.m(r,rr,y,t,lb,h) ;
+  s_limit_hydro(rt,hY,g,y,t,oc)              = limit_hydro.m(g,y,t,oc) ;
+  s_limit_pumpgen1(rt,hY,g,y,t,oc)           = limit_pumpgen1.m(g,y,t,oc) ;
+  s_limit_pumpgen2(rt,hY,g,y,t,oc)           = limit_pumpgen2.m(g,y,t,oc) ;
+  s_limit_pumpgen3(rt,hY,g,y,t,lb,oc)        = limit_pumpgen3.m(g,y,t,lb,oc) ;
+  s_boundtxloss(rt,hY,r,rr,ps,y,t,lb,n,oc)   = boundtxloss.m(r,rr,ps,y,t,lb,n,oc) ;
+  s_tx_capacity(rt,hY,r,rr,y,t,lb,oc)        = tx_capacity.m(r,rr,y,t,lb,oc) ;
   s_tx_projectdef(rt,hY,tupg,r,rr,ps,pss,y)  = tx_projectdef.m(tupg,r,rr,ps,pss,y) ;
   s_tx_onestate(rt,hY,r,rr,y)                = tx_onestate.m(r,rr,y) ;
   s_tx_upgrade(rt,hY,r,rr,ps,y)              = tx_upgrade.m(r,rr,ps,y) ;
   s_tx_oneupgrade(rt,hY,r,rr,y)              = tx_oneupgrade.m(r,rr,y) ;
-  s_tx_dcflow(rt,hY,r,rr,y,t,lb,h)           = tx_dcflow.m(r,rr,y,t,lb,h) ;
-  s_tx_dcflow0(rt,hY,r,rr,y,t,lb,h)          = tx_dcflow0.m(r,rr,y,t,lb,h) ;
-  s_equatetxloss(rt,hY,r,rr,y,t,lb,h)        = equatetxloss.m(r,rr,y,t,lb,h) ;
-  s_txGrpConstraint(rt,hY,tgc,y,t,lb,h)      = txGrpConstraint.m(tgc,y,t,lb,h) ;
-  s_resvsinglereq1(rt,hY,rc,ild,y,t,lb,h)    = resvsinglereq1.m(rc,ild,y,t,lb,h) ;
-  s_genmaxresv1(rt,hY,g,y,t,lb,h)            = genmaxresv1.m(g,y,t,lb,h) ;
-  s_resvtrfr1(rt,hY,ild,ild1,y,t,lb,h)       = resvtrfr1.m(ild,ild1,y,t,lb,h) ;
-  s_resvtrfr2(rt,hY,rc,ild,ild1,y,t,lb,h)    = resvtrfr2.m(rc,ild,ild1,y,t,lb,h) ;
-  s_resvtrfr3(rt,hY,rc,ild,ild1,y,t,lb,h)    = resvtrfr3.m(rc,ild,ild1,y,t,lb,h) ;
-  s_resvrequnit(rt,hY,g,rc,ild,y,t,lb,h)     = resvrequnit.m(g,rc,ild,y,t,lb,h) ;
-  s_resvreq2(rt,hY,rc,ild,y,t,lb,h)          = resvreq2.m(rc,ild,y,t,lb,h) ;
-  s_resvreqhvdc(rt,hY,rc,ild,y,t,lb,h)       = resvreqhvdc.m(rc,ild,y,t,lb,h) ;
-  s_resvtrfr4(rt,hY,ild1,ild,y,t,lb,h)       = resvtrfr4.m(ild1,ild,y,t,lb,h) ;
-  s_resvtrfrdef(rt,hY,ild,ild1,y,t,lb,h)     = resvtrfrdef.m(ild,ild1,y,t,lb,h) ;
-  s_resvoffcap(rt,hY,g,y,t,lb,h)             = resvoffcap.m(g,y,t,lb,h) ;
-  s_resvreqwind(rt,hY,rc,ild,y,t,lb,h)       = resvreqwind.m(rc,ild,y,t,lb,h) ;
+  s_tx_dcflow(rt,hY,r,rr,y,t,lb,oc)          = tx_dcflow.m(r,rr,y,t,lb,oc) ;
+  s_tx_dcflow0(rt,hY,r,rr,y,t,lb,oc)         = tx_dcflow0.m(r,rr,y,t,lb,oc) ;
+  s_equatetxloss(rt,hY,r,rr,y,t,lb,oc)       = equatetxloss.m(r,rr,y,t,lb,oc) ;
+  s_txGrpConstraint(rt,hY,tgc,y,t,lb,oc)     = txGrpConstraint.m(tgc,y,t,lb,oc) ;
+  s_resvsinglereq1(rt,hY,rc,ild,y,t,lb,oc)   = resvsinglereq1.m(rc,ild,y,t,lb,oc) ;
+  s_genmaxresv1(rt,hY,g,y,t,lb,oc)           = genmaxresv1.m(g,y,t,lb,oc) ;
+  s_resvtrfr1(rt,hY,ild,ild1,y,t,lb,oc)      = resvtrfr1.m(ild,ild1,y,t,lb,oc) ;
+  s_resvtrfr2(rt,hY,rc,ild,ild1,y,t,lb,oc)   = resvtrfr2.m(rc,ild,ild1,y,t,lb,oc) ;
+  s_resvtrfr3(rt,hY,rc,ild,ild1,y,t,lb,oc)   = resvtrfr3.m(rc,ild,ild1,y,t,lb,oc) ;
+  s_resvrequnit(rt,hY,g,rc,ild,y,t,lb,oc)    = resvrequnit.m(g,rc,ild,y,t,lb,oc) ;
+  s_resvreq2(rt,hY,rc,ild,y,t,lb,oc)         = resvreq2.m(rc,ild,y,t,lb,oc) ;
+  s_resvreqhvdc(rt,hY,rc,ild,y,t,lb,oc)      = resvreqhvdc.m(rc,ild,y,t,lb,oc) ;
+  s_resvtrfr4(rt,hY,ild1,ild,y,t,lb,oc)      = resvtrfr4.m(ild1,ild,y,t,lb,oc) ;
+  s_resvtrfrdef(rt,hY,ild,ild1,y,t,lb,oc)    = resvtrfrdef.m(ild,ild1,y,t,lb,oc) ;
+  s_resvoffcap(rt,hY,g,y,t,lb,oc)            = resvoffcap.m(g,y,t,lb,oc) ;
+  s_resvreqwind(rt,hY,rc,ild,y,t,lb,oc)      = resvreqwind.m(rc,ild,y,t,lb,oc) ;
 * Now write the statements that are contingent on the model type being solved.
 * NB: these statements will not be executed when included in GEMsolve if RunType = 2.
 $if %RunType%==2 $goto skip

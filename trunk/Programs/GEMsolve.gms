@@ -269,18 +269,18 @@ loop((tmg(rt),hydroYrForTiming(hY)),
   activeSolve(rt,hY) = yes ;
 
 * Select appropriate hydro year(s) in order to do the timing solve.
-  h(outcomes) = no ;
-  hydOutput(g,y,t,h) = 0 ;
+  oc(outcomes) = no ;
+  hydOutput(g,y,t,oc) = 0 ;
   if(sameas(hydroYrForTiming,'Multiple'),
-    h(outcomes)$( not sameas(outcomes,'dum') ) = yes ;
-    hydOutput(g,y,t,h) = hydroOutputScalar * sum((mapv_g(v,g),hY1,mapm_t(m,t))$maphd_hY(h,hY1), hydroOutput(v,hY1,m)) ;
+    oc(outcomes)$( not sameas(outcomes,'dum') ) = yes ;
+    hydOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),hY1,mapm_t(m,t))$maphd_hY(oc,hY1), hydroOutput(v,hY1,m)) ;
     else
-    h(outcomes)$( sameas(outcomes,'dum') ) = yes ;
-    hydOutput(g,y,t,h) = hydroOutputScalar * i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
+    oc(outcomes)$( sameas(outcomes,'dum') ) = yes ;
+    hydOutput(g,y,t,oc) = hydroOutputScalar * i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
   ) ;
 
 * Capture the hydro domain index and the hydro year number.
-  activeHD(rt,hY,h) = yes ;
+  activeHD(rt,hY,oc) = yes ;
   indexhY(rt,hY,y) = hydroYearNum(hY) ;
 
 * Make sure renewable energy share constraint is not suppressed unless i_renewNrgShare(y) = 0 for all y.
@@ -359,13 +359,13 @@ loop((reo(rt),hydroYrForReopt(hY)),
   activeSolve(rt,hY) = yes ;
 
 * Select appropriate hydro year(s) in order to do the re-optimise solve.
-  h(outcomes) = no ;
-  h(outcomes)$( sameas(outcomes,'dum') ) = yes ;
-  hydOutput(g,y,t,h) = 0 ;
-  hydOutput(g,y,t,h) = hydroOutputScalar * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
+  oc(outcomes) = no ;
+  oc(outcomes)$( sameas(outcomes,'dum') ) = yes ;
+  hydOutput(g,y,t,oc) = 0 ;
+  hydOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
 
 * Capture the hydro domain index and the hydro year number.
-  activeHD(rt,hY,h) = yes ;
+  activeHD(rt,hY,oc) = yes ;
   indexhY(rt,hY,y) = hydroYearNum(hY) ;
 
 * Make sure renewable energy share constraint is not suppressed unless SprsRenShrReo = 1 or i_renewNrgShare(y) = 0 for all y.
@@ -490,10 +490,10 @@ BTX.fx(paths,ps,y) = btxfix(paths,ps,y) ;
 $offtext
 $label CarryOn1
 
-* Make sure the only active element of set h is 'dum' and zero out any previously used hydrology output data.
-h(outcomes) = no ;
-h(outcomes)$( sameas(outcomes,'dum') ) = yes ;
-hydOutput(g,y,t,h) = 0 ;
+* Make sure the only active element of set oc is 'dum' and zero out any previously used hydrology output data.
+oc(outcomes) = no ;
+oc(outcomes)$( sameas(outcomes,'dum') ) = yes ;
+hydOutput(g,y,t,oc) = 0 ;
 
 * Construct hydrology output sequences starting with all hydro years (including the average year but excluding the 'multiple' year) if DInflowYr = 0:
 hydroYrForDispatch(hY)$( %DInflowYr%  = 0 and (not sameas(hY,'Multiple')) ) = yes ;
@@ -512,8 +512,8 @@ loop(hY$( hydroYrForDispatch(hY) and (ord(hY) <= %LimHydYr%) ),
 
 * Define inflow data for all modelled years depending on whether the model run uses sequential or constant hydro data.
 * DInflwYrType = 1 ==> sequential; DInflwYrType = 2 ==> constant.
-  hydOutput(g,y,t,h)$( %DInflwYrType% = 1 ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),hY1,mapm_t(m,t))$( hydroYrIndex(hY1) = ord(y) ), hydroOutput(v,hY1,m) ) ;
-  hydOutput(g,y,t,h)$( %DInflwYrType% = 2 or ord(hY) = averageHydroYear ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
+  hydOutput(g,y,t,oc)$( %DInflwYrType% = 1 ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),hY1,mapm_t(m,t))$( hydroYrIndex(hY1) = ord(y) ), hydroOutput(v,hY1,m) ) ;
+  hydOutput(g,y,t,oc)$( %DInflwYrType% = 2 or ord(hY) = averageHydroYear ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
 * This last statement means that if DInflwYrType = 2, the inflows commensurate with the inflow year (hY) being
 * looped over will be used for all modelled years. Note that this includes the average inflow year too.
 
@@ -523,7 +523,7 @@ loop(hY$( hydroYrForDispatch(hY) and (ord(hY) <= %LimHydYr%) ),
 
 * Capture the current elements of the run type-hydro year tuple and the hydro domain index.
   activeSolve(rt,hY) = yes ;
-  activeHD(rt,hY,h) = yes ;
+  activeHD(rt,hY,oc) = yes ;
 
 * Make sure renewable energy share constraint is not suppressed unless SprsRenShrDis = 1 or i_renewNrgShare(y) = 0 for all y.
   renNrgShrOn$( ( %SprsRenShrDis% = 1 ) or ( sum(y, i_renewNrgShare(y)) = 0 ) ) = 0 ;
@@ -702,7 +702,7 @@ Display s2_TOTALCOST, disHydYrs, activeSolve, activeHD, indexhY, solveReport ;
 * Dump output prepared for report writing into a GDX file.
 Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
 * Miscellaneous sets
-  h activeSolve activeHD activeRT solveGoal
+  oc activeSolve activeHD activeRT solveGoal
 * Miscellaneous parameters
   solveReport numDisYrs
 * The 's2' output parameters
