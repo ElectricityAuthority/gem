@@ -174,8 +174,8 @@ Sets
 Parameters
   yearNum(sc,y)                                 'Real number associated with each year'
   hoursPerBlock(sc,t,lb)                        'Hours per load block by time period'
-  PVfacG(sc,y,t)                                'Generation investor's present value factor by period'
-  PVfacT(sc,y,t)                                'Transmission investor's present value factor by period'
+  PVfacG(sc,y,t)                                "Generation investor's present value factor by period"
+  PVfacT(sc,y,t)                                "Transmission investor's present value factor by period"
   capCharge(sc,g,y)                             'Annualised or levelised capital charge for new generation plant, $/MW/yr'
   refurbCapCharge(sc,g,y)                       'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
   exogMWretired(sc,g,y)                         'Exogenously retired MW by plant and year, MW'
@@ -203,7 +203,7 @@ $loaddc reserveViolationPenalty pNFresvCost
 
 * c) Sets and parameters from prepared output GDX file - now with an extra dimension, i.e. set sc.
 Sets
-  h(sc,outcomes)                                'Selected elements of outcomes - used to control multiple versus single hydro years to determine build timing'
+  oc(sc,outcomes)                               'Selected elements of outcomes'
   activeSolve(sc,rt,hY)                         'Collect the rt-hY index used for each solve' 
   activeOC(sc,rt,hY,outcomes)                   'Collect the rt-hY-outcomes index used for each solve'
   activeRT(sc,rt)                               'Identify the run types actually employed in this model run'
@@ -256,7 +256,7 @@ Parameters
 
 $gdxin 'all_prepout.gdx'
 * Sets
-$loaddc h activeSolve activeOC activeRT solveGoal
+$loaddc oc activeSolve activeOC activeRT solveGoal
 * Parameters
 * Miscellaneous parameters
 $loaddc solveReport s2_TOTALCOST s2_TX s2_BRET s2_ISRETIRED s2_BTX
