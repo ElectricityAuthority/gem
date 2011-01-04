@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 17/12/2010 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/01/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -240,7 +240,7 @@ Sets
   oc(outcomes)                                  'Selected elements of outcomes'
   hydroYrForDispatch(hY)                        'Hydro years used to loop over when solving DISpatch'
   activeSolve(rt,hY)                            'Collect the rt-hY index used for each solve' 
-  activeHD(rt,hY,outcomes)                      'Collect the rt-hY-outcomes index used for each solve'
+  activeOC(rt,hY,outcomes)                      'Collect the rt-hY-outcomes index used for each solve'
   dum(outcomes)                                 'The dummy element from the set called outcomes'
   activeRT(rt)                                  'Identify the run types actually employed in this model run'
   disHydYrs(hY)                                 'Hydro years for which DISpatch model was solved or looped over - excludes multiple and average hydro years'

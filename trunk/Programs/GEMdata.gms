@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 17/12/2010 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/01/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -51,7 +51,7 @@ Set y  / %firstYear% * %lastYear% / ;
 
 $gdxin "%DataPath%%GDXinputFile%"
 * 26 fundamental sets (less one, i.e. set y) 
-$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v outcomes=hd m geo col
+$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v outcomes m geo col
 * 42 mapping sets and subsets
 * 24 technology and fuel
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped

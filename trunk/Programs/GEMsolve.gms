@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 17/10/2010 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/01/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -51,8 +51,9 @@ $offsymxref offsymlist
 * 1. Take care of preliminaries.
 
 * Specify various .lst file and solver-related options.
-option limcol = 0, limrow = 0, reslim = 500, iterlim = 10000000 ;
-option sysout = off, solprint = on ;
+if(%limitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ; ) ; 
+option reslim = 500, iterlim = 10000000 ;
+*option solprint = on ;
 
 * Select the solver and include the relevant solver options files:
 option LP = %Solver%, MIP = %Solver%, RMIP = %Solver% ;
@@ -81,7 +82,7 @@ $loaddc y
 
 $gdxin "%DataPath%%GDXinputFile%"
 * Load sets from input GDX file.
-$loaddc k f g s o r e ild p ps tupg tgc t lb rc hY v outcomes=hd m
+$loaddc k f g s o r e ild p ps tupg tgc t lb rc hY v outcomes m
 $loaddc maps_r mapm_t maphd_hY movers wind renew minUtilTechs demandGen gas diesel
 * Load parameters from input GDX file.
 $load i_minUtilByTech i_maxNrgByFuel i_fuelQuantities
@@ -279,8 +280,8 @@ loop((tmg(rt),hydroYrForTiming(hY)),
     hydOutput(g,y,t,oc) = hydroOutputScalar * i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
   ) ;
 
-* Capture the hydro domain index and the hydro year number.
-  activeHD(rt,hY,oc) = yes ;
+* Capture the outcomes index and the hydro year number.
+  activeOC(rt,hY,oc) = yes ;
   indexhY(rt,hY,y) = hydroYearNum(hY) ;
 
 * Make sure renewable energy share constraint is not suppressed unless i_renewNrgShare(y) = 0 for all y.
@@ -295,7 +296,6 @@ loop((tmg(rt),hydroYrForTiming(hY)),
     if(sameas(solveGoal,'VGsol'),  gem.optfile = 3 ) ;
     if(sameas(solveGoal,'MinGap'), gem.optfile = 4 ) ;
 
-    if(%LimitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ;) ; 
     Solve GEM using %GEMtype% minimizing TOTALCOST ;
 
 *   Figure out if run is to be aborted and report that fact before aborting.
@@ -364,8 +364,8 @@ loop((reo(rt),hydroYrForReopt(hY)),
   hydOutput(g,y,t,oc) = 0 ;
   hydOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
 
-* Capture the hydro domain index and the hydro year number.
-  activeHD(rt,hY,oc) = yes ;
+* Capture the outcomes index and the hydro year number.
+  activeOC(rt,hY,oc) = yes ;
   indexhY(rt,hY,y) = hydroYearNum(hY) ;
 
 * Make sure renewable energy share constraint is not suppressed unless SprsRenShrReo = 1 or i_renewNrgShare(y) = 0 for all y.
@@ -397,7 +397,6 @@ loop((reo(rt),hydroYrForReopt(hY)),
     if(sameas(solveGoal,'VGsol'),  gem.optfile = 3 ) ;
     if(sameas(solveGoal,'MinGap'), gem.optfile = 4 ) ;
 
-    if(%LimitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ;) ; 
     Solve GEM using %GEMtype% minimizing TOTALCOST ;
 
 *   Figure out if run is to be aborted and report that fact before aborting.
@@ -521,9 +520,9 @@ loop(hY$( hydroYrForDispatch(hY) and (ord(hY) <= %LimHydYr%) ),
 *  Open loop on run type DIS.
   loop(dis(rt),
 
-* Capture the current elements of the run type-hydro year tuple and the hydro domain index.
+* Capture the current elements of the run type-hydro year tuple and the outcomes index.
   activeSolve(rt,hY) = yes ;
-  activeHD(rt,hY,oc) = yes ;
+  activeOC(rt,hY,oc) = yes ;
 
 * Make sure renewable energy share constraint is not suppressed unless SprsRenShrDis = 1 or i_renewNrgShare(y) = 0 for all y.
   renNrgShrOn$( ( %SprsRenShrDis% = 1 ) or ( sum(y, i_renewNrgShare(y)) = 0 ) ) = 0 ;
@@ -545,7 +544,6 @@ loop(hY$( hydroYrForDispatch(hY) and (ord(hY) <= %LimHydYr%) ),
   ) ;
 
 * Solve the RMIP (i.e. DISP):
-  if(%LimitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ;) ; 
   Solve DISP using %DISPtype% minimizing TOTALCOST ;
 
 * Figure out if run is to be aborted and report that fact before aborting.
@@ -692,7 +690,7 @@ loop(activeRT(rt),
   ) ;
 ) ;
 
-Display s2_TOTALCOST, disHydYrs, activeSolve, activeHD, indexhY, solveReport ;
+Display s2_TOTALCOST, disHydYrs, activeSolve, activeOC, indexhY, solveReport ;
 
 
 
@@ -702,7 +700,7 @@ Display s2_TOTALCOST, disHydYrs, activeSolve, activeHD, indexhY, solveReport ;
 * Dump output prepared for report writing into a GDX file.
 Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
 * Miscellaneous sets
-  oc activeSolve activeHD activeRT solveGoal
+  oc activeSolve activeOC activeRT solveGoal
 * Miscellaneous parameters
   solveReport numDisYrs
 * The 's2' output parameters
