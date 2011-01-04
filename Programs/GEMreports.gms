@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 17/10/2010 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/01/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -67,7 +67,7 @@ Sets
   rc           'Reserve classes'
   hY           'Hydrology output years'
   v            'Hydro reservoirs or river systems'
-  outcomes     'Hydrology domain for multiple hydro years'
+  outcomes     'Stochastic outcomes or uncertainty states'
   m            '12 months'
   geo          'Geographic co-ordinate types'
   col          'RGB color codes'
@@ -80,7 +80,7 @@ Set y / %firstYear% * %lastYear% / ;
 
 * Get the other 25 of the 26 fundamental sets from the first scenario's input GDX file.
 $gdxin "%DataPath%%firstScenario%"
-$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v outcomes=hd m geo col
+$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v outcomes m geo col
 
 * Re-declare and initialise a few miscellaneous sets with fixed membership.
 Sets
@@ -205,7 +205,7 @@ $loaddc reserveViolationPenalty pNFresvCost
 Sets
   h(sc,outcomes)                                'Selected elements of outcomes - used to control multiple versus single hydro years to determine build timing'
   activeSolve(sc,rt,hY)                         'Collect the rt-hY index used for each solve' 
-  activeHD(sc,rt,hY,outcomes)                   'Collect the rt-hY-outcomes index used for each solve'
+  activeOC(sc,rt,hY,outcomes)                   'Collect the rt-hY-outcomes index used for each solve'
   activeRT(sc,rt)                               'Identify the run types actually employed in this model run'
   solveGoal(sc,goal)                            'User-selected solve goal'
 Parameters
@@ -256,7 +256,7 @@ Parameters
 
 $gdxin 'all_prepout.gdx'
 * Sets
-$loaddc h activeSolve activeHD activeRT solveGoal
+$loaddc h activeSolve activeOC activeRT solveGoal
 * Parameters
 * Miscellaneous parameters
 $loaddc solveReport s2_TOTALCOST s2_TX s2_BRET s2_ISRETIRED s2_BTX
@@ -283,7 +283,7 @@ Sets
                                                     rfb   'Potential and actual refurbished capacity by technology'
                                                     rtd   'Potential and actual retired capacity by technology'   /
   buildSoln(rt)                                 'Determine which run type element to use for reporting results related to building generation or transmission'
-  activeRTHD(sc,rt,outcomes)                    'Determine the sc-rt-outcome index used for each solve'
+  activeRTOC(sc,rt,outcomes)                    'Determine the sc-rt-outcome index used for each solve'
   activeCapacity(sc,g,y)                        'Identify all plant that are active in any given year, i.e. existing or built but never retired'
 * Components of objective function
   objc                                          'Objective function components'
@@ -413,7 +413,7 @@ loop(fg, put / fg.tl, fg.te(fg) loop(fuelGrpColor(sc,fg,red,green,blue)$(ord(sc)
 *===============================================================================================
 * 4. Perform the various calculations/assignments necessary to generate reports.
 
-activeRTHD(sc,rt,outcomes) $sum(hY, activeHD(sc,rt,hY,outcomes) ) = yes ;
+activeRTOC(sc,rt,outcomes) $sum(hY, activeOC(sc,rt,hY,outcomes) ) = yes ;
 
 * a) Objective function components - value by year and total value
 * Objective function components - value by year (Note that for run type 'dis', it's the average that gets computed).
@@ -563,15 +563,15 @@ loop(activeRT(sc,rt),
 * End of capacity expansion/contraction calculations.
   ) ;
 
-  genYr(activeRTHD(sc,rt,outcomes) ,g,y) = sum((t,lb), s2_GEN(sc,rt,g,y,t,lb,outcomes) ) ;
+  genYr(activeRTOC(sc,rt,outcomes) ,g,y) = sum((t,lb), s2_GEN(sc,rt,g,y,t,lb,outcomes) ) ;
 
-  genGWh(activeRTHD(sc,rt,outcomes) ) = sum((g,y), genYr(sc,rt,outcomes, g,y)) ;
-  genTWh(activeRTHD(sc,rt,outcomes) ) = 1e-3 * genGWh(sc,rt,outcomes)  ;
-  genDSM(activeRTHD(sc,rt,outcomes) ) = sum((g,y,k)$( mapg_k(sc,g,k) * demandGen(sc,k) ), genYr(sc,rt,outcomes, g,y)) ;
-  genPeaker(activeRTHD(sc,rt,outcomes) ) = sum((g,y,k)$( mapg_k(sc,g,k) * peaker(sc,k) ), genYr(sc,rt,outcomes, g,y)) ;
+  genGWh(activeRTOC(sc,rt,outcomes) ) = sum((g,y), genYr(sc,rt,outcomes, g,y)) ;
+  genTWh(activeRTOC(sc,rt,outcomes) ) = 1e-3 * genGWh(sc,rt,outcomes)  ;
+  genDSM(activeRTOC(sc,rt,outcomes) ) = sum((g,y,k)$( mapg_k(sc,g,k) * demandGen(sc,k) ), genYr(sc,rt,outcomes, g,y)) ;
+  genPeaker(activeRTOC(sc,rt,outcomes) ) = sum((g,y,k)$( mapg_k(sc,g,k) * peaker(sc,k) ), genYr(sc,rt,outcomes, g,y)) ;
 
-  deficitGen(activeRTHD(sc,rt,outcomes) ,y,t,lb) = sum(s, s2_VOLLGEN(sc,rt,s,y,t,lb,outcomes) ) ;
-  xsDeficitGen(activeRTHD(sc,rt,outcomes) ,y,t,lb)$( deficitGen(sc,rt,outcomes, y,t,lb) > ( .03 * sum(g, s2_GEN(sc,rt,g,y,t,lb,outcomes) ) ) ) = deficitGen(sc,rt,outcomes, y,t,lb) ;
+  deficitGen(activeRTOC(sc,rt,outcomes) ,y,t,lb) = sum(s, s2_VOLLGEN(sc,rt,s,y,t,lb,outcomes) ) ;
+  xsDeficitGen(activeRTOC(sc,rt,outcomes) ,y,t,lb)$( deficitGen(sc,rt,outcomes, y,t,lb) > ( .03 * sum(g, s2_GEN(sc,rt,g,y,t,lb,outcomes) ) ) ) = deficitGen(sc,rt,outcomes, y,t,lb) ;
 
 * Transmission
   actualTxCap(sc,rt,r,rr,y)$paths(sc,r,rr) = sum(ps, i_txCapacity(sc,r,rr,ps) * s2_BTX(sc,rt,r,rr,ps,y)) ; 
@@ -590,8 +590,8 @@ loop(activeRT(sc,rt),
     counter = 0 ;
   ) ;
 
-  interTxLossYrGWh(activeRTHD(sc,rt,outcomes) ,y) = 1e-3 * sum((r,rr,t,lb), s2_LOSS(sc,rt,r,rr,y,t,lb,outcomes)  * hoursPerBlock(sc,t,lb) ) ;
-  interTxLossGWh(activeRTHD(sc,rt,outcomes) ) = sum(y, interTxLossYrGWh(sc,rt,outcomes, y)) ; 
+  interTxLossYrGWh(activeRTOC(sc,rt,outcomes) ,y) = 1e-3 * sum((r,rr,t,lb), s2_LOSS(sc,rt,r,rr,y,t,lb,outcomes)  * hoursPerBlock(sc,t,lb) ) ;
+  interTxLossGWh(activeRTOC(sc,rt,outcomes) ) = sum(y, interTxLossYrGWh(sc,rt,outcomes, y)) ; 
 
   intraTxLossYrGWh(sc,y) = sum((ild,r,t,lb)$mapild_r(sc,ild,r), NrgDemand(sc,r,y,t,lb) * AClossFactors(sc,ild) / ( 1 + AClossFactors(sc,ild) ) ) ;
   intraTxLossGWh(sc) = sum(y, intraTxLossYrGWh(sc,y)) ;
@@ -885,7 +885,7 @@ $ontext
   @3 'Hydro year for timing:'          @37 loop(tmnghydyr(hYr),  put hYr.tl:<8:0
                                              if((not sameas(tmnghydyr,'Multiple')), put '- scaled by ', scaleInflows:4:2 ) ;
                                              if(sameas(tmnghydyr,'Multiple'),
-                                               put @47 '- ' loop(outcomes$ ( not sameas(outcomes, 'dum')),  put outcomes. tl, ' ' ) ;
+                                               put @47 '- ' loop(outcomes$ ( not sameas(outcomes, 'dum')),  put outcomes.tl, ' ' ) ;
                                                put '- weighted by, respectively,' loop(outcomes$ ( not sameas(outcomes, 'dum')), put hydWeight(outcomes) :6:3 ) ) ;
                                            ) ; put /
   @3 'Timing re-optimised?'            @37 if(%RunType%<2 and %SuppressReopt%=0, put 'Yes' else put 'No') ; put /
@@ -1053,15 +1053,15 @@ loop(buildSoln(rt),
   if(sameas(rt,'tmg'), put '%TmgHeader%' else if(sameas(rt,'reo'), put '%ReoHeader%' else put '%DisHeader%' ) ) ;
   loop(sc,
     put // @3 sc.te(sc), ' (', sc.tl, ')' ;
-    put  / @5 'Generation:'           @28 loop(activeRTHD(sc,rt,outcomes) , put genGWh(sc,rt,outcomes) :10:1 ) ;
-    put  / @5 'Intraregional losses:' @28 put intraTxLossGWh(sc):10:1 ; loop(activeRTHD(sc,rt,outcomes) ,  put ( 100 * intraTxLossGWh(sc) / genGWh(sc,rt,outcomes)  ):>7:2, '%  ' ) ;
-    put  / @5 'Interregional losses:' @28 loop(activeRTHD(sc,rt,outcomes) , put interTxLossGWh(sc,rt,outcomes) :10:1, ( 100 * interTxLossGWh(sc,rt,outcomes)  / genGWh(sc,rt,outcomes)  ):>7:2, '%  ' ) ;
+    put  / @5 'Generation:'           @28 loop(activeRTOC(sc,rt,outcomes) , put genGWh(sc,rt,outcomes) :10:1 ) ;
+    put  / @5 'Intraregional losses:' @28 put intraTxLossGWh(sc):10:1 ; loop(activeRTOC(sc,rt,outcomes) ,  put ( 100 * intraTxLossGWh(sc) / genGWh(sc,rt,outcomes)  ):>7:2, '%  ' ) ;
+    put  / @5 'Interregional losses:' @28 loop(activeRTOC(sc,rt,outcomes) , put interTxLossGWh(sc,rt,outcomes) :10:1, ( 100 * interTxLossGWh(sc,rt,outcomes)  / genGWh(sc,rt,outcomes)  ):>7:2, '%  ' ) ;
   ) ;
 ) ;
 
 
 * Indicate whether or not there is excessive shortage generation (excessive is assumed to be 3% of generation).
-if(sum((activeRTHD(sc,rt,outcomes) ,y,t,lb), xsDeficitGen(sc,rt,outcomes, y,t,lb)) = 0,
+if(sum((activeRTOC(sc,rt,outcomes) ,y,t,lb), xsDeficitGen(sc,rt,outcomes, y,t,lb)) = 0,
   put //// 'There is no excessive use of unserved energy, where excessive is defined to be 3% or more of generation.' ;
   else
   put //// 'Examine "Objective value components and shortage generation.gdx" in the GDX output folder to see' /
@@ -1317,7 +1317,7 @@ loop(activeRT(sc,rt),
   blah blah blah
 
 * Reserves
-  totalresvviol(sc,rt,rc,outcomes) $activeRTHD(sc,rt,outcomes)  = sum((ild,y,t,lb), s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)  ) ;
+  totalresvviol(sc,rt,rc,outcomes) $activeRTOC(sc,rt,outcomes)  = sum((ild,y,t,lb), s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)  ) ;
 
 * Generation capex
   capchrg_r(sc,rt,g,y)    = 1e-6 * capchargem(g,y,sc) * s2_capacity(sc,rt,g,y) ;
@@ -1368,25 +1368,25 @@ loop(activeRT(sc,rt),
   hvdcnettot_pv(sc,rt,d)   = sum((g,y,t), hvdcnet_pv(sc,rt,g,y,t,d)) ;
 
 * Generation plant total SRMCs
-  vopexgross_r(sc,rt,g,y,t,outcomes)$activeRTHD(sc,rt,outcomes)   = 1e-3 * sum((mapg_e(g,e),lb), SRMC(g,y) * s2_gen(sc,rt,g,y,t,lb,outcomes)  * locFac_Recip(e) ) ;
-  vopexgross_pv(sc,rt,g,y,t,outcomes,d)$activeRTHD(sc,rt,outcomes)       = PVfacsM(y,t,d) * vopexgross_r(sc,rt,g,y,t,outcomes)  ;
-  vopexnet_r(sc,rt,g,y,t,outcomes)$activeRTHD(sc,rt,outcomes)     = (1 - i_taxRate)  * vopexgross_r(sc,rt,g,y,t,outcomes)  ;
-  vopexnet_pv(sc,rt,g,y,t,outcomes,d)$activeRTHD(sc,rt,outcomes)  = PVfacsM(y,t,d) * vopexnet_r(sc,rt,g,y,t,outcomes)  ;
+  vopexgross_r(sc,rt,g,y,t,outcomes)$activeRTOC(sc,rt,outcomes)   = 1e-3 * sum((mapg_e(g,e),lb), SRMC(g,y) * s2_gen(sc,rt,g,y,t,lb,outcomes)  * locFac_Recip(e) ) ;
+  vopexgross_pv(sc,rt,g,y,t,outcomes,d)$activeRTOC(sc,rt,outcomes)       = PVfacsM(y,t,d) * vopexgross_r(sc,rt,g,y,t,outcomes)  ;
+  vopexnet_r(sc,rt,g,y,t,outcomes)$activeRTOC(sc,rt,outcomes)     = (1 - i_taxRate)  * vopexgross_r(sc,rt,g,y,t,outcomes)  ;
+  vopexnet_pv(sc,rt,g,y,t,outcomes,d)$activeRTOC(sc,rt,outcomes)  = PVfacsM(y,t,d) * vopexnet_r(sc,rt,g,y,t,outcomes)  ;
 
-  vopexgrosstot_r(sc,rt,outcomes)$activeRTHD(sc,rt,outcomes)      = sum((g,y,t), vopexgross_r(sc,rt,g,y,t,outcomes) ) ;
-  vopexgrosstot_pv(sc,rt,outcomes,d)$activeRTHD(sc,rt,outcomes)   = sum((g,y,t), vopexgross_pv(sc,rt,g,y,t,outcomes, d)) ;
-  vopexnettot_r(sc,rt,outcomes)$activeRTHD(sc,rt,outcomes)        = sum((g,y,t), vopexnet_r(sc,rt,g,y,t,outcomes) ) ;
-  vopexnettot_pv(sc,rt,outcomes,d)$activeRTHD(sc,rt,outcomes)     = sum((g,y,t), vopexnet_pv(sc,rt,g,y,t,outcomes, d)) ;
+  vopexgrosstot_r(sc,rt,outcomes)$activeRTOC(sc,rt,outcomes)      = sum((g,y,t), vopexgross_r(sc,rt,g,y,t,outcomes) ) ;
+  vopexgrosstot_pv(sc,rt,outcomes,d)$activeRTOC(sc,rt,outcomes)   = sum((g,y,t), vopexgross_pv(sc,rt,g,y,t,outcomes, d)) ;
+  vopexnettot_r(sc,rt,outcomes)$activeRTOC(sc,rt,outcomes)        = sum((g,y,t), vopexnet_r(sc,rt,g,y,t,outcomes) ) ;
+  vopexnettot_pv(sc,rt,outcomes,d)$activeRTOC(sc,rt,outcomes)     = sum((g,y,t), vopexnet_pv(sc,rt,g,y,t,outcomes, d)) ;
 
-  vopexgrossNoLF_r(sc,rt,g,y,t,outcomes)$activeRTHD(sc,rt,outcomes)      = 1e-3 * SRMC(g,y) * sum(lb, s2_gen(sc,rt,g,y,t,lb,outcomes) ) ;
-  vopexgrossNoLF_pv(sc,rt,g,y,t,outcomes,d)$activeRTHD(sc,rt,outcomes)   = PVfacsM(y,t,d) * vopexgrossNoLF_r(sc,rt,g,y,t,outcomes)  ;
-  vopexnetNoLF_r(sc,rt,g,y,t,outcomes)$activeRTHD(sc,rt,outcomes) = (1 - i_taxRate)  * vopexgrossNoLF_r(sc,rt,g,y,t,outcomes)  ;
-  vopexnetNoLF_pv(sc,rt,g,y,t,outcomes,d)$activeRTHD(sc,rt,outcomes)     = PVfacsM(y,t,d) * vopexnetNoLF_r(sc,rt,g,y,t,outcomes)  ;
+  vopexgrossNoLF_r(sc,rt,g,y,t,outcomes)$activeRTOC(sc,rt,outcomes)      = 1e-3 * SRMC(g,y) * sum(lb, s2_gen(sc,rt,g,y,t,lb,outcomes) ) ;
+  vopexgrossNoLF_pv(sc,rt,g,y,t,outcomes,d)$activeRTOC(sc,rt,outcomes)   = PVfacsM(y,t,d) * vopexgrossNoLF_r(sc,rt,g,y,t,outcomes)  ;
+  vopexnetNoLF_r(sc,rt,g,y,t,outcomes)$activeRTOC(sc,rt,outcomes) = (1 - i_taxRate)  * vopexgrossNoLF_r(sc,rt,g,y,t,outcomes)  ;
+  vopexnetNoLF_pv(sc,rt,g,y,t,outcomes,d)$activeRTOC(sc,rt,outcomes)     = PVfacsM(y,t,d) * vopexnetNoLF_r(sc,rt,g,y,t,outcomes)  ;
 
-  vopexgrosstotNoLF_r(sc,rt,outcomes)$activeRTHD(sc,rt,outcomes)  = sum((g,y,t), vopexgrossNoLF_r(sc,rt,g,y,t,outcomes) ) ;
-  vopexgrosstotNoLF_pv(sc,rt,outcomes,d)$activeRTHD(sc,rt,outcomes)      = sum((g,y,t), vopexgrossNoLF_pv(sc,rt,g,y,t,outcomes, d)) ;
-  vopexnettotNoLF_r(sc,rt,outcomes)$activeRTHD(sc,rt,outcomes)    = sum((g,y,t), vopexnetNoLF_r(sc,rt,g,y,t,outcomes) ) ;
-  vopexnettotNoLF_pv(sc,rt,outcomes,d)$activeRTHD(sc,rt,outcomes) = sum((g,y,t), vopexnetNoLF_pv(sc,rt,g,y,t,outcomes, d)) ;
+  vopexgrosstotNoLF_r(sc,rt,outcomes)$activeRTOC(sc,rt,outcomes)  = sum((g,y,t), vopexgrossNoLF_r(sc,rt,g,y,t,outcomes) ) ;
+  vopexgrosstotNoLF_pv(sc,rt,outcomes,d)$activeRTOC(sc,rt,outcomes)      = sum((g,y,t), vopexgrossNoLF_pv(sc,rt,g,y,t,outcomes, d)) ;
+  vopexnettotNoLF_r(sc,rt,outcomes)$activeRTOC(sc,rt,outcomes)    = sum((g,y,t), vopexnetNoLF_r(sc,rt,g,y,t,outcomes) ) ;
+  vopexnettotNoLF_pv(sc,rt,outcomes,d)$activeRTOC(sc,rt,outcomes) = sum((g,y,t), vopexnetNoLF_pv(sc,rt,g,y,t,outcomes, d)) ;
 
 * Transmission equipment capex
   txcapchrg_r(sc,rt,allowedStates(sc,r,rr,ps),y) = 0 ;
@@ -1441,31 +1441,31 @@ loop(sc_sim(sc), put totalRetiredMW(sc):12:1 ) ;
 
 put /// 'Generation (includes DSM, IL, and Shortage), TWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum(sc, genTWh(sc,rt,outcomes) ),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes. tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put genTWh(sc,rt,outcomes) :12:1 ) ;
 ) ;
 
 put /// "'Generation' by DSM and IL, GWh" / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum(sc, genDSM(sc,rt,outcomes) ),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes. tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put genDSM(sc,rt,outcomes) :12:1 ) ;
 ) ;
 
 put /// 'Unserved energy (shortage generation), GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum((sc,y), defgenYr(sc,rt,outcomes, y)),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes. tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put (sum(y, defgenYr(sc,rt,outcomes, y))):12:1 ) ;
 ) ;
 
 put /// 'Generation by peakers, GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum(sc, genPeaker(sc,rt,outcomes) ),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes. tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put  genPeaker(sc,rt,outcomes) :12:1 ) ;
 ) ;
 
 put /// 'Transmission losses, GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum(sc, interTxLossGWh(sc,rt,outcomes) ),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes. tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put  interTxLossGWh(sc,rt,outcomes) :12:1 ) ;
 ) ;
 
@@ -1475,7 +1475,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
   if(tmg(rt), put 'Timing' else if(reo(rt), put 'Re-optimised' else put 'Dispatch' ) ) ;
   put @17 'Reserve class' ;
   loop((rc,outcomes) $(sum(sc, sc_rt(sc,rt)) and sum(sc, totalresvviol(sc,rt,rc,outcomes) )),
-    put / @27 rc.tl if(sameas(outcomes, 'dum'), put @30 else put outcomes. tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+    put / @27 rc.tl if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
     loop(sc_sim(sc), put totalresvviol(sc,rt,rc,outcomes) :12:1 ) ;
   ) ;
 ) ;
@@ -1559,7 +1559,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
     if(sameas(outcomes, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes. tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put outcomes.tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
     loop(sc_sim(sc), put vopexgrosstot_pv(sc,rt,outcomes, d):12:1 ) ;
   ) ;
@@ -1576,7 +1576,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
     if(sameas(outcomes, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes. tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put outcomes.tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
     loop(sc_sim(sc), put vopexnettot_pv(sc,rt,outcomes, d):12:1 ) ;
   ) ;
@@ -1593,7 +1593,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
     if(sameas(outcomes, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes. tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put outcomes.tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
     loop(sc_sim(sc), put vopexgrosstotNoLF_pv(sc,rt,outcomes, d):12:1 ) ;
   ) ;
@@ -1610,7 +1610,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
     if(sameas(outcomes, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes. tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put outcomes.tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
     loop(sc_sim(sc), put vopexnettotNoLF_pv(sc,rt,outcomes, d):12:1 ) ;
   ) ;
@@ -1735,7 +1735,7 @@ loop(sc_sim(sc), put / sc.tl @15 sc.te(sc) ) ;
 
 * Figure out which peakers produce more than 20% energy in any year.
 counter = 0 ;
-loop((activeRTHD(sc,rt,outcomes) ,mapg_k(g,k))$( peaker(k) * sum(y$activeCapacity(sc,g,y), 1) ),
+loop((activeRTOC(sc,rt,outcomes) ,mapg_k(g,k))$( peaker(k) * sum(y$activeCapacity(sc,g,y), 1) ),
   loop(y$( counter < 0.2 ),
     counter = genYr(sc,rt,outcomes, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) ;
     pkrs_plus20(sc,rt,outcomes, g)$( counter >= 0.2 ) = yes ;
@@ -1745,7 +1745,7 @@ loop((activeRTHD(sc,rt,outcomes) ,mapg_k(g,k))$( peaker(k) * sum(y$activeCapacit
 
 * Figure out which non-peakers produce less than 20% energy in any year.
 counter = 1 ;
-loop((activeRTHD(sc,rt,outcomes) ,mapg_k(g,k))$( not peaker(k) ),
+loop((activeRTOC(sc,rt,outcomes) ,mapg_k(g,k))$( not peaker(k) ),
   loop(y$( counter > 0.2 ),
     counter$( i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) =
       genYr(sc,rt,outcomes, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) ;
@@ -1777,45 +1777,45 @@ loop(e,
   put / e.te(e) ; loop(sc_sim(sc), put sum((g,k)$( peaker(k) * mapg_k(g,k) * mapg_e(g,e) ), buildMW(sc,g)) ) ;
 ) ;
 
-put /// 'Peakers exceeding 20% utilisation in any year' / 'Plant' 'Run type' 'Hydro domain' loop(sc_sim(sc), put sc.tl ) ;
+put /// 'Peakers exceeding 20% utilisation in any year' / 'Plant' 'Run type' 'Outcome' loop(sc_sim(sc), put sc.tl ) ;
 loop((g,rt,outcomes) $sum(sc, pkrs_plus20(sc,rt,outcomes, g)),
-  put / g.te(g), rt.tl, outcomes. tl ;
+  put / g.te(g), rt.tl, outcomes.tl ;
   loop(sc_sim(sc),
     if(pkrs_plus20(sc,rt,outcomes, g), put 'y' else put '' ) ;
   ) ;
 ) ;
 
-put /// 'Non-peakers at less than 20% utilisation in any year' / 'Plant' 'Run type' 'Hydro domain' loop(sc_sim(sc), put sc.tl ) ;
+put /// 'Non-peakers at less than 20% utilisation in any year' / 'Plant' 'Run type' 'Outcome' loop(sc_sim(sc), put sc.tl ) ;
 loop((g,rt,outcomes) $sum(sc, nopkr_minus20(sc,rt,outcomes, g)),
-  put / g.te(g), rt.tl, outcomes. tl ;
+  put / g.te(g), rt.tl, outcomes.tl ;
   loop(sc_sim(sc),
     if(nopkr_minus20(sc,rt,outcomes, g), put 'y' else put '' ) ;
   ) ;
 ) ;
 
-put /// 'Energy produced by peakers, GWh' / 'SC' 'Run type' 'Hydro domain' 'Plant' 'Tech' 'Substn' 'MaxPotGWh' loop(y, put y.tl ) ; put '' 'Technology' ;
-loop((activeRTHD(sc,rt,outcomes) ,g,peaker(k),i)$( mapg_k(g,k) * mapg_i(g,i) * sum(y$activeCapacity(sc,g,y), 1) ),
-  put / sc.tl, rt.tl, outcomes. tl, g.te(g), k.tl, i.tl, (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) )
+put /// 'Energy produced by peakers, GWh' / 'SC' 'Run type' 'Outcome' 'Plant' 'Tech' 'Substn' 'MaxPotGWh' loop(y, put y.tl ) ; put '' 'Technology' ;
+loop((activeRTOC(sc,rt,outcomes) ,g,peaker(k),i)$( mapg_k(g,k) * mapg_i(g,i) * sum(y$activeCapacity(sc,g,y), 1) ),
+  put / sc.tl, rt.tl, outcomes.tl, g.te(g), k.tl, i.tl, (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) )
   loop(y, put genYr(sc,rt,outcomes, g,y) ) ;
   put k.te(k) ;
 ) ;
 
-put /// 'Energy produced by peakers as a proportion of potential' / 'SC' 'Run type' 'Hydro domain' 'Plant' 'Tech' 'Substn' 'MaxPotGWh' loop(y, put y.tl ) ; put '' 'Technology' ;
-loop((activeRTHD(sc,rt,outcomes) ,g,peaker(k),i)$( mapg_k(g,k) * mapg_i(g,i) * sum(y$activeCapacity(sc,g,y), 1) ),
-  put / sc.tl, rt.tl, outcomes. tl, g.te(g), k.tl, i.tl, (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) )
+put /// 'Energy produced by peakers as a proportion of potential' / 'SC' 'Run type' 'Outcome' 'Plant' 'Tech' 'Substn' 'MaxPotGWh' loop(y, put y.tl ) ; put '' 'Technology' ;
+loop((activeRTOC(sc,rt,outcomes) ,g,peaker(k),i)$( mapg_k(g,k) * mapg_i(g,i) * sum(y$activeCapacity(sc,g,y), 1) ),
+  put / sc.tl, rt.tl, outcomes.tl, g.te(g), k.tl, i.tl, (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) )
   loop(y, put ( genYr(sc,rt,outcomes, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) )  ) ;
   put k.te(k) ;
 ) ;
 
-put /// 'VOLL by load block, period and year, GWh' / 'SC' 'Run type' 'Hydro domain' 'Plant' 'Period' 'Load block' loop(y, put y.tl ) ;
-loop((activeRTHD(sc,rt,outcomes) ,s,t,lb)$sum(y$s2_vollgen(sc,rt,s,y,t,lb,outcomes) , 1),
-  put / sc.tl, rt.tl, outcomes. tl, s.te(s), t.tl, lb.tl ;
+put /// 'VOLL by load block, period and year, GWh' / 'SC' 'Run type' 'Outcome' 'Plant' 'Period' 'Load block' loop(y, put y.tl ) ;
+loop((activeRTOC(sc,rt,outcomes) ,s,t,lb)$sum(y$s2_vollgen(sc,rt,s,y,t,lb,outcomes) , 1),
+  put / sc.tl, rt.tl, outcomes.tl, s.te(s), t.tl, lb.tl ;
   loop(y, put s2_vollgen(sc,rt,s,y,t,lb,outcomes)  ) ;
 ) ;
 
-put /// 'Energy produced by peakers by load block, period and year, GWh' / 'SC' 'Run type' 'Hydro domain' 'Plant' 'Period' 'Load block' loop(y, put y.tl ) ;
-loop((activeRTHD(sc,rt,outcomes) ,g,peaker(k),t,lb)$( mapg_k(g,k) * sum(y$s2_gen(sc,rt,g,y,t,lb,outcomes) , 1) ),
-  put / sc.tl, rt.tl, outcomes. tl, g.te(g), t.tl, lb.tl ;
+put /// 'Energy produced by peakers by load block, period and year, GWh' / 'SC' 'Run type' 'Outcome' 'Plant' 'Period' 'Load block' loop(y, put y.tl ) ;
+loop((activeRTOC(sc,rt,outcomes) ,g,peaker(k),t,lb)$( mapg_k(g,k) * sum(y$s2_gen(sc,rt,g,y,t,lb,outcomes) , 1) ),
+  put / sc.tl, rt.tl, outcomes.tl, g.te(g), t.tl, lb.tl ;
   loop(y, put s2_gen(sc,rt,g,y,t,lb,outcomes)  ) ;
 ) ;
 
@@ -2127,11 +2127,11 @@ loop((sc,rt,hY)$( sum(y, s_inflowyr(sc,rt,hY,y)) ),
 *===============================================================================================
 * 13. Collect national generation, transmission, losses and load (GWh) into a single parameter.
 
-chktotals(sc_rt(sc,rt),'Gen')  = sum((r,g,y,t,lb,outcomes) $( activeRTHD(sc,rt,outcomes)  and mapg_r(g,r) ), s2_gen(sc,rt,g,y,t,lb,outcomes) ) ;
-chktotals(sc_rt(sc,rt),'Tx')   = sum((r,rr,y,t,lb,outcomes) $activeRTHD(sc,rt,outcomes) , hoursPerBlock(t,lb) * 1e-3 * s2_tx(sc,rt,r,rr,y,t,lb,outcomes) ) ;
-chktotals(sc_rt(sc,rt),'Loss') = sum((r,rr,y,t,lb,outcomes) $activeRTHD(sc,rt,outcomes) , hoursPerBlock(t,lb) * 1e-3 * s2_loss(sc,rt,r,rr,y,t,lb,outcomes) ) ;
+chktotals(sc_rt(sc,rt),'Gen')  = sum((r,g,y,t,lb,outcomes) $( activeRTOC(sc,rt,outcomes)  and mapg_r(g,r) ), s2_gen(sc,rt,g,y,t,lb,outcomes) ) ;
+chktotals(sc_rt(sc,rt),'Tx')   = sum((r,rr,y,t,lb,outcomes) $activeRTOC(sc,rt,outcomes) , hoursPerBlock(t,lb) * 1e-3 * s2_tx(sc,rt,r,rr,y,t,lb,outcomes) ) ;
+chktotals(sc_rt(sc,rt),'Loss') = sum((r,rr,y,t,lb,outcomes) $activeRTOC(sc,rt,outcomes) , hoursPerBlock(t,lb) * 1e-3 * s2_loss(sc,rt,r,rr,y,t,lb,outcomes) ) ;
 chktotals(sc_rt(sc,rt),'Dem')  =
-  sum((r,t,lb,y,outcomes) $activeRTHD(sc,rt,outcomes) , ldcMWm(sc,r,t,lb,y) * hoursPerBlock(t,lb) * 1e-3 + sum(g$( mapg_r(g,r) * pdhydro(g) ), s2_pumpedgen(sc,rt,g,y,t,lb,outcomes) ) ) ;
+  sum((r,t,lb,y,outcomes) $activeRTOC(sc,rt,outcomes) , ldcMWm(sc,r,t,lb,y) * hoursPerBlock(t,lb) * 1e-3 + sum(g$( mapg_r(g,r) * pdhydro(g) ), s2_pumpedgen(sc,rt,g,y,t,lb,outcomes) ) ) ;
 
 chktotals(sc,rt,'Bal')$sc_rt(sc,rt) = chktotals(sc,rt,'Gen') - chktotals(sc,rt,'Dem') - chktotals(sc,rt,'Loss') ;
 
@@ -2336,7 +2336,7 @@ $ if %SuppressReopt%==1 $goto NoReOpt
 *   Capture the elements of the run type - SC - hydro year tuple, i.e. the 3 looping sets:
     activeSolve(sc,rt,hY) = yes ;
 
-*   Capture the hydro domain index.
+*   Capture the Outcome index.
      = yes ;
 
 * Compute depreciation and undepreciated capital by sequential year. 
