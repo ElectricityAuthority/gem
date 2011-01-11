@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 05/01/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/01/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -130,14 +130,14 @@ Parameters
   i_VOLLcost(sc,s)                              'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
   i_HVDCshr(sc,o)                               'Share of HVDC charge to be incurred by plant owner'
   i_HVDClevy(sc,y)                              'HVDC charge levied on new South Island plant by year, $/kW'
-  i_hydroWeight(sc,outcomes)                    'Weights on hydro outflows when multiple hydro outputs is used'
+  i_outcomeWeight(sc,outcomes)                  'Weights on outcomes when multiple outcomes are used'
   i_txCapacity(sc,r,rr,ps)                      'Transmission path capacities (bi-directional), MW'
   i_substnCoordinates(sc,i,geo)                 'Geographic coordinates for substations'
   ;
 
 $gdxin 'all_input.gdx'
 $loaddc mapf_fg techColor fuelColor fuelGrpcolor peaker demandGen regionCentroid
-$load   i_nameplate i_fixedOM i_refurbDecisionYear i_plantReservesCost i_VOLLcost i_HVDCshr i_HVDClevy i_hydroWeight i_txCapacity
+$load   i_nameplate i_fixedOM i_refurbDecisionYear i_plantReservesCost i_VOLLcost i_HVDCshr i_HVDClevy i_outcomeWeight i_txCapacity
 $loaddc i_substnCoordinates
 * Make sure intraregional transmission capacities are zero.
 i_txCapacity(sc,r,r,ps) = 0 ;
@@ -427,15 +427,15 @@ objComponentsYr(activeRT(sc,rt),y,'obj_fixOM')    = 1e-6 / card(t) * (1 - taxRat
 objComponentsYr(activeRT(sc,rt),y,'obj_hvdc')     = 1e-6 / card(t) * (1 - taxRate) *
                                                       sum((g,k,o,t)$( (not demandGen(sc,k)) * sigen(sc,g) * possibleToBuild(sc,g) * mapg_k(sc,g,k) * mapg_o(sc,g,o) ),
                                                         PVfacG(sc,y,t) * i_HVDCshr(sc,o) * i_HVDClevy(sc,y) * s2_CAPACITY(sc,rt,g,y) ) ;
-objComponentsYr(activeRT(sc,rt),y,'obj_varOM')    = 1e-6 * (1 - taxRate) * sum((t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_hydroWeight(sc,outcomes)  *
+objComponentsYr(activeRT(sc,rt),y,'obj_varOM')    = 1e-6 * (1 - taxRate) * sum((t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_outcomeWeight(sc,outcomes)  *
                                                       sum((g,lb), s2_GEN(sc,rt,g,y,t,lb,outcomes)  * SRMC(sc,g,y) * sum(mapg_e(sc,g,e), locFac_Recip(sc,e)) ) ) ;
-objComponentsYr(activeRT(sc,rt),y,'VoLLcost')     = 1e-6 * (1 - taxRate) * sum((t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_hydroWeight(sc,outcomes)  *
+objComponentsYr(activeRT(sc,rt),y,'VoLLcost')     = 1e-6 * (1 - taxRate) * sum((t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_outcomeWeight(sc,outcomes)  *
                                                       sum((s,lb), s2_VOLLGEN(sc,rt,s,y,t,lb,outcomes)  * i_VOLLcost(sc,s) ) ) ;
-objComponentsYr(activeRT(sc,rt),y,'obj_rescosts') = 1e-6 * (1 - taxRate) * sum((g,rc,t,lb,outcomes) , PVfacG(sc,y,t) * i_hydroWeight(sc,outcomes)  * s2_RESV(sc,rt,g,rc,y,t,lb,outcomes)  * i_plantReservesCost(sc,g,rc) ) ;
+objComponentsYr(activeRT(sc,rt),y,'obj_rescosts') = 1e-6 * (1 - taxRate) * sum((g,rc,t,lb,outcomes) , PVfacG(sc,y,t) * i_outcomeWeight(sc,outcomes)  * s2_RESV(sc,rt,g,rc,y,t,lb,outcomes)  * i_plantReservesCost(sc,g,rc) ) ;
 objComponentsYr(activeRT(sc,rt),y,'obj_nfrcosts') = 1e-6 * (1 - taxRate) * sum((r,rr,t,lb,outcomes, stp)$( nwd(sc,r,rr) or swd(sc,r,rr) ),
-                                                      PVfacG(sc,y,t) * i_hydroWeight(sc,outcomes)  * (hoursPerBlock(sc,t,lb) * s2_RESVCOMPONENTS(sc,rt,r,rr,y,t,lb,outcomes, stp)) * pNFresvCost(sc,r,rr,stp) ) ;
+                                                      PVfacG(sc,y,t) * i_outcomeWeight(sc,outcomes)  * (hoursPerBlock(sc,t,lb) * s2_RESVCOMPONENTS(sc,rt,r,rr,y,t,lb,outcomes, stp)) * pNFresvCost(sc,r,rr,stp) ) ;
 objComponentsYr(activeRT(sc,rt),y,'obj_renNrg')   = penaltyViolateRenNrg * s2_RENNRGPENALTY(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'obj_resvviol') = 1e-6 * sum((rc,ild,t,lb,outcomes) , i_hydroWeight(sc,outcomes)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)  ) ;
+objComponentsYr(activeRT(sc,rt),y,'obj_resvviol') = 1e-6 * sum((rc,ild,t,lb,outcomes) , i_outcomeWeight(sc,outcomes)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)  ) ;
 objComponentsYr(activeRT(sc,rt),y,'slk_rstrctMW') = 9999 * s2_ANNMWSLACK(sc,rt,y) ;
 objComponentsYr(activeRT(sc,rt),y,'slk_nzsec')    = 9998 * s2_SEC_NZSLACK(sc,rt,y) ;
 objComponentsYr(activeRT(sc,rt),y,'slk_ni1sec')   = 9998 * s2_SEC_NI1SLACK(sc,rt,y) ;
@@ -456,15 +456,15 @@ objComponents(activeRT(sc,rt),'obj_fixOM')    = 1e-6 / card(t) * (1 - taxRate) *
 objComponents(activeRT(sc,rt),'obj_hvdc')     = 1e-6 / card(t) * (1 - taxRate) *
                                                   sum((g,k,o,y,t)$( (not demandGen(sc,k)) * sigen(sc,g) * possibleToBuild(sc,g) * mapg_k(sc,g,k) * mapg_o(sc,g,o) ),
                                                     PVfacG(sc,y,t) * i_HVDCshr(sc,o) * i_HVDClevy(sc,y) * s2_CAPACITY(sc,rt,g,y) ) ;
-objComponents(activeRT(sc,rt),'obj_varOM')    = 1e-6 * (1 - taxRate) * sum((y,t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_hydroWeight(sc,outcomes)  *
+objComponents(activeRT(sc,rt),'obj_varOM')    = 1e-6 * (1 - taxRate) * sum((y,t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_outcomeWeight(sc,outcomes)  *
                                                   sum((g,lb), s2_GEN(sc,rt,g,y,t,lb,outcomes)  * SRMC(sc,g,y) * sum(mapg_e(sc,g,e), locFac_Recip(sc,e)) ) ) ;
-objComponents(activeRT(sc,rt),'VoLLcost')     = 1e-6 * (1 - taxRate) * sum((y,t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_hydroWeight(sc,outcomes)  *
+objComponents(activeRT(sc,rt),'VoLLcost')     = 1e-6 * (1 - taxRate) * sum((y,t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_outcomeWeight(sc,outcomes)  *
                                                   sum((s,lb), s2_VOLLGEN(sc,rt,s,y,t,lb,outcomes)  * i_VOLLcost(sc,s) ) ) ;
-objComponents(activeRT(sc,rt),'obj_rescosts') = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,outcomes) , PVfacG(sc,y,t) * i_hydroWeight(sc,outcomes)  * s2_RESV(sc,rt,g,rc,y,t,lb,outcomes)  * i_plantReservesCost(sc,g,rc) ) ;
+objComponents(activeRT(sc,rt),'obj_rescosts') = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,outcomes) , PVfacG(sc,y,t) * i_outcomeWeight(sc,outcomes)  * s2_RESV(sc,rt,g,rc,y,t,lb,outcomes)  * i_plantReservesCost(sc,g,rc) ) ;
 objComponents(activeRT(sc,rt),'obj_nfrcosts') = 1e-6 * (1 - taxRate) * sum((r,rr,y,t,lb,outcomes, stp)$( nwd(sc,r,rr) or swd(sc,r,rr) ),
-                                                  PVfacG(sc,y,t) * i_hydroWeight(sc,outcomes)  * (hoursPerBlock(sc,t,lb) * s2_RESVCOMPONENTS(sc,rt,r,rr,y,t,lb,outcomes, stp)) * pNFresvCost(sc,r,rr,stp) ) ;
+                                                  PVfacG(sc,y,t) * i_outcomeWeight(sc,outcomes)  * (hoursPerBlock(sc,t,lb) * s2_RESVCOMPONENTS(sc,rt,r,rr,y,t,lb,outcomes, stp)) * pNFresvCost(sc,r,rr,stp) ) ;
 objComponents(activeRT(sc,rt),'obj_renNrg')   = sum(y, penaltyViolateRenNrg * s2_RENNRGPENALTY(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'obj_resvviol') = 1e-6 * sum((rc,ild,y,t,lb,outcomes) , i_hydroWeight(sc,outcomes)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)  ) ;
+objComponents(activeRT(sc,rt),'obj_resvviol') = 1e-6 * sum((rc,ild,y,t,lb,outcomes) , i_outcomeWeight(sc,outcomes)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)  ) ;
 objComponents(activeRT(sc,rt),'slk_rstrctMW') = 9999 * sum(y, s2_ANNMWSLACK(sc,rt,y)) ;
 objComponents(activeRT(sc,rt),'slk_nzsec')    = 9998 * sum(y, s2_SEC_NZSLACK(sc,rt,y)) ;
 objComponents(activeRT(sc,rt),'slk_ni1sec')   = 9998 * sum(y, s2_SEC_NI1SLACK(sc,rt,y)) ;
@@ -886,7 +886,7 @@ $ontext
                                              if((not sameas(tmnghydyr,'Multiple')), put '- scaled by ', scaleInflows:4:2 ) ;
                                              if(sameas(tmnghydyr,'Multiple'),
                                                put @47 '- ' loop(outcomes$ ( not sameas(outcomes, 'dum')),  put outcomes.tl, ' ' ) ;
-                                               put '- weighted by, respectively,' loop(outcomes$ ( not sameas(outcomes, 'dum')), put hydWeight(outcomes) :6:3 ) ) ;
+                                               put '- weighted by, respectively,' loop(outcomes$ ( not sameas(outcomes, 'dum')), put outcomeWeight(outcomes) :6:3 ) ) ;
                                            ) ; put /
   @3 'Timing re-optimised?'            @37 if(%RunType%<2 and %SuppressReopt%=0, put 'Yes' else put 'No') ; put /
 $                                      if %SuppressReopt%==1 $goto SkipLine
@@ -1441,31 +1441,31 @@ loop(sc_sim(sc), put totalRetiredMW(sc):12:1 ) ;
 
 put /// 'Generation (includes DSM, IL, and Shortage), TWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum(sc, genTWh(sc,rt,outcomes) ),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put genTWh(sc,rt,outcomes) :12:1 ) ;
 ) ;
 
 put /// "'Generation' by DSM and IL, GWh" / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum(sc, genDSM(sc,rt,outcomes) ),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put genDSM(sc,rt,outcomes) :12:1 ) ;
 ) ;
 
 put /// 'Unserved energy (shortage generation), GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum((sc,y), defgenYr(sc,rt,outcomes, y)),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put (sum(y, defgenYr(sc,rt,outcomes, y))):12:1 ) ;
 ) ;
 
 put /// 'Generation by peakers, GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum(sc, genPeaker(sc,rt,outcomes) ),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put  genPeaker(sc,rt,outcomes) :12:1 ) ;
 ) ;
 
 put /// 'Transmission losses, GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
 loop((rt,outcomes) $sum(sc, interTxLossGWh(sc,rt,outcomes) ),
-  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+  put / rt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
   loop(sc_sim(sc), put  interTxLossGWh(sc,rt,outcomes) :12:1 ) ;
 ) ;
 
@@ -1475,7 +1475,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
   if(tmg(rt), put 'Timing' else if(reo(rt), put 'Re-optimised' else put 'Dispatch' ) ) ;
   put @17 'Reserve class' ;
   loop((rc,outcomes) $(sum(sc, sc_rt(sc,rt)) and sum(sc, totalresvviol(sc,rt,rc,outcomes) )),
-    put / @27 rc.tl if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_hydroWeight(outcomes) ):8:2, @30 ) ;
+    put / @27 rc.tl if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
     loop(sc_sim(sc), put totalresvviol(sc,rt,rc,outcomes) :12:1 ) ;
   ) ;
 ) ;
@@ -1559,7 +1559,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
     if(sameas(outcomes, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes.tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
     loop(sc_sim(sc), put vopexgrosstot_pv(sc,rt,outcomes, d):12:1 ) ;
   ) ;
@@ -1576,7 +1576,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
     if(sameas(outcomes, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes.tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
     loop(sc_sim(sc), put vopexnettot_pv(sc,rt,outcomes, d):12:1 ) ;
   ) ;
@@ -1593,7 +1593,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
     if(sameas(outcomes, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes.tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
     loop(sc_sim(sc), put vopexgrosstotNoLF_pv(sc,rt,outcomes, d):12:1 ) ;
   ) ;
@@ -1610,7 +1610,7 @@ loop(rt$sum(sc, sc_rt(sc,rt)),
     if(sameas(outcomes, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes.tl, (100 * i_hydroWeight(outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
     loop(sc_sim(sc), put vopexnettotNoLF_pv(sc,rt,outcomes, d):12:1 ) ;
   ) ;

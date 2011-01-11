@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 05/01/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/01/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -66,7 +66,7 @@ $loaddc txUpgradeTransitions mapArcNode
 $loaddc mapm_t
 * 0 reserves and security
 * 2 hydrology
-$loaddc maphd_hY mapReservoirs
+$loaddc mapoc_hY mapReservoirs
 
 * 20 technology and fuel parameters
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate i_capCostAdjByTech i_CapexExposure
@@ -87,8 +87,11 @@ $load   i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRH
 $load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_peakLoadNZp i_peakLoadNIp i_NrgDemand i_inflation
 * 12 reserves and security
 $load   i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
-* 4 hydrology
-$load   i_firstHydroYear i_hydroOutput i_hydroWeight i_hydroOutputAdj
+* 3 hydrology
+$load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
+* 1 outcomes (or stochastic scenarios)
+$load   i_outcomeWeight
+
 
 * Initialise hard-coded sets (NB: previously declared in GEMdeclarations).
 * - ct, d, and dt hard-coded; n and selectedGrowthProfile receive info from GEMsettings.
@@ -562,7 +565,7 @@ bigM(ild1,ild) =
 
 * i) Hydrology output data.
 * Assign hydro output for all hydro years and compute the simple arithmetic average hydro sequence.
-historicalHydroOutput(v,hY,m) = i_hydroOutput(v,hY,m) ;
+historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 historicalHydroOutput(v,'Average',m) = sum(hY, historicalHydroOutput(v,hY,m)) / ( lastHydroYear - i_firstHydroYear + 1 ) ;
 
 
