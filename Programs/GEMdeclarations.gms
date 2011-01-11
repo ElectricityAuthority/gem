@@ -424,7 +424,7 @@ Parameters
   windCoverPropn(rc)                            'Proportion of wind to be covered by reserves, (0-1)'
   bigM(ild,ild1)                                'A large positive number'
 * Hydrology output data
-  hydroOutput(v,hY,m)                           'Historical hydro output sequences by reservoir and month, GWh'
+  historicalHydroOutput(v,hY,m)                 'Historical hydro output sequences by reservoir and month, GWh'
   ;
 
 

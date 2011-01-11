@@ -106,7 +106,7 @@ $loaddc txEarlyComYrSet txFixedComYrSet vtgc nSegment
 $loaddc yearNum averageHydroYear hydroYearNum lastHydroYear hoursPerBlock PVfacG PVfacT SRMC initialCapacity capCharge refurbCapCharge txCapCharge exogMWretired continueAftaEndogRetire
 $loaddc peakConPlant NWpeakConPlant reservesCapability maxCapFactPlant minCapFactPlant ldcMW peakLoadNZ peakLoadNI bigNIgen nxtbigNIgen
 $loaddc locFac_Recip susceptanceYr BBincidence bigLoss slope intercept reserveViolationPenalty windCoverPropn bigM
-$loaddc singleReservesReqF hydroOutput
+$loaddc singleReservesReqF historicalHydroOutput
 *+++++++++++++++++++++++++
 * More code to do the non-free reserves stuff. 
 $loaddc freeReserves pNFresvCap pNFresvCost
@@ -274,10 +274,10 @@ loop((tmg(rt),hydroYrForTiming(hY)),
   hydOutput(g,y,t,oc) = 0 ;
   if(sameas(hydroYrForTiming,'Multiple'),
     oc(outcomes)$( not sameas(outcomes,'dum') ) = yes ;
-    hydOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),hY1,mapm_t(m,t))$maphd_hY(oc,hY1), hydroOutput(v,hY1,m)) ;
+    hydOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),hY1,mapm_t(m,t))$maphd_hY(oc,hY1), historicalHydroOutput(v,hY1,m)) ;
     else
     oc(outcomes)$( sameas(outcomes,'dum') ) = yes ;
-    hydOutput(g,y,t,oc) = hydroOutputScalar * i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
+    hydOutput(g,y,t,oc) = hydroOutputScalar * i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), historicalHydroOutput(v,hY,m)) ;
   ) ;
 
 * Capture the outcomes index and the hydro year number.
@@ -362,7 +362,7 @@ loop((reo(rt),hydroYrForReopt(hY)),
   oc(outcomes) = no ;
   oc(outcomes)$( sameas(outcomes,'dum') ) = yes ;
   hydOutput(g,y,t,oc) = 0 ;
-  hydOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
+  hydOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),mapm_t(m,t)), historicalHydroOutput(v,hY,m)) ;
 
 * Capture the outcomes index and the hydro year number.
   activeOC(rt,hY,oc) = yes ;
@@ -511,8 +511,8 @@ loop(hY$( hydroYrForDispatch(hY) and (ord(hY) <= %LimHydYr%) ),
 
 * Define inflow data for all modelled years depending on whether the model run uses sequential or constant hydro data.
 * DInflwYrType = 1 ==> sequential; DInflwYrType = 2 ==> constant.
-  hydOutput(g,y,t,oc)$( %DInflwYrType% = 1 ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),hY1,mapm_t(m,t))$( hydroYrIndex(hY1) = ord(y) ), hydroOutput(v,hY1,m) ) ;
-  hydOutput(g,y,t,oc)$( %DInflwYrType% = 2 or ord(hY) = averageHydroYear ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), hydroOutput(v,hY,m)) ;
+  hydOutput(g,y,t,oc)$( %DInflwYrType% = 1 ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),hY1,mapm_t(m,t))$( hydroYrIndex(hY1) = ord(y) ), historicalHydroOutput(v,hY1,m) ) ;
+  hydOutput(g,y,t,oc)$( %DInflwYrType% = 2 or ord(hY) = averageHydroYear ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), historicalHydroOutput(v,hY,m)) ;
 * This last statement means that if DInflwYrType = 2, the inflows commensurate with the inflow year (hY) being
 * looped over will be used for all modelled years. Note that this includes the average inflow year too.
 
