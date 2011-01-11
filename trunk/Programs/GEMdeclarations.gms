@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 05/01/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/01/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -108,7 +108,7 @@ Sets
   mapm_t(m,t)                                   'Map months into time periods'
 * 0 reserves and security
 * 2 hydrology
-  maphd_hY(outcomes,hY)                         'Map hydrology output years to outcomes'
+  mapoc_hY(outcomes,hY)                         'Map historical hydro output years to outcomes'
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
@@ -205,11 +205,12 @@ Parameters
   i_fkSI(y)                                     'Required frequency keeping in South Island by year, MW'
   i_HVDClosses(y)                               'Maximum loss rate on HVDC link by year'
   i_HVDClossesPO(y)                             'Maximum loss rate on HVDC link with one pole out by year'
-* 4 hydrology
+* 3 hydrology
   i_firstHydroYear                              'First year of hydrology output data (ignoring the 1st two elements of hY - multiple and average)'
-  i_hydroOutput(v,hY,m)                         'Historical hydro output sequences by reservoir and month, GWh'
-  i_hydroWeight(outcomes)                       'Weights on hydro outflows when multiple hydro outputs are used'
+  i_historicalHydroOutput(v,hY,m)               'Historical hydro output sequences by reservoir and month, GWh'
   i_hydroOutputAdj(y)                           'Schedulable hydro output adjuster by year (default = 1)'
+* 1 outcomes (or stochastic scenarios)
+  i_outcomeWeight(outcomes)                     'Weights on outcomes when multiple outcomes are used'
   ;
 
 
@@ -273,7 +274,7 @@ Parameters
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
 * Initialised in GEMsolve
-  hydOutput(g,y,t,outcomes)                     'Hydro output used in each modelled year by scheduleable hydro plant'
+  modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
   slacks                                        'A flag indicating slacks or penalty variables exist in at least one solution'
   timeAllowed(goal)                             'CPU seconds available for solver to spend solving the model'
   solveReport(rt,hY,*,*)                        'Collect various details about each solve of the models (both GEM and DISP)'
@@ -576,15 +577,15 @@ objectivefn..
   9994 * sum(y, MINUTILSLACK(y) ) +
   9993 * sum(y, FUELSLACK(y) ) +
 * Reserve violation costs (really a 'slack' but not called a slack), $m
-  1e-6 * sum((rc,ild,y,t,lb,oc), i_hydroWeight(oc) * RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
+  1e-6 * sum((rc,ild,y,t,lb,oc), i_outcomeWeight(oc) * RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
 * Add in penalties at high but not arbitrarily high cost.
   penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
 * Fixed, variable and HVDC costs - discounted and adjusted for tax
 * NB: Fixed costs are scaled by 1/card(t) to convert annual costs to a periodic basis coz discounting is done by period.
 * NB: The HVDC charge applies only to committed and new SI projects.
   1e-6 * sum((y,t), PVfacG(y,t) * (1 - taxRate) * (
-           sum(oc, sum((s,lb), 1e3 * i_hydroWeight(oc) * VOLLGEN(s,y,t,lb,oc) * i_VOLLcost(s) ) ) +
-           sum(oc, sum((g,lb)$validYrOperate(g,y,t), 1e3 * i_hydroWeight(oc) * GEN(g,y,t,lb,oc) * srmc(g,y) * sum(mapg_e(g,e), locFac_Recip(e)) ) ) +
+           sum(oc, sum((s,lb), 1e3 * i_outcomeWeight(oc) * VOLLGEN(s,y,t,lb,oc) * i_VOLLcost(s) ) ) +
+           sum(oc, sum((g,lb)$validYrOperate(g,y,t), 1e3 * i_outcomeWeight(oc) * GEN(g,y,t,lb,oc) * srmc(g,y) * sum(mapg_e(g,e), locFac_Recip(e)) ) ) +
            ( 1/card(t) ) * 1e3 * (
            sum(g, i_fixedOM(g) * CAPACITY(g,y)) +
            sum((g,k,o)$((not demandGen(k)) * sigen(g) * possibleToBuild(g) * mapg_k(g,k) * mapg_o(g,o)), i_HVDCshr(o) * i_HVDClevy(y) * CAPACITY(g,y))
@@ -597,12 +598,12 @@ objectivefn..
 * Transmission capital expenditure - discounted
   sum((paths,y,firstPeriod(t)),   PVfacT(y,t) * TXCAPCHARGES(paths,y) ) +
 * Cost of providing reserves ($m) - discounted and adjusted for tax.
-  1e-6 * sum((g,rc,y,t,lb,oc), PVfacG(y,t) * (1 - taxRate) * i_hydroWeight(oc) * RESV(g,rc,y,t,lb,oc) * i_plantreservescost(g,rc) ) +
+  1e-6 * sum((g,rc,y,t,lb,oc), PVfacG(y,t) * (1 - taxRate) * i_outcomeWeight(oc) * RESV(g,rc,y,t,lb,oc) * i_plantreservescost(g,rc) ) +
 *+++++++++++++++++
 * More non-free reserves code.
 * Cost of providing reserves ($m) - discounted and adjusted for tax (last term of objective function).
   1e-6 * sum((paths,y,t,lb,oc,stp)$( nwd(paths) or swd(paths) ),
-                               PVfacG(y,t) * (1 - taxRate) * i_hydroWeight(oc) * (hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp)) * pnfresvcost(paths,stp) ) ;
+                               PVfacG(y,t) * (1 - taxRate) * i_outcomeWeight(oc) * (hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp)) * pnfresvcost(paths,stp) ) ;
 
 * Calculate non-free reserve components. 
 calc_nfreserves(paths(r,rr),y,t,lb,oc)$( nwd(r,rr) or swd(r,rr) )..
@@ -736,7 +737,7 @@ minReq_RenCap(y)$i_renewCapShare(y)..
 
 * Limit hydro according to energy available in inflows less spill (needs to be =e= if SPILL is costless).
 limit_hydro(validYrOperate(g,y,t),oc)$schedHydroPlant(g)..
-  sum(lb, GEN(g,y,t,lb,oc)) + SPILL(g,y,t,oc) =l= hydOutput(g,y,t,oc) + HYDROSLACK(y) ;
+  sum(lb, GEN(g,y,t,lb,oc)) + SPILL(g,y,t,oc) =l= modelledHydroOutput(g,y,t,oc) + HYDROSLACK(y) ;
 
 * Over the period, ensure that generation from pumped hydro is less than the energy pumped.
 limit_pumpgen1(validYrOperate(g,y,t),oc)$pumpedHydroPlant(g)..
@@ -1010,7 +1011,7 @@ $onecho > CollectResults.txt
   s_resv_capacity(rt,hY,r,rr,y,t,lb,oc,stp)  = resv_capacity.m(r,rr,y,t,lb,oc,stp) ;
 *++++++++++
 * Misc params
-*  s_hydOutput(rt,hY,g,y,t,oc)               = hydOutput(g,y,t,oc) ;
+*  s_modelledHydroOutput(rt,hY,g,y,t,oc)     = modelledHydroOutput(g,y,t,oc) ;
 * Free variables.
   s_TOTALCOST(rt,hY)                         = TOTALCOST.l ;
   if(DCloadFlow = 1,
