@@ -562,8 +562,8 @@ bigM(ild1,ild) =
 
 * i) Hydrology output data.
 * Assign hydro output for all hydro years and compute the simple arithmetic average hydro sequence.
-hydroOutput(v,hY,m) = i_hydroOutput(v,hY,m) ;
-hydroOutput(v,'Average',m) = sum(hY, hydroOutput(v,hY,m)) / ( lastHydroYear - i_firstHydroYear + 1 ) ;
+historicalHydroOutput(v,hY,m) = i_hydroOutput(v,hY,m) ;
+historicalHydroOutput(v,'Average',m) = sum(hY, historicalHydroOutput(v,hY,m)) / ( lastHydroYear - i_firstHydroYear + 1 ) ;
 
 
 
@@ -699,7 +699,7 @@ Execute_Unload "%GEMdataGDX%",
 * Reserve energy data.
   reservesAreas reserveViolationPenalty windCoverPropn bigM singleReservesReqF
 * Hydrology output data.
-  hydroOutput
+  historicalHydroOutput
   ;
 
 
