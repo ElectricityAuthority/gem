@@ -138,9 +138,22 @@ loop(hY$sameas(hY,'Average'),  averageHydroYear = ord(hY) ) ;
 
 hydroYearNum(hY)$sameas(hY,'Multiple') = multipleHydroYear ;
 hydroYearNum(hY)$sameas(hY,'Average')  = averageHydroYear ;
-hydroYearNum(hY)$( ord(hY) > averageHydroYear ) = i_firstHydroYear + ord(hY) - multipleHydroYear - averageHydroYear ;
+
+set realHydroYears(hY);
+realHydroYears(hY)$(not sameas(hY, 'Multiple') and not sameas(hY, 'Average')) = yes;
+
+parameter ordFirstHydroYear;
+ordFirstHydroYear = 1e6;
+loop(hY$realHydroYears(hY),
+  if(ord(hY) < ordFirstHydroYear,
+    ordFirstHydroYear = ord(hY);
+    );
+  );
+
+hydroYearNum(hY)$realHydroYears(hY) = i_firstHydroYear + ord(hY) - ordFirstHydroYear;
 
 lastHydroYear = sum(hY$( ord(hY) = card(hY) ), hydroYearNum(hY)) ;
+
 
 * Count hours per load block per time period.
 hoursPerBlock(t,lb) = sum(mapm_t(m,t), 0.5 * i_HalfHrsPerBlk(m,lb)) ;
@@ -565,8 +578,33 @@ bigM(ild1,ild) =
 
 * i) Hydrology output data.
 * Assign hydro output for all hydro years and compute the simple arithmetic average hydro sequence.
+*historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
+*historicalHydroOutput(v,'Average',m) = sum(hY, historicalHydroOutput(v,hY,m)) / ( lastHydroYear - i_firstHydroYear + 1 ) ;
+
+* i) Hydrology output data.
+* Assign hydro output for all hydro years and compute the simple arithmetic average hydro sequence.
 historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
+
+parameter count;
+count = ( lastHydroYear - i_firstHydroYear + 1 ) ;
+display count;
+
 historicalHydroOutput(v,'Average',m) = sum(hY, historicalHydroOutput(v,hY,m)) / ( lastHydroYear - i_firstHydroYear + 1 ) ;
+
+parameter sumHydroOutput(v, m);
+sumHydroOutput(v,m) = sum(hY, historicalHydroOutput(v,hY,m));
+
+
+display lastHydroYear;
+display i_firstHydroYear;
+count = ( lastHydroYear - i_firstHydroYear + 1 ) ;
+display count;
+display sumHydroOutput;
+display historicalHydroOutput;
+
+parameter testHydroOutput(v, m);
+testHydroOutput(v, m) = sumHydroOutput(v, m) / count / historicalHydroOutput(v,'Average',m);
+display testHydroOutput;
 
 
 
