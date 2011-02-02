@@ -247,13 +247,17 @@ RESV.up(g,rc,y,t,lb,outcomes)$( useReserves and reservesCapability(g,rc) ) = res
 RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 
 * Reset all slacks and penalties/violations to zero.
-ANNMWSLACK.l(y) = 0 ;         SEC_NZSLACK.l(y) = 0 ;      SEC_NI1SLACK.l(y) = 0 ;  SEC_NI2SLACK.l(y) = 0 ;
-NOWIND_NZSLACK.l(y) = 0 ;     NOWIND_NISLACK.l(y) = 0 ;   RENCAPSLACK.l(y) = 0 ;
+ANNMWSLACK.l(y) = 0 ;
+
+SEC_NZ_PENALTY.l(y, outcomes) = 0 ;      SEC_NI1_PENALTY.l(y, outcomes) = 0 ;  SEC_NI2_PENALTY.l(y, outcomes) = 0 ;
+NOWIND_NZ_PENALTY.l(y, outcomes) = 0 ;   NOWIND_NI_PENALTY.l(y, outcomes) = 0 ;
+
+RENCAPSLACK.l(y) = 0 ;
 HYDROSLACK.l(y) = 0 ;         MINUTILSLACK.l(y) = 0 ;     FUELSLACK.l(y) = 0 ;
 RENNRGPENALTY.l(y) = 0 ;
 RESVVIOL.l(rc,ild,y,t,lb,outcomes) = 0 ;
 
-$set AddUp10Slacks "sum(y, ANNMWSLACK.l(y) + SEC_NZSLACK.l(y) + SEC_NI1SLACK.l(y) + SEC_NI2SLACK.l(y) + NOWIND_NZSLACK.l(y) + NOWIND_NISLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
+$set AddUp10Slacks "sum((y,oc), ANNMWSLACK.l(y) + SEC_NZ_PENALTY.l(y,oc) + SEC_NI1_PENALTY.l(y,oc) + SEC_NI2_PENALTY.l(y,oc) + NOWIND_NZ_PENALTY.l(y,oc) + NOWIND_NI_PENALTY.l(y,oc) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
 
 
 
@@ -636,11 +640,11 @@ loop(activeRT(rt),
     s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)     = sum(activeSolve(rt,hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,outcomes) ) ;
     s2_RENNRGPENALTY(rt,y)                          = sum(activeSolve(rt,hY), s_RENNRGPENALTY(rt,hY,y) ) ;
     s2_ANNMWSLACK(rt,y)                             = sum(activeSolve(rt,hY), s_ANNMWSLACK(rt,hY,y) ) ;
-    s2_SEC_NZSLACK(rt,y)                            = sum(activeSolve(rt,hY), s_SEC_NZSLACK(rt,hY,y) ) ;
-    s2_SEC_NI1SLACK(rt,y)                           = sum(activeSolve(rt,hY), s_SEC_NI1SLACK(rt,hY,y) ) ;
-    s2_SEC_NI2SLACK(rt,y)                           = sum(activeSolve(rt,hY), s_SEC_NI2SLACK(rt,hY,y) ) ;
-    s2_NOWIND_NZSLACK(rt,y)                         = sum(activeSolve(rt,hY), s_NOWIND_NZSLACK(rt,hY,y) ) ;
-    s2_NOWIND_NISLACK(rt,y)                         = sum(activeSolve(rt,hY), s_NOWIND_NISLACK(rt,hY,y) ) ;
+    s2_SEC_NZ_PENALTY(rt,outcomes,y)                = sum(activeSolve(rt,hY), s_SEC_NZ_PENALTY(rt,outcomes,y) ) ;
+    s2_SEC_NI1_PENALTY(rt,outcomes,y)               = sum(activeSolve(rt,hY), s_SEC_NI1_PENALTY(rt,outcomes,y) ) ;
+    s2_SEC_NI2_PENALTY(rt,outcomes,y)               = sum(activeSolve(rt,hY), s_SEC_NI2_PENALTY(rt,outcomes,y) ) ;
+    s2_NOWIND_NZ_PENALTY(rt,outcomes,y)             = sum(activeSolve(rt,hY), s_NOWIND_NZ_PENALTY(rt,outcomes,y) ) ;
+    s2_NOWIND_NI_PENALTY(rt,outcomes,y)             = sum(activeSolve(rt,hY), s_NOWIND_NI_PENALTY(rt,outcomes,y) ) ;
     s2_RENCAPSLACK(rt,y)                            = sum(activeSolve(rt,hY), s_RENCAPSLACK(rt,hY,y) ) ;
     s2_HYDROSLACK(rt,y)                             = sum(activeSolve(rt,hY), s_HYDROSLACK(rt,hY,y) ) ;
     s2_MINUTILSLACK(rt,y)                           = sum(activeSolve(rt,hY), s_MINUTILSLACK(rt,hY,y) ) ;
@@ -673,11 +677,11 @@ loop(activeRT(rt),
     s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,dum)          = sum(disHydYrs(hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,dum) ) / numDisYrs ;
     s2_RENNRGPENALTY(rt,y)                          = sum(disHydYrs(hY), s_RENNRGPENALTY(rt,hY,y) ) / numDisYrs ;
     s2_ANNMWSLACK(rt,y)                             = sum(disHydYrs(hY), s_ANNMWSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_SEC_NZSLACK(rt,y)                            = sum(disHydYrs(hY), s_SEC_NZSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_SEC_NI1SLACK(rt,y)                           = sum(disHydYrs(hY), s_SEC_NI1SLACK(rt,hY,y) ) / numDisYrs ;
-    s2_SEC_NI2SLACK(rt,y)                           = sum(disHydYrs(hY), s_SEC_NI2SLACK(rt,hY,y) ) / numDisYrs ;
-    s2_NOWIND_NZSLACK(rt,y)                         = sum(disHydYrs(hY), s_NOWIND_NZSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_NOWIND_NISLACK(rt,y)                         = sum(disHydYrs(hY), s_NOWIND_NISLACK(rt,hY,y) ) / numDisYrs ;
+    s2_SEC_NZ_PENALTY(rt,outcomes,y)                = sum(disHydYrs(hY), s_SEC_NZ_PENALTY(rt,outcomes,y) ) / numDisYrs ;
+    s2_SEC_NI1_PENALTY(rt,outcomes,y)               = sum(disHydYrs(hY), s_SEC_NI1_PENALTY(rt,outcomes,y) ) / numDisYrs ;
+    s2_SEC_NI2_PENALTY(rt,outcomes,y)               = sum(disHydYrs(hY), s_SEC_NI2_PENALTY(rt,outcomes,y) ) / numDisYrs ;
+    s2_NOWIND_NZ_PENALTY(rt,outcomes,y)             = sum(disHydYrs(hY), s_NOWIND_NZ_PENALTY(rt,outcomes,y) ) / numDisYrs ;
+    s2_NOWIND_NI_PENALTY(rt,outcomes,y)             = sum(disHydYrs(hY), s_NOWIND_NI_PENALTY(rt,outcomes,y) ) / numDisYrs ;
     s2_RENCAPSLACK(rt,y)                            = sum(disHydYrs(hY), s_RENCAPSLACK(rt,hY,y) ) / numDisYrs ;
     s2_HYDROSLACK(rt,y)                             = sum(disHydYrs(hY), s_HYDROSLACK(rt,hY,y) ) / numDisYrs ;
     s2_MINUTILSLACK(rt,y)                           = sum(disHydYrs(hY), s_MINUTILSLACK(rt,hY,y) ) / numDisYrs ;
@@ -711,12 +715,12 @@ Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
   s2_RESVCOMPONENTS
 *++++++++++
 * The 's2' penalties and slacks
-  s2_RENNRGPENALTY s2_ANNMWSLACK s2_SEC_NZSLACK s2_SEC_NI1SLACK s2_SEC_NI2SLACK s2_NOWIND_NZSLACK s2_NOWIND_NISLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
+  s2_RENNRGPENALTY s2_ANNMWSLACK s2_SEC_NZ_PENALTY s2_SEC_NI1_PENALTY s2_SEC_NI2_PENALTY s2_NOWIND_NZ_PENALTY s2_NOWIND_NI_PENALTY s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
   ;
 
 * Dump all 's' slacks and penalties into a GDX file.
 Execute_Unload "Slacks and penalties - %runName% - %scenarioName%.gdx",
-  s_RENNRGPENALTY s_ANNMWSLACK s_SEC_NZSLACK s_SEC_NI1SLACK s_SEC_NI2SLACK s_NOWIND_NZSLACK s_NOWIND_NISLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
+  s_RENNRGPENALTY s_ANNMWSLACK s_SEC_NZ_PENALTY s_SEC_NI1_PENALTY s_SEC_NI2_PENALTY s_NOWIND_NZ_PENALTY s_NOWIND_NI_PENALTY s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
   ;
 
 * Dump all variable levels and constraint marginals into a GDX file. 
@@ -734,7 +738,7 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
 * Reserve variables
   s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
 * Penalty and slack variables
-  s_ANNMWSLACK s_RENNRGPENALTY s_SEC_NZSLACK s_SEC_NI1SLACK s_SEC_NI2SLACK s_NOWIND_NZSLACK s_NOWIND_NISLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
+  s_ANNMWSLACK s_RENNRGPENALTY s_SEC_NZ_PENALTY s_SEC_NI1_PENALTY s_SEC_NI2_PENALTY s_NOWIND_NZ_PENALTY s_NOWIND_NI_PENALTY s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
 * Equations (ignore the objective function)
   s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire s_endogretonce s_balance_capacity s_bal_supdem
   s_security_nz s_security_ni1 s_security_ni2 s_nowind_nz s_nowind_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg

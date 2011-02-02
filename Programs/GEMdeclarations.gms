@@ -25,6 +25,13 @@ $offsymxref offsymlist
 
 
 *===============================================================================================
+* 0. Set up sets and variables that are being worked on
+
+parameter penaltyLostPeak;
+penaltyLostPeak = 9998;
+
+
+*===============================================================================================
 * 1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
 
 * 26 fundamental sets
@@ -495,13 +502,13 @@ Positive Variables
   RESVREQINT(rc,ild,y,t,lb,outcomes)            'Internally determined energy reserve requirement, MWh'
 * Penalty variables
   RENNRGPENALTY(y)                              'Penalty used to make renewable energy constraint feasible, GWh'
+  SEC_NZ_PENALTY(y, outcomes)                   'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  SEC_NI1_PENALTY(y, outcomes)                  'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
+  SEC_NI2_PENALTY(y, outcomes)                  'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
+  NOWIND_NZ_PENALTY(y, outcomes)                'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  NOWIND_NI_PENALTY(y, outcomes)                'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
   ANNMWSLACK(y)                                 'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  SEC_NZSLACK(y)                                'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
-  SEC_NI1SLACK(y)                               'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
-  SEC_NI2SLACK(y)                               'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
-  NOWIND_NZSLACK(y)                             'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
-  NOWIND_NISLACK(y)                             'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
   RENCAPSLACK(y)                                'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
   HYDROSLACK(y)                                 'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
   MINUTILSLACK(y)                               'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
@@ -519,11 +526,11 @@ Equations
   endogretonce(g)                               'Can only endogenously retire a plant once'
   balance_capacity(g,y)                         'Year to year capacity balance relationship for all plant, MW'
   bal_supdem(r,y,t,lb,outcomes)                 'Balance supply and demand in each region, year, time period and load block'
-  security_nz(y)                                'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
-  security_ni1(y)                               'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
-  security_ni2(y)                               'Ensure enough capacity to meet peak demand in NI if tx capacity is out'
-  nowind_nz(y)                                  'Ensure enough capacity to meet peak demand in NZ when all wind is off'
-  nowind_ni(y)                                  'Ensure enough capacity to meet peak demand in NI when all wind is off'
+  security_nz(y, outcomes)                      'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
+  security_ni1(y, outcomes)                     'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
+  security_ni2(y, outcomes)                     'Ensure enough capacity to meet peak demand in NI if tx capacity is out'
+  nowind_nz(y, outcomes)                        'Ensure enough capacity to meet peak demand in NZ when all wind is off'
+  nowind_ni(y, outcomes)                        'Ensure enough capacity to meet peak demand in NI when all wind is off'
   limit_maxgen(g,y,t,lb,outcomes)               'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   limit_mingen(g,y,t,lb,outcomes)               'Ensure generation in each block exceeds capacity implied by min capacity factors'
   minutil(g,k,y,outcomes)                       'Ensure generation by certain technology type meets a minimum utilisation'
@@ -570,8 +577,8 @@ objectivefn..
   TOTALCOST =e=
 * Add in slacks at arbitrarily high cost.
   9999 * sum(y, ANNMWSLACK(y) ) +
-  9998 * sum(y$(gridSecurity > -1), SEC_NZSLACK(y) + SEC_NI1SLACK(y) + SEC_NI2SLACK(y) ) +
-  9997 * sum(y, NOWIND_NZSLACK(y) + NOWIND_NISLACK(y) ) +
+  penaltyLostPeak * sum((y,oc)$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
+  (penaltyLostPeak-1) * sum((y,oc), NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
   9996 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
   9995 * sum(y, HYDROSLACK(y) ) +
   9994 * sum(y, MINUTILSLACK(y) ) +
@@ -664,40 +671,40 @@ bal_supdem(r,y,t,lb,oc)..
   sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y,t) ), PUMPEDGEN(g,y,t,lb,oc)) ;
 
 * Ensure reserve requirements can be met at peak in both islands with largest NI unit out.
-security_NZ(y)$(gridSecurity > -1)..
-  SEC_NZSLACK(y) +
+security_NZ(y, oc)$(gridSecurity > -1)..
+  SEC_NZ_PENALTY(y, oc) +
   sum(g, CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - nxtbigNIgen(y) - i_bigSIgen(y) - i_fkNI(y) - i_fkSI(y) -
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
   =g= peakLoadNZ(y) ;
 
 * Ensure reserve requirements can be met at peak in North island with largest NI unit out.
-security_NI1(y)$(gridSecurity > -1)..
-  SEC_NI1SLACK(y) +
+security_NI1(y, oc)$(gridSecurity > -1)..
+  SEC_NI1_PENALTY(y, oc) +
   sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - nxtbigNIgen(y) - i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClosses(y))
   =g= peakLoadNI(y) ;
 
 * Ensure reserve requirements can be met at peak in North island with the loss of one HVDC pole.
-security_NI2(y)$(gridSecurity > -1)..
-  SEC_NI2SLACK(y) +
+security_NI2(y, oc)$(gridSecurity > -1)..
+  SEC_NI2_PENALTY(y, oc) +
   sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacityPO(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClossesPO(y))
   =g= peakLoadNI(y) ;
 
 * Ensure NZ cold-year winter peak can be met without any wind.
-noWind_NZ(y)$(gridSecurity > -1)..
-  NOWIND_NZSLACK(y) +
+noWind_NZ(y, oc)$(gridSecurity > -1)..
+  NOWIND_NZ_PENALTY(y, oc) +
   sum(mapg_k(g,k)$( not wind(k) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) - i_fkSI(y) -
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
   =g= peakLoadNZ(y) ;
 
 * Ensure NI cold-year winter peak can be met without any wind.
-noWind_NI(y)$(gridSecurity > -1)..
-  NOWIND_NISLACK(y) +
+noWind_NI(y, oc)$(gridSecurity > -1)..
+  NOWIND_NZ_PENALTY(y, oc) +
   sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClosses(y))
@@ -940,11 +947,11 @@ Parameters
   s_RENNRGPENALTY(rt,hY,y)                      'Penalty used to make renewable energy constraint feasible, GWh'
 * Slack variables
   s_ANNMWSLACK(rt,hY,y)                         'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s_SEC_NZSLACK(rt,hY,y)                        'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
-  s_SEC_NI1SLACK(rt,hY,y)                       'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
-  s_SEC_NI2SLACK(rt,hY,y)                       'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
-  s_NOWIND_NZSLACK(rt,hY,y)                     'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
-  s_NOWIND_NISLACK(rt,hY,y)                     'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
+  s_SEC_NZ_PENALTY(rt,outcomes,y)               'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
+  s_SEC_NI1_PENALTY(rt,outcomes,y)              'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
+  s_SEC_NI2_PENALTY(rt,outcomes,y)              'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
+  s_NOWIND_NZ_PENALTY(rt,outcomes,y)            'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
+  s_NOWIND_NI_PENALTY(rt,outcomes,y)            'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
   s_RENCAPSLACK(rt,hY,y)                        'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
   s_HYDROSLACK(rt,hY,y)                         'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
   s_MINUTILSLACK(rt,hY,y)                       'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
@@ -960,11 +967,11 @@ Parameters
   s_endogretonce(rt,hY,g)                       'Can only endogenously retire a plant once'
   s_balance_capacity(rt,hY,g,y)                 'Year to year capacity balance relationship for all plant, MW'
   s_bal_supdem(rt,hY,r,y,t,lb,outcomes)         'Balance supply and demand in each region, year, time period and load block'
-  s_security_nz(rt,hY,y)                        'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
-  s_security_ni1(rt,hY,y)                       'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
-  s_security_ni2(rt,hY,y)                       'Ensure enough capacity to meet peak demand in NI if tx capacity is out'
-  s_nowind_nz(rt,hY,y)                          'Ensure enough capacity to meet peak demand in NZ when all wind is off'
-  s_nowind_ni(rt,hY,y)                          'Ensure enough capacity to meet peak demand in NI when all wind is off'
+  s_security_nz(rt,outcomes,y)                  'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
+  s_security_ni1(rt,outcomes,y)                 'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
+  s_security_ni2(rt,outcomes,y)                 'Ensure enough capacity to meet peak demand in NI if tx capacity is out'
+  s_nowind_nz(rt,outcomes,y)                    'Ensure enough capacity to meet peak demand in NZ when all wind is off'
+  s_nowind_ni(rt,outcomes,y)                    'Ensure enough capacity to meet peak demand in NI when all wind is off'
   s_limit_maxgen(rt,hY,g,y,t,lb,outcomes)       'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   s_limit_mingen(rt,hY,g,y,t,lb,outcomes)       'Ensure generation in each block exceeds capacity implied by min capacity factors'
   s_minutil(rt,hY,g,k,y,outcomes)               'Ensure generation by certain technology type meets a minimum utilisation'
@@ -1047,11 +1054,11 @@ $onecho > CollectResults.txt
   s_RENNRGPENALTY(rt,hY,y)                   = RENNRGPENALTY.l(y) ;
 * Slack variables
   s_ANNMWSLACK(rt,hY,y)                      = ANNMWSLACK.l(y) ;
-  s_SEC_NZSLACK(rt,hY,y)                     = SEC_NZSLACK.l(y) ;
-  s_SEC_NI1SLACK(rt,hY,y)                    = SEC_NI1SLACK.l(y) ;
-  s_SEC_NI2SLACK(rt,hY,y)                    = SEC_NI2SLACK.l(y) ;
-  s_NOWIND_NZSLACK(rt,hY,y)                  = NOWIND_NZSLACK.l(y) ;
-  s_NOWIND_NISLACK(rt,hY,y)                  = NOWIND_NISLACK.l(y) ;
+  s_SEC_NZ_PENALTY(rt,oc,y)                  = SEC_NZ_PENALTY.l(y, oc) ;
+  s_SEC_NI1_PENALTY(rt,oc,y)                 = SEC_NI1_PENALTY.l(y, oc) ;
+  s_SEC_NI2_PENALTY(rt,oc,y)                 = SEC_NI2_PENALTY.l(y, oc) ;
+  s_NOWIND_NZ_PENALTY(rt,oc,y)               = NOWIND_NZ_PENALTY.l(y, oc) ;
+  s_NOWIND_NI_PENALTY(rt,oc,y)               = NOWIND_NI_PENALTY.l(y, oc) ;
   s_RENCAPSLACK(rt,hY,y)                     = RENCAPSLACK.l(y) ;
   s_HYDROSLACK(rt,hY,y)                      = HYDROSLACK.l(y) ;
   s_MINUTILSLACK(rt,hY,y)                    = MINUTILSLACK.l(y) ;
@@ -1061,11 +1068,11 @@ $onecho > CollectResults.txt
   s_calc_txcapcharges(rt,hY,paths,y)         = calc_txcapcharges.m(paths,y) ;
   s_balance_capacity(rt,hY,g,y)              = balance_capacity.m(g,y) ;
   s_bal_supdem(rt,hY,r,y,t,lb,oc)            = bal_supdem.m(r,y,t,lb,oc) ;
-  s_security_nz(rt,hY,y)                     = security_NZ.m(y) ;
-  s_security_ni1(rt,hY,y)                    = security_NI1.m(y) ;
-  s_security_ni2(rt,hY,y)                    = security_NI2.m(y) ;
-  s_nowind_nz(rt,hY,y)                       = noWind_NZ.m(y) ;
-  s_nowind_ni(rt,hY,y)                       = noWind_NI.m(y) ;
+  s_security_nz(rt,oc,y)                     = security_NZ.m(y,oc) ;
+  s_security_ni1(rt,oc,y)                    = security_NI1.m(y,oc) ;
+  s_security_ni2(rt,oc,y)                    = security_NI2.m(y,oc) ;
+  s_nowind_nz(rt,oc,y)                       = noWind_NZ.m(y,oc) ;
+  s_nowind_ni(rt,oc,y)                       = noWind_NI.m(y,oc) ;
   s_limit_maxgen(rt,hY,g,y,t,lb,oc)          = limit_maxgen.m(g,y,t,lb,oc) ;
   s_limit_mingen(rt,hY,g,y,t,lb,oc)          = limit_mingen.m(g,y,t,lb,oc) ;
   s_minutil(rt,hY,g,k,y,oc)                  = minutil.m(g,k,y,oc) ;
@@ -1148,13 +1155,13 @@ Parameters
   s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)   'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
   s2_RENNRGPENALTY(rt,y)                        'Penalty used to make renewable energy constraint feasible, GWh'
+  s2_SEC_NZ_PENALTY(rt,outcomes,y)              'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s2_SEC_NI1_PENALTY(rt,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
+  s2_SEC_NI2_PENALTY(rt,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
+  s2_NOWIND_NZ_PENALTY(rt,outcomes,y)           'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s2_NOWIND_NI_PENALTY(rt,outcomes,y)           'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
   s2_ANNMWSLACK(rt,y)                           'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s2_SEC_NZSLACK(rt,y)                          'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI1SLACK(rt,y)                         'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
-  s2_SEC_NI2SLACK(rt,y)                         'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
-  s2_NOWIND_NZSLACK(rt,y)                       'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NISLACK(rt,y)                       'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
   s2_RENCAPSLACK(rt,y)                          'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
   s2_HYDROSLACK(rt,y)                           'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
   s2_MINUTILSLACK(rt,y)                         'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'

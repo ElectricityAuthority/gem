@@ -589,23 +589,7 @@ parameter count;
 count = ( lastHydroYear - i_firstHydroYear + 1 ) ;
 display count;
 
-historicalHydroOutput(v,'Average',m) = sum(hY, historicalHydroOutput(v,hY,m)) / ( lastHydroYear - i_firstHydroYear + 1 ) ;
-
-parameter sumHydroOutput(v, m);
-sumHydroOutput(v,m) = sum(hY, historicalHydroOutput(v,hY,m));
-
-
-display lastHydroYear;
-display i_firstHydroYear;
-count = ( lastHydroYear - i_firstHydroYear + 1 ) ;
-display count;
-display sumHydroOutput;
-display historicalHydroOutput;
-
-parameter testHydroOutput(v, m);
-testHydroOutput(v, m) = sumHydroOutput(v, m) / count / historicalHydroOutput(v,'Average',m);
-display testHydroOutput;
-
+historicalHydroOutput(v,'Average',m) = sum(hY$realHydroYears(hY), historicalHydroOutput(v,hY,m)) / sum(hY$realHydroYears(hY), 1) ;
 
 
 *===============================================================================================
