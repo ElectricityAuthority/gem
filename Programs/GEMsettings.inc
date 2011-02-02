@@ -7,12 +7,12 @@ $setglobal OutPath          "%system.fp%..\Output\"
 
 $setglobal runName          "Test"
 
-Set sc 'Scenarios'     / mds1 'MDS1', mds2 'MDS2' /;
+Set sc 'Scenarios'     / mds2 'MDS2', mds3 'MDS3' /;
 Set scenarioColor(sc,*,*,*) 'RGB color mix for scenarios - to pass to plotting applications' ;
-scenarioColor('mds1','0','0','255') = yes ;
-scenarioColor('mds2','0','255','255') = yes ;
+scenarioColor('mds2','0','0','255') = yes ;
+scenarioColor('mds3','0','255','255') = yes ;
 
-$setglobal firstScenario    "Final GEM2.0 input data (2Reg 9Block mds1).gdx"
+$setglobal firstScenario    "Final GEM2.0 input data (2Reg 9Block mds2).gdx"
 
 
 *** Model ***

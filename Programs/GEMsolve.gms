@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 12/01/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 03/02/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -246,18 +246,16 @@ RESV.up(g,rc,y,t,lb,outcomes)$( useReserves and reservesCapability(g,rc) ) = res
 * NB: 'validYrOperate' embodies the appropriate date for existing, committed, and new units - i.e., all units.
 RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 
-* Reset all slacks and penalties/violations to zero.
-ANNMWSLACK.l(y) = 0 ;
-
-SEC_NZ_PENALTY.l(y, outcomes) = 0 ;      SEC_NI1_PENALTY.l(y, outcomes) = 0 ;  SEC_NI2_PENALTY.l(y, outcomes) = 0 ;
-NOWIND_NZ_PENALTY.l(y, outcomes) = 0 ;   NOWIND_NI_PENALTY.l(y, outcomes) = 0 ;
-
-RENCAPSLACK.l(y) = 0 ;
-HYDROSLACK.l(y) = 0 ;         MINUTILSLACK.l(y) = 0 ;     FUELSLACK.l(y) = 0 ;
-RENNRGPENALTY.l(y) = 0 ;
+* Reset all penalties/violations and slacks to zero.
 RESVVIOL.l(rc,ild,y,t,lb,outcomes) = 0 ;
+RENNRGPENALTY.l(y) = 0 ;
+SEC_NZ_PENALTY.l(y,outcomes) = 0 ;      SEC_NI1_PENALTY.l(y,outcomes) = 0 ;   SEC_NI2_PENALTY.l(y,outcomes) = 0 ;
+NOWIND_NZ_PENALTY.l(y,outcomes) = 0 ;   NOWIND_NI_PENALTY.l(y,outcomes) = 0 ;
 
-$set AddUp10Slacks "sum((y,oc), ANNMWSLACK.l(y) + SEC_NZ_PENALTY.l(y,oc) + SEC_NI1_PENALTY.l(y,oc) + SEC_NI2_PENALTY.l(y,oc) + NOWIND_NZ_PENALTY.l(y,oc) + NOWIND_NI_PENALTY.l(y,oc) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
+ANNMWSLACK.l(y) = 0 ;                   RENCAPSLACK.l(y) = 0 ;
+HYDROSLACK.l(y) = 0 ;                   MINUTILSLACK.l(y) = 0 ;               FUELSLACK.l(y) = 0 ;
+
+$set AddUp10Slacks "sum((y,oc), SEC_NZ_PENALTY.l(y,oc) + SEC_NI1_PENALTY.l(y,oc) + SEC_NI2_PENALTY.l(y,oc) + NOWIND_NZ_PENALTY.l(y,oc) + NOWIND_NI_PENALTY.l(y,oc) + ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
 
 
 
@@ -715,12 +713,12 @@ Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
   s2_RESVCOMPONENTS
 *++++++++++
 * The 's2' penalties and slacks
-  s2_RENNRGPENALTY s2_ANNMWSLACK s2_SEC_NZ_PENALTY s2_SEC_NI1_PENALTY s2_SEC_NI2_PENALTY s2_NOWIND_NZ_PENALTY s2_NOWIND_NI_PENALTY s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
+  s2_RENNRGPENALTY s2_SEC_NZ_PENALTY s2_SEC_NI1_PENALTY s2_SEC_NI2_PENALTY s2_NOWIND_NZ_PENALTY s2_NOWIND_NI_PENALTY s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
   ;
 
 * Dump all 's' slacks and penalties into a GDX file.
 Execute_Unload "Slacks and penalties - %runName% - %scenarioName%.gdx",
-  s_RENNRGPENALTY s_ANNMWSLACK s_SEC_NZ_PENALTY s_SEC_NI1_PENALTY s_SEC_NI2_PENALTY s_NOWIND_NZ_PENALTY s_NOWIND_NI_PENALTY s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
+  s_RENNRGPENALTY s_SEC_NZ_PENALTY s_SEC_NI1_PENALTY s_SEC_NI2_PENALTY s_NOWIND_NZ_PENALTY s_NOWIND_NI_PENALTY s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
   ;
 
 * Dump all variable levels and constraint marginals into a GDX file. 
@@ -738,7 +736,7 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
 * Reserve variables
   s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
 * Penalty and slack variables
-  s_ANNMWSLACK s_RENNRGPENALTY s_SEC_NZ_PENALTY s_SEC_NI1_PENALTY s_SEC_NI2_PENALTY s_NOWIND_NZ_PENALTY s_NOWIND_NI_PENALTY s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
+  s_RENNRGPENALTY s_SEC_NZ_PENALTY s_SEC_NI1_PENALTY s_SEC_NI2_PENALTY s_NOWIND_NZ_PENALTY s_NOWIND_NI_PENALTY s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
 * Equations (ignore the objective function)
   s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire s_endogretonce s_balance_capacity s_bal_supdem
   s_security_nz s_security_ni1 s_security_ni2 s_nowind_nz s_nowind_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg

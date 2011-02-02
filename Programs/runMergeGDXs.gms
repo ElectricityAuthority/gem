@@ -9,13 +9,13 @@ File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.a
 *    - copy each raw input GDX file used to a GDX file that goes by its corresponding short scenario name, and
 *    - merge all short scenario name GDX files into a single GDX file called 'all_input.gdx'.
 putclose bat
-  'del mds1.gdx /q' /
   'del mds2.gdx /q' /
-  'copy "%DataPath%Final GEM2.0 input data (2Reg 9Block mds1).gdx" mds1.gdx' /
+  'del mds3.gdx /q' /
   'copy "%DataPath%Final GEM2.0 input data (2Reg 9Block mds2).gdx" mds2.gdx' /
+  'copy "%DataPath%Final GEM2.0 input data (2Reg 9Block mds3).gdx" mds3.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds2.gdx output=all_input.gdx big=100000'
+execute 'gdxmerge mds2.gdx mds3.gdx output=all_input.gdx big=100000'
 
 
 * 2. Create and execute a batch file to:
@@ -23,13 +23,13 @@ execute 'gdxmerge mds1.gdx mds2.gdx output=all_input.gdx big=100000'
 *    - copy each GEMdataOutput GDX file used to a GDX file that goes by its corresponding short scenario name, and
 *    - merge all short scenario name GDX files into a single GDX file called 'all_gemdata.gdx'.
 putclose bat
-  'del mds1.gdx /q' /
   'del mds2.gdx /q' /
-  'copy "%OutPath%\%runName%\GDX\GEMdataOutput - %runName% - mds1.gdx" mds1.gdx' /
+  'del mds3.gdx /q' /
   'copy "%OutPath%\%runName%\GDX\GEMdataOutput - %runName% - mds2.gdx" mds2.gdx' /
+  'copy "%OutPath%\%runName%\GDX\GEMdataOutput - %runName% - mds3.gdx" mds3.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds2.gdx output=all_gemdata.gdx big=100000'
+execute 'gdxmerge mds2.gdx mds3.gdx output=all_gemdata.gdx big=100000'
 
 
 * 3. Create and execute a batch file to:
@@ -37,13 +37,13 @@ execute 'gdxmerge mds1.gdx mds2.gdx output=all_gemdata.gdx big=100000'
 *    - copy each PreparedOutput GDX file used to a GDX file that goes by its corresponding short scenario name, and
 *    - merge all short scenario name GDX files into a single GDX file called 'all_prepout.gdx'.
 putclose bat
-  'del mds1.gdx /q' /
   'del mds2.gdx /q' /
-  'copy "%OutPath%\%runName%\GDX\PreparedOutput - %runName% - mds1.gdx" mds1.gdx' /
+  'del mds3.gdx /q' /
   'copy "%OutPath%\%runName%\GDX\PreparedOutput - %runName% - mds2.gdx" mds2.gdx' /
+  'copy "%OutPath%\%runName%\GDX\PreparedOutput - %runName% - mds3.gdx" mds3.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds2.gdx output=all_prepout.gdx big=100000'
+execute 'gdxmerge mds2.gdx mds3.gdx output=all_prepout.gdx big=100000'
 
 
 * 4. Create a progress report file indicating that runMergeGDXs is now finished.
