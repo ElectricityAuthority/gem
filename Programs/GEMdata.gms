@@ -420,8 +420,8 @@ ldcMW(r,y,t,lb)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb) / hoursPerBlock(
 
 * i) System security data.
 * Pull out peak load (MW) for the selected growth profile and adjust for embedded generation.
-peakLoadNZ(y) = sum(selectedGrowthProfile(prf), i_peakLoadNZp(y,prf)) + %embedAdjNZ% ;
-peakLoadNI(y) = sum(selectedGrowthProfile(prf), i_peakLoadNIp(y,prf)) + %embedAdjNI% ;
+peakLoadNZ(y, outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNZp(y,prf)) + %embedAdjNZ%);
+peakLoadNI(y, outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNIp(y,prf)) + %embedAdjNI%);
 
 bigNIgen(y) = i_BigNIgen(y) ;
 nxtbigNIgen(y) = i_nxtBigNIgen(y) ;
