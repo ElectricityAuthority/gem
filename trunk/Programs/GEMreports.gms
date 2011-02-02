@@ -237,11 +237,11 @@ Parameters
   s2_RENNRGPENALTY(sc,rt,y)                     'Penalty used to make renewable energy constraint feasible, GWh'
 * Slack variables
   s2_ANNMWSLACK(sc,rt,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s2_SEC_NZSLACK(sc,rt,y)                       'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI1SLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
-  s2_SEC_NI2SLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
-  s2_NOWIND_NZSLACK(sc,rt,y)                    'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NISLACK(sc,rt,y)                    'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
+  s2_SEC_NZ_PENALTY(sc,rt,y)                    'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
+  s2_SEC_NI1_PENALTY(sc,rt,y)                   'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
+  s2_SEC_NI2_PENALTY(sc,rt,y)                   'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
+  s2_NOWIND_NZ_PENALTY(sc,rt,y)                 'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
+  s2_NOWIND_NI_PENALTY(sc,rt,y)                 'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
   s2_RENCAPSLACK(sc,rt,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
   s2_HYDROSLACK(sc,rt,y)                        'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
   s2_MINUTILSLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
@@ -261,7 +261,7 @@ $loaddc oc activeSolve activeOC activeRT solveGoal
 * Miscellaneous parameters
 $loaddc solveReport s2_TOTALCOST s2_TX s2_BRET s2_ISRETIRED s2_BTX
 $loaddc s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY  s2_TXCAPCHARGES s2_GEN s2_VOLLGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL
-$loaddc s2_RENNRGPENALTY s2_ANNMWSLACK s2_SEC_NZSLACK s2_SEC_NI1SLACK s2_SEC_NI2SLACK s2_NOWIND_NZSLACK s2_NOWIND_NISLACK
+$loaddc s2_RENNRGPENALTY s2_ANNMWSLACK s2_SEC_NZ_PENALTY s2_SEC_NI1_PENALTY s2_SEC_NI2_PENALTY s2_NOWIND_NZ_PENALTY s2_NOWIND_NI_PENALTY
 $loaddc s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK s2_bal_supdem
 *++++++++++
 * More non-free reserves code.
@@ -437,15 +437,16 @@ objComponentsYr(activeRT(sc,rt),y,'obj_nfrcosts') = 1e-6 * (1 - taxRate) * sum((
 objComponentsYr(activeRT(sc,rt),y,'obj_renNrg')   = penaltyViolateRenNrg * s2_RENNRGPENALTY(sc,rt,y) ;
 objComponentsYr(activeRT(sc,rt),y,'obj_resvviol') = 1e-6 * sum((rc,ild,t,lb,outcomes) , i_outcomeWeight(sc,outcomes)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)  ) ;
 objComponentsYr(activeRT(sc,rt),y,'slk_rstrctMW') = 9999 * s2_ANNMWSLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_nzsec')    = 9998 * s2_SEC_NZSLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_ni1sec')   = 9998 * s2_SEC_NI1SLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_ni2sec')   = 9998 * s2_SEC_NI2SLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_nzNoWnd')  = 9997 * s2_NOWIND_NZSLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_niNoWnd')  = 9997 * s2_NOWIND_NISLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_rencap')   = 9996 * s2_RENCAPSLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_limhyd')   = 9995 * s2_HYDROSLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_minutil')  = 9994 * s2_MINUTILSLACK(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'slk_limfuel')  = 9993 * s2_FUELSLACK(sc,rt,y) ;
+objComponentsYr(activeRT(sc,rt),y,'slk_rencap')   = 9998 * s2_RENCAPSLACK(sc,rt,y) ;
+objComponentsYr(activeRT(sc,rt),y,'slk_limhyd')   = 9997 * s2_HYDROSLACK(sc,rt,y) ;
+objComponentsYr(activeRT(sc,rt),y,'slk_minutil')  = 9996 * s2_MINUTILSLACK(sc,rt,y) ;
+objComponentsYr(activeRT(sc,rt),y,'slk_limfuel')  = 9995 * s2_FUELSLACK(sc,rt,y) ;
+
+objComponentsYr(activeRT(sc,rt),y,'penalty_nzsec')    = penaltyLostPeak * s2_SEC_NZ_PENALTY(sc,rt,y) ;
+objComponentsYr(activeRT(sc,rt),y,'penalty_ni1sec')   = penaltyLostPeak * s2_SEC_NI1_PENALTY(sc,rt,y) ;
+objComponentsYr(activeRT(sc,rt),y,'penalty_ni2sec')   = penaltyLostPeak * s2_SEC_NI2_PENALTY(sc,rt,y) ;
+objComponentsYr(activeRT(sc,rt),y,'penalty_nzNoWnd')  = penaltyLostPeak * s2_NOWIND_NZ_PENALTY(sc,rt,y) ;
+objComponentsYr(activeRT(sc,rt),y,'penalty_niNoWnd')  = penaltyLostPeak * s2_NOWIND_NI_PENALTY(sc,rt,y) ;
 
 * Objective function components - total value (Note that for run type 'dis', it's the average that gets computed).
 objComponents(activeRT(sc,rt),'obj_total')    = s2_TOTALCOST(sc,rt) ;
@@ -466,16 +467,16 @@ objComponents(activeRT(sc,rt),'obj_nfrcosts') = 1e-6 * (1 - taxRate) * sum((r,rr
 objComponents(activeRT(sc,rt),'obj_renNrg')   = sum(y, penaltyViolateRenNrg * s2_RENNRGPENALTY(sc,rt,y)) ;
 objComponents(activeRT(sc,rt),'obj_resvviol') = 1e-6 * sum((rc,ild,y,t,lb,outcomes) , i_outcomeWeight(sc,outcomes)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)  ) ;
 objComponents(activeRT(sc,rt),'slk_rstrctMW') = 9999 * sum(y, s2_ANNMWSLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_nzsec')    = 9998 * sum(y, s2_SEC_NZSLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_ni1sec')   = 9998 * sum(y, s2_SEC_NI1SLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_ni2sec')   = 9998 * sum(y, s2_SEC_NI2SLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_nzNoWnd')  = 9997 * sum(y, s2_NOWIND_NZSLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_niNoWnd')  = 9997 * sum(y, s2_NOWIND_NISLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_rencap')   = 9996 * sum(y, s2_RENCAPSLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_limhyd')   = 9995 * sum(y, s2_HYDROSLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_minutil')  = 9994 * sum(y, s2_MINUTILSLACK(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'slk_limfuel')  = 9993 * sum(y, s2_FUELSLACK(sc,rt,y)) ;
+objComponents(activeRT(sc,rt),'slk_rencap')   = 9998 * sum(y, s2_RENCAPSLACK(sc,rt,y)) ;
+objComponents(activeRT(sc,rt),'slk_limhyd')   = 9997 * sum(y, s2_HYDROSLACK(sc,rt,y)) ;
+objComponents(activeRT(sc,rt),'slk_minutil')  = 9996 * sum(y, s2_MINUTILSLACK(sc,rt,y)) ;
+objComponents(activeRT(sc,rt),'slk_limfuel')  = 9995 * sum(y, s2_FUELSLACK(sc,rt,y)) ;
 
+objComponents(activeRT(sc,rt),'penalty_nzsec')    = penaltyLostPeak * sum(y, s2_SEC_NZ_PENALTY(sc,rt,y)) ;
+objComponents(activeRT(sc,rt),'penalty_ni1sec')   = penaltyLostPeak * sum(y, s2_SEC_NI1_PENALTY(sc,rt,y)) ;
+objComponents(activeRT(sc,rt),'penalty_ni2sec')   = penaltyLostPeak * sum(y, s2_SEC_NI2_PENALTY(sc,rt,y)) ;
+objComponents(activeRT(sc,rt),'penalty_nzNoWnd')  = penaltyLostPeak * sum(y, s2_NOWIND_NZ_PENALTY(sc,rt,y)) ;
+objComponents(activeRT(sc,rt),'penalty_niNoWnd')  = penaltyLostPeak * sum(y, s2_NOWIND_NI_PENALTY(sc,rt,y)) ;
 
 
 * b) Various counts
