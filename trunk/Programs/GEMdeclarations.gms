@@ -25,14 +25,36 @@ $offsymxref offsymlist
 
 
 *===============================================================================================
-* 0. Set up sets and variables that are being worked on
+<<<<<<< .mine<<<<<<< .mine<<<<<<< .mine* 0. Set up sets and variables that are being worked on
+=======* 0. Set up sets and variables that are being worked on
 
+parameter penaltyLostPeak;
+penaltyLostPeak = 10000;
+
+
+*===============================================================================================
+=======* 0. Set up sets and variables that are being worked on
+
+parameter penaltyLostPeak;
+penaltyLostPeak = 10000;
+
+
+*===============================================================================================
+>>>>>>> .theirs* 1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
+>>>>>>> .theirs
 parameter penaltyLostPeak;
 penaltyLostPeak = 9998;
 
 
 *===============================================================================================
-* 1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
+=======* 0. Set up sets and variables that are being worked on
+
+parameter penaltyLostPeak;
+penaltyLostPeak = 10000;
+
+
+*===============================================================================================
+>>>>>>> .theirs* 1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
 
 * 26 fundamental sets
 Sets
@@ -407,8 +429,8 @@ Parameters
   AClossFactors(ild)                            'Upwards adjustment to load to account for AC (or intraregional) losses'
   NrgDemand(r,y,t,lb)                           'Load (or energy demand) by region, year, time period and load block for selected growth profile, GWh (used to create ldcMW)'
   ldcMW(r,y,t,lb)                               'MW at each block by region, year and period'
-  peakLoadNZ(y)                                 'Peak load for New Zealand by year for selected growth profile, MW'
-  peakLoadNI(y)                                 'Peak load for North Island by year for selected growth profile, MW'
+  peakLoadNZ(y, outcomes)                       'Peak load for New Zealand by year for selected growth profile, MW'
+  peakLoadNI(y, outcomes)                       'Peak load for North Island by year for selected growth profile, MW'
   bigNIgen(y)                                   'Largest North Island generation plant by year, MW'
   nxtbigNIgen(y)                                'Next (second) largest North Island generation plant by year, MW'
 * Transmission data.
@@ -577,16 +599,30 @@ objectivefn..
   TOTALCOST =e=
 * Add in slacks at arbitrarily high cost.
   9999 * sum(y, ANNMWSLACK(y) ) +
-  penaltyLostPeak * sum((y,oc)$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
+<<<<<<< .mine<<<<<<< .mine<<<<<<< .mine  penaltyLostPeak * sum((y,oc)$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
   (penaltyLostPeak-1) * sum((y,oc), NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
   9996 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
   9995 * sum(y, HYDROSLACK(y) ) +
   9994 * sum(y, MINUTILSLACK(y) ) +
   9993 * sum(y, FUELSLACK(y) ) +
-* Reserve violation costs (really a 'slack' but not called a slack), $m
+=======  9998 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
+  9997 * sum(y, HYDROSLACK(y) ) +
+  9996 * sum(y, MINUTILSLACK(y) ) +
+  9995 * sum(y, FUELSLACK(y) ) +
+>>>>>>> .theirs=======  9998 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
+  9997 * sum(y, HYDROSLACK(y) ) +
+  9996 * sum(y, MINUTILSLACK(y) ) +
+  9995 * sum(y, FUELSLACK(y) ) +
+>>>>>>> .theirs=======  9998 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
+  9997 * sum(y, HYDROSLACK(y) ) +
+  9996 * sum(y, MINUTILSLACK(y) ) +
+  9995 * sum(y, FUELSLACK(y) ) +
+>>>>>>> .theirs* Reserve violation costs (really a 'slack' but not called a slack), $m
   1e-6 * sum((rc,ild,y,t,lb,oc), i_outcomeWeight(oc) * RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
 * Add in penalties at high but not arbitrarily high cost.
   penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
+  penaltyLostPeak * sum((y,oc)$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
+  penaltyLostPeak * sum((y,oc), NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
 * Fixed, variable and HVDC costs - discounted and adjusted for tax
 * NB: Fixed costs are scaled by 1/card(t) to convert annual costs to a periodic basis coz discounting is done by period.
 * NB: The HVDC charge applies only to committed and new SI projects.
@@ -676,7 +712,7 @@ security_NZ(y, oc)$(gridSecurity > -1)..
   sum(g, CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - nxtbigNIgen(y) - i_bigSIgen(y) - i_fkNI(y) - i_fkSI(y) -
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
-  =g= peakLoadNZ(y) ;
+  =g= peakLoadNZ(y, oc) ;
 
 * Ensure reserve requirements can be met at peak in North island with largest NI unit out.
 security_NI1(y, oc)$(gridSecurity > -1)..
@@ -684,7 +720,7 @@ security_NI1(y, oc)$(gridSecurity > -1)..
   sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - nxtbigNIgen(y) - i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClosses(y))
-  =g= peakLoadNI(y) ;
+  =g= peakLoadNI(y, oc) ;
 
 * Ensure reserve requirements can be met at peak in North island with the loss of one HVDC pole.
 security_NI2(y, oc)$(gridSecurity > -1)..
@@ -692,7 +728,7 @@ security_NI2(y, oc)$(gridSecurity > -1)..
   sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacityPO(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClossesPO(y))
-  =g= peakLoadNI(y) ;
+  =g= peakLoadNI(y, oc) ;
 
 * Ensure NZ cold-year winter peak can be met without any wind.
 noWind_NZ(y, oc)$(gridSecurity > -1)..
@@ -700,7 +736,7 @@ noWind_NZ(y, oc)$(gridSecurity > -1)..
   sum(mapg_k(g,k)$( not wind(k) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) - i_fkSI(y) -
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
-  =g= peakLoadNZ(y) ;
+  =g= peakLoadNZ(y, oc) ;
 
 * Ensure NI cold-year winter peak can be met without any wind.
 noWind_NI(y, oc)$(gridSecurity > -1)..
@@ -708,7 +744,7 @@ noWind_NI(y, oc)$(gridSecurity > -1)..
   sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClosses(y))
-  =g= peakLoadNI(y) ;
+  =g= peakLoadNI(y, oc) ;
 
 * Ensure generation is less than capacity times max capacity factor in each block.
 limit_maxgen(validYrOperate(g,y,t),lb,oc)$( ( exist(g) or possibleToBuild(g) ) * ( not useReserves ) )..
