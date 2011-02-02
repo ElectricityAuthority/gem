@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 12/01/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 03/02/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -234,14 +234,14 @@ Parameters
   s2_RESVVIOL(sc,rt,rc,ild,y,t,lb,outcomes)     'Reserve energy supply violations, MWh'
   s2_RESVTRFR(sc,rt,rc,ild,ild1,y,t,lb,outcomes)'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
-  s2_RENNRGPENALTY(sc,rt,y)                     'Penalty used to make renewable energy constraint feasible, GWh'
+  s2_RENNRGPENALTY(sc,rt,y)                     'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s2_SEC_NZ_PENALTY(sc,rt,outcomes,y)           'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s2_SEC_NI1_PENALTY(sc,rt,outcomes,y)          'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
+  s2_SEC_NI2_PENALTY(sc,rt,outcomes,y)          'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
+  s2_NOWIND_NZ_PENALTY(sc,rt,outcomes,y)        'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s2_NOWIND_NI_PENALTY(sc,rt,outcomes,y)        'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
   s2_ANNMWSLACK(sc,rt,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s2_SEC_NZ_PENALTY(sc,rt,y)                    'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI1_PENALTY(sc,rt,y)                   'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
-  s2_SEC_NI2_PENALTY(sc,rt,y)                   'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
-  s2_NOWIND_NZ_PENALTY(sc,rt,y)                 'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NI_PENALTY(sc,rt,y)                 'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
   s2_RENCAPSLACK(sc,rt,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
   s2_HYDROSLACK(sc,rt,y)                        'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
   s2_MINUTILSLACK(sc,rt,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
@@ -261,8 +261,8 @@ $loaddc oc activeSolve activeOC activeRT solveGoal
 * Miscellaneous parameters
 $loaddc solveReport s2_TOTALCOST s2_TX s2_BRET s2_ISRETIRED s2_BTX
 $loaddc s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY  s2_TXCAPCHARGES s2_GEN s2_VOLLGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL
-$loaddc s2_RENNRGPENALTY s2_ANNMWSLACK s2_SEC_NZ_PENALTY s2_SEC_NI1_PENALTY s2_SEC_NI2_PENALTY s2_NOWIND_NZ_PENALTY s2_NOWIND_NI_PENALTY
-$loaddc s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK s2_bal_supdem
+$loaddc s2_RENNRGPENALTY s2_SEC_NZ_PENALTY s2_SEC_NI1_PENALTY s2_SEC_NI2_PENALTY s2_NOWIND_NZ_PENALTY s2_NOWIND_NI_PENALTY
+$loaddc s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK s2_bal_supdem
 *++++++++++
 * More non-free reserves code.
 $loaddc s2_RESVCOMPONENTS
@@ -442,11 +442,14 @@ objComponentsYr(activeRT(sc,rt),y,'slk_limhyd')   = 9997 * s2_HYDROSLACK(sc,rt,y
 objComponentsYr(activeRT(sc,rt),y,'slk_minutil')  = 9996 * s2_MINUTILSLACK(sc,rt,y) ;
 objComponentsYr(activeRT(sc,rt),y,'slk_limfuel')  = 9995 * s2_FUELSLACK(sc,rt,y) ;
 
-objComponentsYr(activeRT(sc,rt),y,'penalty_nzsec')    = penaltyLostPeak * s2_SEC_NZ_PENALTY(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'penalty_ni1sec')   = penaltyLostPeak * s2_SEC_NI1_PENALTY(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'penalty_ni2sec')   = penaltyLostPeak * s2_SEC_NI2_PENALTY(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'penalty_nzNoWnd')  = penaltyLostPeak * s2_NOWIND_NZ_PENALTY(sc,rt,y) ;
-objComponentsYr(activeRT(sc,rt),y,'penalty_niNoWnd')  = penaltyLostPeak * s2_NOWIND_NI_PENALTY(sc,rt,y) ;
+* +++ The 's2' penalty params need the domain to be defined on outcomes or oc, i.e. between the rt and the y
+* +++ Also, penaltyLostPeak has yet to be passed along to the GDX that GEMreports grabs it data from.
+* +++ ditto the bunch of lines about 30 lines down from here. 
+*objComponentsYr(activeRT(sc,rt),y,'penalty_nzsec')    = penaltyLostPeak * s2_SEC_NZ_PENALTY(sc,rt,y) ;
+*objComponentsYr(activeRT(sc,rt),y,'penalty_ni1sec')   = penaltyLostPeak * s2_SEC_NI1_PENALTY(sc,rt,y) ;
+*objComponentsYr(activeRT(sc,rt),y,'penalty_ni2sec')   = penaltyLostPeak * s2_SEC_NI2_PENALTY(sc,rt,y) ;
+*objComponentsYr(activeRT(sc,rt),y,'penalty_nzNoWnd')  = penaltyLostPeak * s2_NOWIND_NZ_PENALTY(sc,rt,y) ;
+*objComponentsYr(activeRT(sc,rt),y,'penalty_niNoWnd')  = penaltyLostPeak * s2_NOWIND_NI_PENALTY(sc,rt,y) ;
 
 * Objective function components - total value (Note that for run type 'dis', it's the average that gets computed).
 objComponents(activeRT(sc,rt),'obj_total')    = s2_TOTALCOST(sc,rt) ;
@@ -472,11 +475,11 @@ objComponents(activeRT(sc,rt),'slk_limhyd')   = 9997 * sum(y, s2_HYDROSLACK(sc,r
 objComponents(activeRT(sc,rt),'slk_minutil')  = 9996 * sum(y, s2_MINUTILSLACK(sc,rt,y)) ;
 objComponents(activeRT(sc,rt),'slk_limfuel')  = 9995 * sum(y, s2_FUELSLACK(sc,rt,y)) ;
 
-objComponents(activeRT(sc,rt),'penalty_nzsec')    = penaltyLostPeak * sum(y, s2_SEC_NZ_PENALTY(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'penalty_ni1sec')   = penaltyLostPeak * sum(y, s2_SEC_NI1_PENALTY(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'penalty_ni2sec')   = penaltyLostPeak * sum(y, s2_SEC_NI2_PENALTY(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'penalty_nzNoWnd')  = penaltyLostPeak * sum(y, s2_NOWIND_NZ_PENALTY(sc,rt,y)) ;
-objComponents(activeRT(sc,rt),'penalty_niNoWnd')  = penaltyLostPeak * sum(y, s2_NOWIND_NI_PENALTY(sc,rt,y)) ;
+*objComponents(activeRT(sc,rt),'penalty_nzsec')    = penaltyLostPeak * sum(y, s2_SEC_NZ_PENALTY(sc,rt,y)) ;
+*objComponents(activeRT(sc,rt),'penalty_ni1sec')   = penaltyLostPeak * sum(y, s2_SEC_NI1_PENALTY(sc,rt,y)) ;
+*objComponents(activeRT(sc,rt),'penalty_ni2sec')   = penaltyLostPeak * sum(y, s2_SEC_NI2_PENALTY(sc,rt,y)) ;
+*objComponents(activeRT(sc,rt),'penalty_nzNoWnd')  = penaltyLostPeak * sum(y, s2_NOWIND_NZ_PENALTY(sc,rt,y)) ;
+*objComponents(activeRT(sc,rt),'penalty_niNoWnd')  = penaltyLostPeak * sum(y, s2_NOWIND_NI_PENALTY(sc,rt,y)) ;
 
 
 * b) Various counts

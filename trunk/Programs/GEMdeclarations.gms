@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 12/01/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 03/02/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -24,37 +24,17 @@ $offsymxref offsymlist
 *$onsymxref  onsymlist
 
 
-*===============================================================================================
-<<<<<<< .mine<<<<<<< .mine<<<<<<< .mine* 0. Set up sets and variables that are being worked on
-=======* 0. Set up sets and variables that are being worked on
-
-parameter penaltyLostPeak;
-penaltyLostPeak = 10000;
-
 
 *===============================================================================================
-=======* 0. Set up sets and variables that are being worked on
+* 0. Set up sets and variables that are being worked on
 
-parameter penaltyLostPeak;
-penaltyLostPeak = 10000;
+parameter penaltyLostPeak ;
+penaltyLostPeak = 9998 ;
+
 
 
 *===============================================================================================
->>>>>>> .theirs* 1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
->>>>>>> .theirs
-parameter penaltyLostPeak;
-penaltyLostPeak = 9998;
-
-
-*===============================================================================================
-=======* 0. Set up sets and variables that are being worked on
-
-parameter penaltyLostPeak;
-penaltyLostPeak = 10000;
-
-
-*===============================================================================================
->>>>>>> .theirs* 1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
+* 1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
 
 * 26 fundamental sets
 Sets
@@ -429,8 +409,8 @@ Parameters
   AClossFactors(ild)                            'Upwards adjustment to load to account for AC (or intraregional) losses'
   NrgDemand(r,y,t,lb)                           'Load (or energy demand) by region, year, time period and load block for selected growth profile, GWh (used to create ldcMW)'
   ldcMW(r,y,t,lb)                               'MW at each block by region, year and period'
-  peakLoadNZ(y, outcomes)                       'Peak load for New Zealand by year for selected growth profile, MW'
-  peakLoadNI(y, outcomes)                       'Peak load for North Island by year for selected growth profile, MW'
+  peakLoadNZ(y,outcomes)                        'Peak load for New Zealand by year for selected growth profile, MW'
+  peakLoadNI(y,outcomes)                        'Peak load for North Island by year for selected growth profile, MW'
   bigNIgen(y)                                   'Largest North Island generation plant by year, MW'
   nxtbigNIgen(y)                                'Next (second) largest North Island generation plant by year, MW'
 * Transmission data.
@@ -523,12 +503,12 @@ Positive Variables
   RESVTRFR(rc,ild,ild1,y,t,lb,outcomes)         'Reserve energy transferred from one island to another, MWh'
   RESVREQINT(rc,ild,y,t,lb,outcomes)            'Internally determined energy reserve requirement, MWh'
 * Penalty variables
-  RENNRGPENALTY(y)                              'Penalty used to make renewable energy constraint feasible, GWh'
-  SEC_NZ_PENALTY(y, outcomes)                   'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  SEC_NI1_PENALTY(y, outcomes)                  'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
-  SEC_NI2_PENALTY(y, outcomes)                  'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
-  NOWIND_NZ_PENALTY(y, outcomes)                'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  NOWIND_NI_PENALTY(y, outcomes)                'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  RENNRGPENALTY(y)                              'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  SEC_NZ_PENALTY(y,outcomes)                    'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  SEC_NI1_PENALTY(y,outcomes)                   'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
+  SEC_NI2_PENALTY(y,outcomes)                   'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
+  NOWIND_NZ_PENALTY(y,outcomes)                 'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  NOWIND_NI_PENALTY(y,outcomes)                 'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
   ANNMWSLACK(y)                                 'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
   RENCAPSLACK(y)                                'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
@@ -548,11 +528,11 @@ Equations
   endogretonce(g)                               'Can only endogenously retire a plant once'
   balance_capacity(g,y)                         'Year to year capacity balance relationship for all plant, MW'
   bal_supdem(r,y,t,lb,outcomes)                 'Balance supply and demand in each region, year, time period and load block'
-  security_nz(y, outcomes)                      'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
-  security_ni1(y, outcomes)                     'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
-  security_ni2(y, outcomes)                     'Ensure enough capacity to meet peak demand in NI if tx capacity is out'
-  nowind_nz(y, outcomes)                        'Ensure enough capacity to meet peak demand in NZ when all wind is off'
-  nowind_ni(y, outcomes)                        'Ensure enough capacity to meet peak demand in NI when all wind is off'
+  security_nz(y,outcomes)                       'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
+  security_ni1(y,outcomes)                      'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
+  security_ni2(y,outcomes)                      'Ensure enough capacity to meet peak demand in NI if tx capacity is out'
+  nowind_nz(y,outcomes)                         'Ensure enough capacity to meet peak demand in NZ when all wind is off'
+  nowind_ni(y,outcomes)                         'Ensure enough capacity to meet peak demand in NI when all wind is off'
   limit_maxgen(g,y,t,lb,outcomes)               'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   limit_mingen(g,y,t,lb,outcomes)               'Ensure generation in each block exceeds capacity implied by min capacity factors'
   minutil(g,k,y,outcomes)                       'Ensure generation by certain technology type meets a minimum utilisation'
@@ -599,27 +579,13 @@ objectivefn..
   TOTALCOST =e=
 * Add in slacks at arbitrarily high cost.
   9999 * sum(y, ANNMWSLACK(y) ) +
-<<<<<<< .mine<<<<<<< .mine<<<<<<< .mine  penaltyLostPeak * sum((y,oc)$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
-  (penaltyLostPeak-1) * sum((y,oc), NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
   9996 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
   9995 * sum(y, HYDROSLACK(y) ) +
   9994 * sum(y, MINUTILSLACK(y) ) +
   9993 * sum(y, FUELSLACK(y) ) +
-=======  9998 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
-  9997 * sum(y, HYDROSLACK(y) ) +
-  9996 * sum(y, MINUTILSLACK(y) ) +
-  9995 * sum(y, FUELSLACK(y) ) +
->>>>>>> .theirs=======  9998 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
-  9997 * sum(y, HYDROSLACK(y) ) +
-  9996 * sum(y, MINUTILSLACK(y) ) +
-  9995 * sum(y, FUELSLACK(y) ) +
->>>>>>> .theirs=======  9998 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
-  9997 * sum(y, HYDROSLACK(y) ) +
-  9996 * sum(y, MINUTILSLACK(y) ) +
-  9995 * sum(y, FUELSLACK(y) ) +
->>>>>>> .theirs* Reserve violation costs (really a 'slack' but not called a slack), $m
+* Reserve violation costs (really a 'slack' but not called a slack), $m
   1e-6 * sum((rc,ild,y,t,lb,oc), i_outcomeWeight(oc) * RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
-* Add in penalties at high but not arbitrarily high cost.
+* Add in penalties at user-defined high, but not necessarily arbitrarily high, cost.
   penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
   penaltyLostPeak * sum((y,oc)$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
   penaltyLostPeak * sum((y,oc), NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
@@ -707,44 +673,44 @@ bal_supdem(r,y,t,lb,oc)..
   sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y,t) ), PUMPEDGEN(g,y,t,lb,oc)) ;
 
 * Ensure reserve requirements can be met at peak in both islands with largest NI unit out.
-security_NZ(y, oc)$(gridSecurity > -1)..
-  SEC_NZ_PENALTY(y, oc) +
+security_NZ(y,oc)$(gridSecurity > -1)..
+  SEC_NZ_PENALTY(y,oc) +
   sum(g, CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - nxtbigNIgen(y) - i_bigSIgen(y) - i_fkNI(y) - i_fkSI(y) -
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
-  =g= peakLoadNZ(y, oc) ;
+  =g= peakLoadNZ(y,oc) ;
 
 * Ensure reserve requirements can be met at peak in North island with largest NI unit out.
-security_NI1(y, oc)$(gridSecurity > -1)..
-  SEC_NI1_PENALTY(y, oc) +
+security_NI1(y,oc)$(gridSecurity > -1)..
+  SEC_NI1_PENALTY(y,oc) +
   sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - nxtbigNIgen(y) - i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClosses(y))
-  =g= peakLoadNI(y, oc) ;
+  =g= peakLoadNI(y,oc) ;
 
 * Ensure reserve requirements can be met at peak in North island with the loss of one HVDC pole.
-security_NI2(y, oc)$(gridSecurity > -1)..
-  SEC_NI2_PENALTY(y, oc) +
+security_NI2(y,oc)$(gridSecurity > -1)..
+  SEC_NI2_PENALTY(y,oc) +
   sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacityPO(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClossesPO(y))
-  =g= peakLoadNI(y, oc) ;
+  =g= peakLoadNI(y,oc) ;
 
 * Ensure NZ cold-year winter peak can be met without any wind.
-noWind_NZ(y, oc)$(gridSecurity > -1)..
-  NOWIND_NZ_PENALTY(y, oc) +
+noWind_NZ(y,oc)$(gridSecurity > -1)..
+  NOWIND_NZ_PENALTY(y,oc) +
   sum(mapg_k(g,k)$( not wind(k) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) - i_fkSI(y) -
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
-  =g= peakLoadNZ(y, oc) ;
+  =g= peakLoadNZ(y,oc) ;
 
 * Ensure NI cold-year winter peak can be met without any wind.
-noWind_NI(y, oc)$(gridSecurity > -1)..
-  NOWIND_NZ_PENALTY(y, oc) +
+noWind_NI(y,oc)$(gridSecurity > -1)..
+  NOWIND_NZ_PENALTY(y,oc) +
   sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClosses(y))
-  =g= peakLoadNI(y, oc) ;
+  =g= peakLoadNI(y,oc) ;
 
 * Ensure generation is less than capacity times max capacity factor in each block.
 limit_maxgen(validYrOperate(g,y,t),lb,oc)$( ( exist(g) or possibleToBuild(g) ) * ( not useReserves ) )..
@@ -980,14 +946,14 @@ Parameters
   s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,outcomes) 'Reserve energy transferred from one island to another, MWh'
   s_RESVREQINT(rt,hY,rc,ild,y,t,lb,outcomes)    'Internally determined energy reserve requirement, MWh'
 * Penalty variables
-  s_RENNRGPENALTY(rt,hY,y)                      'Penalty used to make renewable energy constraint feasible, GWh'
+  s_RENNRGPENALTY(rt,hY,y)                      'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s_SEC_NZ_PENALTY(rt,outcomes,y)               'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s_SEC_NI1_PENALTY(rt,outcomes,y)              'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
+  s_SEC_NI2_PENALTY(rt,outcomes,y)              'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
+  s_NOWIND_NZ_PENALTY(rt,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s_NOWIND_NI_PENALTY(rt,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
   s_ANNMWSLACK(rt,hY,y)                         'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s_SEC_NZ_PENALTY(rt,outcomes,y)               'Slack with arbitrarily high cost - used to make NZ security constraint feasible, MW'
-  s_SEC_NI1_PENALTY(rt,outcomes,y)              'Slack with arbitrarily high cost - used to make NI1 security constraint feasible, MW'
-  s_SEC_NI2_PENALTY(rt,outcomes,y)              'Slack with arbitrarily high cost - used to make NI2 security constraint feasible, MW'
-  s_NOWIND_NZ_PENALTY(rt,outcomes,y)            'Slack with arbitrarily high cost - used to make NZ no wind constraint feasible, MW'
-  s_NOWIND_NI_PENALTY(rt,outcomes,y)            'Slack with arbitrarily high cost - used to make NI no wind constraint feasible, MW'
   s_RENCAPSLACK(rt,hY,y)                        'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
   s_HYDROSLACK(rt,hY,y)                         'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
   s_MINUTILSLACK(rt,hY,y)                       'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
@@ -1088,13 +1054,13 @@ $onecho > CollectResults.txt
   s_RESVREQINT(rt,hY,rc,ild,y,t,lb,oc)       = RESVREQINT.l(rc,ild,y,t,lb,oc) ;
 * Penalty variables
   s_RENNRGPENALTY(rt,hY,y)                   = RENNRGPENALTY.l(y) ;
+  s_SEC_NZ_PENALTY(rt,oc,y)                  = SEC_NZ_PENALTY.l(y,oc) ;
+  s_SEC_NI1_PENALTY(rt,oc,y)                 = SEC_NI1_PENALTY.l(y,oc) ;
+  s_SEC_NI2_PENALTY(rt,oc,y)                 = SEC_NI2_PENALTY.l(y,oc) ;
+  s_NOWIND_NZ_PENALTY(rt,oc,y)               = NOWIND_NZ_PENALTY.l(y,oc) ;
+  s_NOWIND_NI_PENALTY(rt,oc,y)               = NOWIND_NI_PENALTY.l(y,oc) ;
 * Slack variables
   s_ANNMWSLACK(rt,hY,y)                      = ANNMWSLACK.l(y) ;
-  s_SEC_NZ_PENALTY(rt,oc,y)                  = SEC_NZ_PENALTY.l(y, oc) ;
-  s_SEC_NI1_PENALTY(rt,oc,y)                 = SEC_NI1_PENALTY.l(y, oc) ;
-  s_SEC_NI2_PENALTY(rt,oc,y)                 = SEC_NI2_PENALTY.l(y, oc) ;
-  s_NOWIND_NZ_PENALTY(rt,oc,y)               = NOWIND_NZ_PENALTY.l(y, oc) ;
-  s_NOWIND_NI_PENALTY(rt,oc,y)               = NOWIND_NI_PENALTY.l(y, oc) ;
   s_RENCAPSLACK(rt,hY,y)                     = RENCAPSLACK.l(y) ;
   s_HYDROSLACK(rt,hY,y)                      = HYDROSLACK.l(y) ;
   s_MINUTILSLACK(rt,hY,y)                    = MINUTILSLACK.l(y) ;
@@ -1190,7 +1156,7 @@ Parameters
   s2_RESVVIOL(rt,rc,ild,y,t,lb,outcomes)        'Reserve energy supply violations, MWh'
   s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)   'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
-  s2_RENNRGPENALTY(rt,y)                        'Penalty used to make renewable energy constraint feasible, GWh'
+  s2_RENNRGPENALTY(rt,y)                        'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
   s2_SEC_NZ_PENALTY(rt,outcomes,y)              'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
   s2_SEC_NI1_PENALTY(rt,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
   s2_SEC_NI2_PENALTY(rt,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'

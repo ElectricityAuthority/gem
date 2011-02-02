@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 12/01/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 03/02/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -139,21 +139,22 @@ loop(hY$sameas(hY,'Average'),  averageHydroYear = ord(hY) ) ;
 hydroYearNum(hY)$sameas(hY,'Multiple') = multipleHydroYear ;
 hydroYearNum(hY)$sameas(hY,'Average')  = averageHydroYear ;
 
-set realHydroYears(hY);
-realHydroYears(hY)$(not sameas(hY, 'Multiple') and not sameas(hY, 'Average')) = yes;
+set realHydroYears(hY) ;
+realHydroYears(hY)$(not sameas(hY, 'Multiple') and not sameas(hY, 'Average')) = yes ;
 
-parameter ordFirstHydroYear;
-ordFirstHydroYear = 1e6;
+parameter ordFirstHydroYear ;
+ordFirstHydroYear = 1e6 ;
 loop(hY$realHydroYears(hY),
   if(ord(hY) < ordFirstHydroYear,
-    ordFirstHydroYear = ord(hY);
-    );
-  );
+    ordFirstHydroYear = ord(hY) ;
+    ) ;
+  ) ;
 
-hydroYearNum(hY)$realHydroYears(hY) = i_firstHydroYear + ord(hY) - ordFirstHydroYear;
+hydroYearNum(hY)$realHydroYears(hY) = i_firstHydroYear + ord(hY) - ordFirstHydroYear ;
 
 lastHydroYear = sum(hY$( ord(hY) = card(hY) ), hydroYearNum(hY)) ;
 
+Display "Blah", realHydroYears, ordFirstHydroYear, hydroYearNum, lastHydroYear ;
 
 * Count hours per load block per time period.
 hoursPerBlock(t,lb) = sum(mapm_t(m,t), 0.5 * i_HalfHrsPerBlk(m,lb)) ;
@@ -420,8 +421,8 @@ ldcMW(r,y,t,lb)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb) / hoursPerBlock(
 
 * i) System security data.
 * Pull out peak load (MW) for the selected growth profile and adjust for embedded generation.
-peakLoadNZ(y, outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNZp(y,prf)) + %embedAdjNZ%);
-peakLoadNI(y, outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNIp(y,prf)) + %embedAdjNI%);
+peakLoadNZ(y,outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNZp(y,prf)) + %embedAdjNZ%) ;
+peakLoadNI(y,outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNIp(y,prf)) + %embedAdjNI%) ;
 
 bigNIgen(y) = i_BigNIgen(y) ;
 nxtbigNIgen(y) = i_nxtBigNIgen(y) ;
