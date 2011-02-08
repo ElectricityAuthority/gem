@@ -1,12 +1,12 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 03/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/02/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
 
  Code sections:
-  1. Load input data that comes from GUI.
+  1. Load input data that comes from input GDX file or is hard-coded.
   2. Initialise sets and parameters.
      a) Time/date-related sets and parameters.
      b) Various mappings, subsets and counts.
@@ -44,15 +44,15 @@ $offsymxref offsymlist
 
 
 *===============================================================================================
-* 1. Load input data that comes from GUI.
+* 1. Load input data that comes from input GDX file or is hard-coded.
 
 * Re-initialise set y with the modelled years (set y in the GDX file contains data years).
 Set y  / %firstYear% * %lastYear% / ;
 
 $gdxin "%DataPath%%GDXinputFile%"
-* 26 fundamental sets (less one, i.e. set y) 
-$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v outcomes m geo col
-* 42 mapping sets and subsets
+* 24 fundamental sets (i.e. all 25 less set y)
+$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v m geo col
+* 41 mapping sets and subsets
 * 24 technology and fuel
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
 $loaddc wind renew thermalTech CCStech minUtilTechs demandGen randomiseCapex linearBuildTech coal lignite gas diesel
@@ -65,9 +65,10 @@ $loaddc txUpgradeTransitions mapArcNode
 * 1 load and time
 $loaddc mapm_t
 * 0 reserves and security
-* 2 hydrology
-$loaddc mapoc_hY mapReservoirs
+* 1 hydrology
+$loaddc mapReservoirs
 
+* 88 parameters 
 * 20 technology and fuel parameters
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate i_capCostAdjByTech i_CapexExposure
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech
@@ -89,8 +90,6 @@ $load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_peakLoadNZp i_peakLoadN
 $load   i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
 * 3 hydrology
 $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
-* 1 outcomes (or stochastic scenarios)
-$load   i_outcomeWeight
 
 
 * Initialise hard-coded sets (NB: previously declared in GEMdeclarations).
@@ -108,6 +107,11 @@ Sets
   n                              'Piecewise linear vertices'    / n1 * n%NumVertices% /
   selectedGrowthProfile(prf)     'User-specified load growth profile (Low, Medium, or High)'  / %GrowthProfile% /
   ;
+
+
+* Only need set rt here so that including GEMstochastic works.... 
+Sets rt 'Model run types' / tmg, reo, dis / ;
+$include GEMstochastic.gms
 
 
 
@@ -131,26 +135,8 @@ firstPeriod(t)$( ord(t) = 1 ) = yes ;
 abort$( %firstYear% < i_firstDataYear ) "First modelled year precedes first data year",        i_firstDataYear, firstYr ;
 abort$( %lastYear%  > i_lastDataYear )  "Last modelled year is later than the last data year", i_lastDataYear, lastYr ;
 
-* Denote 'multiple' hydrology year with a '1'; denote 'average' hydrology year with a '2'; and denote each actual hydrology
-* year with a real number corresponding to that year, i.e. 1932 = 1932, 1933 = 1933, ... 2007 = 2007.
-loop(hY$sameas(hY,'Multiple'), multipleHydroYear = ord(hY) ) ;
-loop(hY$sameas(hY,'Average'),  averageHydroYear = ord(hY) ) ;
-
-hydroYearNum(hY)$sameas(hY,'Multiple') = multipleHydroYear ;
-hydroYearNum(hY)$sameas(hY,'Average')  = averageHydroYear ;
-
-set realHydroYears(hY) ;
-realHydroYears(hY)$(not sameas(hY, 'Multiple') and not sameas(hY, 'Average')) = yes ;
-
-parameter ordFirstHydroYear ;
-ordFirstHydroYear = 1e6 ;
-loop(hY$realHydroYears(hY),
-  if(ord(hY) < ordFirstHydroYear,
-    ordFirstHydroYear = ord(hY) ;
-    ) ;
-  ) ;
-
-hydroYearNum(hY)$realHydroYears(hY) = i_firstHydroYear + ord(hY) - ordFirstHydroYear ;
+* Denote each hydro year set element with a real number corresponding to that year, i.e. 1932 = 1932, 1933 = 1933, ... 2007 = 2007.
+hydroYearNum(hY) = i_firstHydroYear + ord(hY) - 1 ;
 
 lastHydroYear = sum(hY$( ord(hY) = card(hY) ), hydroYearNum(hY)) ;
 
@@ -420,8 +406,8 @@ ldcMW(r,y,t,lb)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb) / hoursPerBlock(
 
 * i) System security data.
 * Pull out peak load (MW) for the selected growth profile and adjust for embedded generation.
-peakLoadNZ(y,outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNZp(y,prf)) + %embedAdjNZ%) ;
-peakLoadNI(y,outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNIp(y,prf)) + %embedAdjNI%) ;
+peakLoadNZ(y,outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNZp(y,prf)) + %embedAdjNZ%) * outcomePeakLoadFactor(outcomes) ;
+peakLoadNI(y,outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNIp(y,prf)) + %embedAdjNI%) * outcomePeakLoadFactor(outcomes) ;
 
 bigNIgen(y) = i_BigNIgen(y) ;
 nxtbigNIgen(y) = i_nxtBigNIgen(y) ;
@@ -613,7 +599,7 @@ Display
 * Reserve energy data.
 * Parameters
 * Time/date-related sets and parameters.
-  counter, yearNum, multipleHydroYear, averageHydroYear, hydroYearNum, hoursPerBlock
+  counter, yearNum, hydroYearNum, hoursPerBlock
 * Various mappings, subsets and counts.
   numReg
 * Financial parameters.
@@ -700,7 +686,7 @@ Execute_Unload "%GEMdataGDX%",
   upgradedStates txEarlyComYrSet txFixedComYrSet vtgc nSegment
 * Parameters
 * Time/date-related sets and parameters.
-  lastYear yearNum multipleHydroYear averageHydroYear hydroYearNum lastHydroYear hoursPerBlock
+  lastYear yearNum hydroYearNum lastHydroYear hoursPerBlock
 * Various mappings, subsets and counts.
   numReg
 * Financial parameters.

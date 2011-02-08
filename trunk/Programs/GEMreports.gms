@@ -205,7 +205,7 @@ $loaddc reserveViolationPenalty pNFresvCost
 Sets
   oc(sc,outcomes)                               'Selected elements of outcomes'
   activeSolve(sc,rt,hY)                         'Collect the rt-hY index used for each solve' 
-  activeOC(sc,rt,hY,outcomes)                   'Collect the rt-hY-outcomes index used for each solve'
+*  activeOC(sc,rt,hY,outcomes)                   'Collect the rt-hY-outcomes index used for each solve'
   activeRT(sc,rt)                               'Identify the run types actually employed in this model run'
   solveGoal(sc,goal)                            'User-selected solve goal'
 Parameters
