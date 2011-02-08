@@ -154,7 +154,6 @@ hydroYearNum(hY)$realHydroYears(hY) = i_firstHydroYear + ord(hY) - ordFirstHydro
 
 lastHydroYear = sum(hY$( ord(hY) = card(hY) ), hydroYearNum(hY)) ;
 
-Display "Blah", realHydroYears, ordFirstHydroYear, hydroYearNum, lastHydroYear ;
 
 * Count hours per load block per time period.
 hoursPerBlock(t,lb) = sum(mapm_t(m,t), 0.5 * i_HalfHrsPerBlk(m,lb)) ;
@@ -586,11 +585,6 @@ bigM(ild1,ild) =
 * Assign hydro output for all hydro years and compute the simple arithmetic average hydro sequence.
 historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 
-parameter count;
-count = ( lastHydroYear - i_firstHydroYear + 1 ) ;
-display count;
-
-historicalHydroOutput(v,'Average',m) = sum(hY$realHydroYears(hY), historicalHydroOutput(v,hY,m)) / sum(hY$realHydroYears(hY), 1) ;
 
 
 *===============================================================================================
