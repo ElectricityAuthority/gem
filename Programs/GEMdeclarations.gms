@@ -1,15 +1,19 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 03/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/02/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
 
  Code sections:
-  1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
+  1. Declare sets and parameters - data to be imported from the GDX file created by EAME.
   2. Declare sets and parameters
-     - hard-coded and/or receive input from model/run configuration GUI and/or required in GEMsolve.
-  3. Declare sets and parameters to be initialised in GEMdata.
+     - hard-coded in GEMdata
+     - hard-coded in GEMsolve
+     - initialised in GEMdata using input from GEMsettings/GEMstochastic
+     - initialised in GEMsolve using input from GEMsettings/GEMstochastic
+     - initialised in GEMsolve
+  3. Declare sets and parameters to be initialised/computed in GEMdata.
   4. Declare model variables and equations.
   5. Specify the equations and declare the models.
   6. Declare the 's' parameters and specify the statements used to collect up results after each solve.
@@ -26,17 +30,9 @@ $offsymxref offsymlist
 
 
 *===============================================================================================
-* 0. Set up sets and variables that are being worked on
+* 1. Declare sets and parameters - data to be imported from the GDX file created by EAME.
 
-parameter penaltyLostPeak ;
-penaltyLostPeak = 9998 ;
-
-
-
-*===============================================================================================
-* 1. Declare sets and parameters for data to be imported from the GDX file created by GUI.
-
-* 26 fundamental sets
+* 25 fundamental sets
 Sets
   k            'Generation technologies'
   f            'Fuels'
@@ -60,7 +56,6 @@ Sets
   rc           'Reserve classes'
   hY           'Hydrology output years'
   v            'Hydro reservoirs or river systems'
-  outcomes     'Stochastic outcomes or uncertainty states'
   m            '12 months'
   geo          'Geographic co-ordinate types'
   col          'RGB color codes'
@@ -68,7 +63,7 @@ Sets
 
 Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 42 mapping sets and subsets (grouped as per the navigation pane of GUI)
+* 41 mapping sets and subsets (grouped as per the navigation pane of EAME)
 Sets
 * 24 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -111,17 +106,16 @@ Sets
   zoneCentroid(i,e)                             'Identify the centroid of each zone with a substation'
   islandCentroid(i,ild)                         'Identify the centroid of each island with a substation'
 * 2 transmission
-  txUpgradeTransitions(tupg,r,rr,ps,pss)        'Define the allowable transitions from one transmission state to another'
+  txUpgradeTransitions(tupg,r,rr,ps,pss)        'Define the allowable transitions from one transmission path state to another'
   mapArcNode(p,r,rr)                            'Map nodes (actually, regions) to arcs (paths) in order to build the bus-branch incidence matrix'
 * 1 load and time
   mapm_t(m,t)                                   'Map months into time periods'
 * 0 reserves and security
-* 2 hydrology
-  mapoc_hY(outcomes,hY)                         'Map historical hydro output years to outcomes'
+* 1 hydrology
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare parameters (again, grouped as per the navigation pane of GUI).
+* Declare 88 parameters (again, grouped as per the navigation pane of EAME).
 Parameters
 * 20 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -218,22 +212,25 @@ Parameters
   i_firstHydroYear                              'First year of hydrology output data (ignoring the 1st two elements of hY - multiple and average)'
   i_historicalHydroOutput(v,hY,m)               'Historical hydro output sequences by reservoir and month, GWh'
   i_hydroOutputAdj(y)                           'Schedulable hydro output adjuster by year (default = 1)'
-* 1 outcomes (or stochastic scenarios)
-  i_outcomeWeight(outcomes)                     'Weights on outcomes when multiple outcomes are used'
   ;
 
 
 
 *===============================================================================================
 * 2. Declare sets and parameters
-*     - hard-coded and/or receive input from model/run configuration GUI and/or required in GEMsolve.
+*    - hard-coded in GEMdata
+*    - hard-coded in GEMsolve
+*    - initialised in GEMdata using input from GEMsettings/GEMstochastic
+*    - initialised in GEMsolve using input from GEMsettings/GEMstochastic
+*    - initialised in GEMsolve
 
 Sets
 * Hard-coded in GEMdata
   ct                                            'Capital expenditure types'
   d                                             'Discount rate classes'
   dt                                            'Types of discounting'
-* Initialised in GEMdata using input from GEMsettings
+* Initialised in GEMdata using input from GEMsettings/GEMstochastic
+  outcomes                                      'Stochastic outcomes or uncertainty states'
   n                                             'Piecewise linear vertices'
   selectedGrowthProfile(prf)                    'User-specified load growth profile (Low, Medium, or High)'
 * Hard-coded in GEMsolve
@@ -242,16 +239,14 @@ Sets
   tmg(rt)                                       'Run type TMG - determine timing'
   reo(rt)                                       'Run type REO - re-optimise timing'
   dis(rt)                                       'Run type DIS - dispatch'
-* Initialised in GEMsolve using input from GEMsettings
+* Initialised in GEMsolve using input from GEMsettings/GEMstochastic
+  mapoc_hY(outcomes,hY)                         'Map historical hydro output years to outcomes'
+  map_rt_oc(rt,outcomes)                        'Map stochastic outcomes to run types'
   solveGoal(goal)                               'User-selected solve goal'
-  hydroYrForTiming(hY)                          'Hydro year used to determine investment timing. Choices are Multiple, Average, 1932, 1933, ... 2007'
-  hydroYrForReopt(hY)                           'Hydro year used to re-optimise investment timing. Choices are Multiple, Average, 1932, 1933, ... 2007'
 * Initialised in GEMsolve
   oc(outcomes)                                  'Selected elements of outcomes'
   hydroYrForDispatch(hY)                        'Hydro years used to loop over when solving DISpatch'
-  activeSolve(rt,hY)                            'Collect the rt-hY index used for each solve' 
-  activeOC(rt,hY,outcomes)                      'Collect the rt-hY-outcomes index used for each solve'
-  dum(outcomes)                                 'The dummy element from the set called outcomes'
+  activeSolve(rt,*)                             'Collect the rt-hY index used for each solve' 
   activeRT(rt)                                  'Identify the run types actually employed in this model run'
   disHydYrs(hY)                                 'Hydro years for which DISpatch model was solved or looped over - excludes multiple and average hydro years'
   ;
@@ -283,11 +278,15 @@ Parameters
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
 * Initialised in GEMsolve
+  penaltyLostPeak                               'Blah blah blah'
+  outcomePeakLoadFactor(outcomes)               'Blah blah blah'
+  rt_outcomeWeight(rt,outcomes)                 'Blah blah blah'
+  outcomeWeight(oc)                             'blah blah blah'
   modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
   slacks                                        'A flag indicating slacks or penalty variables exist in at least one solution'
   timeAllowed(goal)                             'CPU seconds available for solver to spend solving the model'
-  solveReport(rt,hY,*,*)                        'Collect various details about each solve of the models (both GEM and DISP)'
-  indexhY(rt,hY,y)                              'Collect the hydro year number used for each modelled year of each solve'
+  solveReport(rt,*,*,*)                         'Collect various details about each solve of the models (both GEM and DISP)'
+*  indexhY(rt,hY,y)                              'Collect the hydro year number used for each modelled year of each solve'
   hydroYrIndex(hY)                              'Index to enable assignment of hydro years over the modelled years'
   numDisYrs                                     'Number of hydro years for which DISpatch model was solved or looped over - excludes multiple and average hydro years'
   ;
@@ -295,7 +294,7 @@ Parameters
 
 
 *===============================================================================================
-* 3. Declare sets and parameters to be initialised in GEMdata.
+* 3. Declare sets and parameters to be initialised/computed in GEMdata.
 
 Sets
 * Time/date-related sets and parameters.
@@ -362,8 +361,6 @@ Parameters
   counter                                       'A recyclable counter - set equal to zero each time before using'
 * Time/date-related sets and parameters.
   yearNum(y)                                    'Real number associated with each year'
-  multipleHydroYear                             'Ordinal ranking of the multiple hydrology output year'
-  averageHydroYear                              'Ordinal ranking of the average hydrology output year'
   hydroYearNum(hY)                              'Real number associated with each hydrology output year'
   lastHydroYear                                 'Last year of hydrology output data - as an integer'
   hoursPerBlock(t,lb)                           'Hours per load block by time period'
@@ -584,7 +581,7 @@ objectivefn..
   9994 * sum(y, MINUTILSLACK(y) ) +
   9993 * sum(y, FUELSLACK(y) ) +
 * Reserve violation costs (really a 'slack' but not called a slack), $m
-  1e-6 * sum((rc,ild,y,t,lb,oc), i_outcomeWeight(oc) * RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
+  1e-6 * sum((rc,ild,y,t,lb,oc), outcomeWeight(oc) * RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
 * Add in penalties at user-defined high, but not necessarily arbitrarily high, cost.
   penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
   penaltyLostPeak * sum((y,oc)$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
@@ -593,8 +590,8 @@ objectivefn..
 * NB: Fixed costs are scaled by 1/card(t) to convert annual costs to a periodic basis coz discounting is done by period.
 * NB: The HVDC charge applies only to committed and new SI projects.
   1e-6 * sum((y,t), PVfacG(y,t) * (1 - taxRate) * (
-           sum(oc, sum((s,lb), 1e3 * i_outcomeWeight(oc) * VOLLGEN(s,y,t,lb,oc) * i_VOLLcost(s) ) ) +
-           sum(oc, sum((g,lb)$validYrOperate(g,y,t), 1e3 * i_outcomeWeight(oc) * GEN(g,y,t,lb,oc) * srmc(g,y) * sum(mapg_e(g,e), locFac_Recip(e)) ) ) +
+           sum(oc, sum((s,lb), 1e3 * outcomeWeight(oc) * VOLLGEN(s,y,t,lb,oc) * i_VOLLcost(s) ) ) +
+           sum(oc, sum((g,lb)$validYrOperate(g,y,t), 1e3 * outcomeWeight(oc) * GEN(g,y,t,lb,oc) * srmc(g,y) * sum(mapg_e(g,e), locFac_Recip(e)) ) ) +
            ( 1/card(t) ) * 1e3 * (
            sum(g, i_fixedOM(g) * CAPACITY(g,y)) +
            sum((g,k,o)$((not demandGen(k)) * sigen(g) * possibleToBuild(g) * mapg_k(g,k) * mapg_o(g,o)), i_HVDCshr(o) * i_HVDClevy(y) * CAPACITY(g,y))
@@ -607,12 +604,12 @@ objectivefn..
 * Transmission capital expenditure - discounted
   sum((paths,y,firstPeriod(t)),   PVfacT(y,t) * TXCAPCHARGES(paths,y) ) +
 * Cost of providing reserves ($m) - discounted and adjusted for tax.
-  1e-6 * sum((g,rc,y,t,lb,oc), PVfacG(y,t) * (1 - taxRate) * i_outcomeWeight(oc) * RESV(g,rc,y,t,lb,oc) * i_plantreservescost(g,rc) ) +
+  1e-6 * sum((g,rc,y,t,lb,oc), PVfacG(y,t) * (1 - taxRate) * outcomeWeight(oc) * RESV(g,rc,y,t,lb,oc) * i_plantreservescost(g,rc) ) +
 *+++++++++++++++++
 * More non-free reserves code.
 * Cost of providing reserves ($m) - discounted and adjusted for tax (last term of objective function).
   1e-6 * sum((paths,y,t,lb,oc,stp)$( nwd(paths) or swd(paths) ),
-                               PVfacG(y,t) * (1 - taxRate) * i_outcomeWeight(oc) * (hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp)) * pnfresvcost(paths,stp) ) ;
+                               PVfacG(y,t) * (1 - taxRate) * outcomeWeight(oc) * (hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp)) * pnfresvcost(paths,stp) ) ;
 
 * Calculate non-free reserve components. 
 calc_nfreserves(paths(r,rr),y,t,lb,oc)$( nwd(r,rr) or swd(r,rr) )..

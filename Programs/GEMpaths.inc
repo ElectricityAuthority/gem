@@ -1,6 +1,6 @@
 $setglobal runName        "Test"
-$setglobal scenarioName   "mds3"
-$setglobal GDXinputFile   "Final GEM2.0 input data (2Reg 9Block mds3).gdx"
+$setglobal scenarioName   "mds2"
+$setglobal GDXinputFile   "Final GEM2.0 input data (2Reg 9Block mds2).gdx"
 $setglobal GEMdataGDX     "GEMdataOutput - %runName% - %scenarioName%.gdx"
 $setglobal Mode            0
 

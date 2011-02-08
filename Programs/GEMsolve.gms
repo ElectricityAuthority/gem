@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 03/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/02/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -82,18 +82,24 @@ $loaddc y
 
 $gdxin "%DataPath%%GDXinputFile%"
 * Load sets from input GDX file.
-$loaddc k f g s o r e ild p ps tupg tgc t lb rc hY v outcomes m
-$loaddc maps_r mapm_t mapoc_hY movers wind renew minUtilTechs demandGen gas diesel
+$loaddc k f g s o r e ild p ps tupg tgc t lb rc hY v m
+$loaddc maps_r mapm_t movers wind renew minUtilTechs demandGen gas diesel
 * Load parameters from input GDX file.
 $load i_minUtilByTech i_maxNrgByFuel i_fuelQuantities
 $load i_UnitLargestProp i_offlineReserve i_nameplate i_baseload i_minUtilisation i_refurbDecisionYear
 $load i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_fixedOM i_HVDCshr i_HVDClevy i_plantReservesCost
 $load i_distdGenRenew i_distdGenFossil i_VOLLcap i_VOLLcost i_renewNrgShare i_renewCapShare
-$load i_firstHydroYear i_hydroOutputAdj i_outcomeWeight i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
+$load i_firstHydroYear i_hydroOutputAdj i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
 $load i_txGrpConstraintsRHS i_txGrpConstraintsLHS i_maxReservesTrnsfr i_reserveReqMW i_txCapacity i_txCapacityPO
 
 * Make sure intraregional transmission capacities are zero.
 i_txCapacity(r,r,ps) = 0 ; i_txCapacityPO(r,r,ps) = 0 ;
+
+
+* Only need set rt here so that including GEMstochastic works.... 
+Sets rt 'Model run types' / tmg, reo, dis / ;
+$include GEMstochastic.gms
+
 
 $gdxin '%ProgPath%%GEMdataGDX%'
 * Load sets created in GEMdata.
@@ -103,7 +109,7 @@ $loaddc possibleToRefurbish possibleToEndogRetire endogenousRetireDecisnYrs endo
 $loaddc slackBus regLower interIsland nwd swd paths transitions validTransitions allowedStates notAllowedStates upgradedStates
 $loaddc txEarlyComYrSet txFixedComYrSet vtgc nSegment
 * Load parameters created in GEMdata.
-$loaddc yearNum averageHydroYear hydroYearNum lastHydroYear hoursPerBlock PVfacG PVfacT SRMC initialCapacity capCharge refurbCapCharge txCapCharge exogMWretired continueAftaEndogRetire
+$loaddc yearNum hydroYearNum lastHydroYear hoursPerBlock PVfacG PVfacT SRMC initialCapacity capCharge refurbCapCharge txCapCharge exogMWretired continueAftaEndogRetire
 $loaddc peakConPlant NWpeakConPlant reservesCapability maxCapFactPlant minCapFactPlant ldcMW peakLoadNZ peakLoadNI bigNIgen nxtbigNIgen
 $loaddc locFac_Recip susceptanceYr BBincidence bigLoss slope intercept reserveViolationPenalty windCoverPropn bigM
 $loaddc singleReservesReqF historicalHydroOutput
@@ -118,9 +124,10 @@ $loaddc freeReserves pNFresvCap pNFresvCost
 * 3. Re-declare and/or initialise sets and parameters.
 
 Sets
-  rt                      'Model run types'                     / tmg      'Run model GEM to determine optimal timing of new builds'
-                                                                  reo      'Run model GEM to re-optimise timing while allowing specified plants to move'
-                                                                  dis      'Run model DISP with build forced and timing fixed'   /
+* Comment out for now as initialised above. But restore once GEMstochastic is all figured out
+*  rt                      'Model run types'                     / tmg      'Run model GEM to determine optimal timing of new builds'
+*                                                                  reo      'Run model GEM to re-optimise timing while allowing specified plants to move'
+*                                                                  dis      'Run model DISP with build forced and timing fixed'   /
   goal                    'Goals for MIP solution procedure'    / QDsol    'Find a quick and dirty solution using a user-specified optcr'
                                                                   VGsol    'Find a very good solution reasonably quickly'
                                                                   MinGap   'Minimize the gap between best possible and best found'  /
@@ -129,8 +136,6 @@ Sets
   dis(rt)                 'Run type DIS - dispatch'             / dis /
 * Initialise selected subsets (NB: values come from GEMsettings).
   solveGoal(goal)         'User-selected solve goal'                                                                               / %solveGoal% /
-  hydroYrForTiming(hY)    'Hydro year used to determine investment timing. Choices are Multiple, Average, 1932, 1933, ... 2007'    / %hydroYrForTiming% /
-  hydroYrForReopt(hY)     'Hydro year used to re-optimise investment timing. Choices are Multiple, Average, 1932, 1933, ... 2007'  / %hydroYrForReopt% /
   ;
 
 timeAllowed('QDsol')  = %QDsolSecs% ;
@@ -266,25 +271,19 @@ $if %RunType%==2 $goto NoGEM
 
 ** Solve the MIP to determine investment timing.
 * This is not a loop, we're setting tmg and rt to 'tmg' and hydroYrForTiming and hY to %hydroYrForTiming%.
-loop((tmg(rt),hydroYrForTiming(hY)),
+loop((tmg(rt)),
 
 * Capture the current elements of the run type-hydro year tuple.
-  activeSolve(tmg,hydroYrForTiming) = yes ;
+  activeSolve(tmg,'default') = yes ;
 
 * Select appropriate hydro year(s) in order to do the timing solve.
-  oc(outcomes) = no ;
-  modelledHydroOutput(g,y,t,oc) = 0 ;
-  if(sameas(hydroYrForTiming,'Multiple'),
-    oc(outcomes)$( not sameas(outcomes,'dum') ) = yes ;
-    modelledHydroOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),hY1,mapm_t(m,t))$mapoc_hY(oc,hY1), historicalHydroOutput(v,hY1,m)) ;
-    else
-    oc(outcomes)$( sameas(outcomes,'dum') ) = yes ;
-    modelledHydroOutput(g,y,t,oc) = hydroOutputScalar * i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), historicalHydroOutput(v,hydroYrForTiming,m)) ;
-  ) ;
+*  oc(outcomes) = no ;
+*  oc(outcomes)$map_rt_oc(rt,outcomes) = yes ;
 
-* Capture the outcomes index and the hydro year number.
-  activeOC(tmg,hydroYrForTiming,oc) = yes ;
-  indexhY(tmg,hydroYrForTiming,y) = hydroYearNum(hydroYrForTiming) ;
+  modelledHydroOutput(g,y,t,oc) =  hydroOutputScalar * i_hydroOutputAdj(y) *
+    sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(oc,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(oc,hY), 1) ;
+
+  outcomeWeight(oc) = rt_outcomeWeight(rt,oc) ;
 
 * Make sure renewable energy share constraint is not suppressed unless i_renewNrgShare(y) = 0 for all y.
   renNrgShrOn$( sum(y, i_renewNrgShare(y)) = 0 ) = 0 ;
@@ -307,12 +306,12 @@ loop((tmg(rt),hydroYrForTiming(hY)),
 
 *   Post a progress message to report for use by GUI and to the console.
     if(counter = 1,
-      putclose rep // 'The ' rt.tl '-' hY.tl ' solve finished with some sort of problem and the job is now going to abort.' /
+      putclose rep // 'The ' rt.tl ' solve finished with some sort of problem and the job is now going to abort.' /
                       'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
       else
-      putclose rep // 'The ' rt.tl '-' hY.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
+      putclose rep // 'The ' rt.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
     ) ;
-    putclose con // '    The ' rt.tl '-' hY.tl ' solve for "%runName% -- %scenarioName% has just finished' /
+    putclose con // '    The ' rt.tl ' solve for "%runName% -- %scenarioName% has just finished' /
                     '    Objective function value: ' TOTALCOST.l:<12:1 // ;
 
     abort$( GEM.modelstat = 10 ) "GEM is infeasible - check out GEMsolve.log to see what you've done wrong in configuring a model that is infeasible" ;
@@ -325,20 +324,20 @@ $   if not %PlotMIPtrace%==1 $goto NoTrace3
 $   label NoTrace3
 
 *   Collect information for solve summary report
-    solveReport(tmg,hydroYrForTiming,goal,'ObjFnValue') = TOTALCOST.l ;
-    solveReport(tmg,hydroYrForTiming,goal,'OptFile') = gem.optfile ;
-    solveReport(tmg,hydroYrForTiming,goal,'OptFile') = gem.optfile ;
-    solveReport(tmg,hydroYrForTiming,goal,'OptCr') = gem.optcr ;
-    solveReport(tmg,hydroYrForTiming,goal,'ModStat') = gem.modelstat ;
-    solveReport(tmg,hydroYrForTiming,goal,'SolStat') = gem.solvestat ;
-    solveReport(tmg,hydroYrForTiming,goal,'Vars') = gem.numvar ;
-    solveReport(tmg,hydroYrForTiming,goal,'DVars') = gem.numdvar ;
-    solveReport(tmg,hydroYrForTiming,goal,'Eqns') = gem.numequ ;
-    solveReport(tmg,hydroYrForTiming,goal,'Iter') = gem.iterusd ;
-    solveReport(tmg,hydroYrForTiming,goal,'Time') = gem.resusd ;
-    solveReport(tmg,hydroYrForTiming,goal,'Gap%')$gem.objval = 100 * abs( gem.objest - gem.objval ) / gem.objval ;
-    solveReport(tmg,hydroYrForTiming,goal,'GapAbs') = abs( gem.objest - gem.objval ) ;
-    if(slacks > 0, solveReport(tmg,hydroYrForTiming,goal,'Slacks') = 1 else solveReport(tmg,hydroYrForTiming,goal,'Slacks') = -99 ) ;
+    solveReport(tmg,'timing',goal,'ObjFnValue') = TOTALCOST.l ;
+    solveReport(tmg,'timing',goal,'OptFile') = gem.optfile ;
+    solveReport(tmg,'timing',goal,'OptFile') = gem.optfile ;
+    solveReport(tmg,'timing',goal,'OptCr') = gem.optcr ;
+    solveReport(tmg,'timing',goal,'ModStat') = gem.modelstat ;
+    solveReport(tmg,'timing',goal,'SolStat') = gem.solvestat ;
+    solveReport(tmg,'timing',goal,'Vars') = gem.numvar ;
+    solveReport(tmg,'timing',goal,'DVars') = gem.numdvar ;
+    solveReport(tmg,'timing',goal,'Eqns') = gem.numequ ;
+    solveReport(tmg,'timing',goal,'Iter') = gem.iterusd ;
+    solveReport(tmg,'timing',goal,'Time') = gem.resusd ;
+    solveReport(tmg,'timing',goal,'Gap%')$gem.objval = 100 * abs( gem.objest - gem.objval ) / gem.objval ;
+    solveReport(tmg,'timing',goal,'GapAbs') = abs( gem.objest - gem.objval ) ;
+    if(slacks > 0, solveReport(tmg,'timing',goal,'Slacks') = 1 else solveReport(tmg,'timing',goal,'Slacks') = -99 ) ;
 
 * End of selected solve goal loop for investment timing solve.
   ) ;
@@ -355,20 +354,20 @@ $if %SuppressReopt%==1 $goto NoReOpt
 
 ** Solve the MIP again to re-optimise investment timing.
 * Open loop on run type REO.
-loop((reo(rt),hydroYrForReopt(hY)),
+loop((reo(rt)),
 
 * Capture the current elements of the run type-hydro year tuple.
-  activeSolve(rt,hY) = yes ;
+  activeSolve(rt,'default') = yes ;
 
 * Select appropriate hydro year(s) in order to do the re-optimise solve.
-  oc(outcomes) = no ;
-  oc(outcomes)$( sameas(outcomes,'dum') ) = yes ;
-  modelledHydroOutput(g,y,t,oc) = 0 ;
-  modelledHydroOutput(g,y,t,oc) = hydroOutputScalar * sum((mapv_g(v,g),mapm_t(m,t)), historicalHydroOutput(v,hY,m)) ;
+*  oc(outcomes) = no ;
+*  oc(outcomes)$map_rt_oc(rt,outcomes) = yes ;
 
-* Capture the outcomes index and the hydro year number.
-  activeOC(rt,hY,oc) = yes ;
-  indexhY(rt,hY,y) = hydroYearNum(hY) ;
+  modelledHydroOutput(g,y,t,oc) = 0 ;
+  modelledHydroOutput(g,y,t,oc) = hydroOutputScalar * i_hydroOutputAdj(y) *
+    sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(oc,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(oc,hY), 1) ;
+
+  outcomeWeight(oc) = rt_outcomeWeight(rt,oc) ;
 
 * Make sure renewable energy share constraint is not suppressed unless SprsRenShrReo = 1 or i_renewNrgShare(y) = 0 for all y.
   renNrgShrOn$( ( %SprsRenShrReo% = 1 ) or ( sum(y, i_renewNrgShare(y)) = 0 ) ) = 0 ;
@@ -408,12 +407,12 @@ loop((reo(rt),hydroYrForReopt(hY)),
 
 *   Post a progress message to report for use by GUI and to the console.
     if(counter = 1,
-      putclose rep // 'The ' rt.tl '-' hY.tl ' solve finished with some sort of problem and the job is now going to abort.' /
+      putclose rep // 'The ' rt.tl ' solve finished with some sort of problem and the job is now going to abort.' /
                       'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
       else
-      putclose rep // 'The ' rt.tl '-' hY.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
+      putclose rep // 'The ' rt.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
     ) ;
-    putclose con // '    The ' rt.tl '-' hY.tl ' solve for "%runName% -- %scenarioName% has just finished' /
+    putclose con // '    The ' rt.tl ' solve for "%runName% -- %scenarioName% has just finished' /
                     '    Objective function value: ' TOTALCOST.l:<12:1 // ;
 
     abort$( GEM.modelstat <> 1 and GEM.modelstat <> 8 ) "Problem encountered solving GEM when doing re-optimisation..." ;
@@ -491,97 +490,67 @@ BTX.fx(paths,ps,y) = btxfix(paths,ps,y) ;
 $offtext
 $label CarryOn1
 
-* Make sure the only active element of set oc is 'dum' and zero out any previously used hydrology output data.
-oc(outcomes) = no ;
-oc(outcomes)$( sameas(outcomes,'dum') ) = yes ;
-modelledHydroOutput(g,y,t,oc) = 0 ;
 
-* Construct hydrology output sequences starting with all hydro years (including the average year but excluding the 'multiple' year) if DInflowYr = 0:
-hydroYrForDispatch(hY)$( %DInflowYr%  = 0 and (not sameas(hY,'Multiple')) ) = yes ;
-* If DInflowYr is not zero and is outside the valid range of hydro years, then solve using the average hydro year only.
-hydroYrForDispatch(hY)$( (%DInflowYr% <> 0) * ( %DInflowYr% < i_firstHydroYear or %DInflowYr% > lastHydroYear ) ) = yes$( sameas(hY,'Average') ) ;
-* If DInflowYr is inside valid hydro year range, then the only element of the hydroYrForDispatch set is the hydro output indicated by DInflowYr:
-hydroYrForDispatch(hY)$( (%DInflowYr% >= i_firstHydroYear) * (%DInflowYr% <= lastHydroYear) ) = yes$( hydroYearNum(hY) = %DInflowYr% ) ;
+set chooseYear(hY) ;
+*oc(outcomes) = no ;
+modelledHydroOutput(g,y,t,outcomes) = 0 ;
 
-* Open the loop over hydro years:
-loop(hY$( hydroYrForDispatch(hY) and (ord(hY) <= %LimHydYr%) ),
+* Select the dispatch run type
+loop(dis(rt),
 
-* Define indices to handle sequential inflow simulation (this excludes the 'multiple' and average year).
-  hydroYrIndex(hY1)$( ord(hY1) > averageHydroYear ) =
-    ( ord(hY1) - ord(hY) + 1            )$( ord(hY1) >= ord(hY) ) +  { index for inflow years >= the simulated inflow year }
-    ( ord(hY1) - ord(hY) + card(hY) - 1 )$( ord(hY1) <  ord(hY) ) ;  {'wraparound' index for inflow years < the simulated inflow year}
+* Loop over each outcome
+  loop(map_rt_oc(rt,outcomes),
+*    oc(outcomes) = yes ;
 
-* Define inflow data for all modelled years depending on whether the model run uses sequential or constant hydro data.
-* DInflwYrType = 1 ==> sequential; DInflwYrType = 2 ==> constant.
-  modelledHydroOutput(g,y,t,oc)$( %DInflwYrType% = 1 ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),hY1,mapm_t(m,t))$( hydroYrIndex(hY1) = ord(y) ), historicalHydroOutput(v,hY1,m) ) ;
-  modelledHydroOutput(g,y,t,oc)$( %DInflwYrType% = 2 or ord(hY) = averageHydroYear ) = i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t)), historicalHydroOutput(v,hY,m)) ;
-* This last statement means that if DInflwYrType = 2, the inflows commensurate with the inflow year (hY) being
-* looped over will be used for all modelled years. Note that this includes the average inflow year too.
-
-** Solve the RMIP to simulate dispatch given an investment schedule.
-*  Open loop on run type DIS.
-  loop(dis(rt),
-
-* Capture the current elements of the run type-hydro year tuple and the outcomes index.
-  activeSolve(rt,hY) = yes ;
-  activeOC(rt,hY,oc) = yes ;
-
-* Make sure renewable energy share constraint is not suppressed unless SprsRenShrDis = 1 or i_renewNrgShare(y) = 0 for all y.
-  renNrgShrOn$( ( %SprsRenShrDis% = 1 ) or ( sum(y, i_renewNrgShare(y)) = 0 ) ) = 0 ;
-
-* Capture the hydro year to be assigned to each modelled year:
-* First assign the average year to everything.
-  indexhY(rt,hY,y) = averageHydroYear ;
-* Then if %DInflwYrType% = 2, i.e. constant hydro year for each modelled year, set indexhY equal to hydroYearNum.
-  indexhY(rt,hY,y) = hydroYearNum(hY) ;
-* Finally, if %DInflwYrType% = 1, i.e. the wraparound thing, set indexhY accordingly.
-  if(%DInflwYrType% = 1,
-    loop((y,hY1),
-      if(sameas(hY,'Average'),
-        indexhY(rt,hY,y)$( ord(y) = hydroYrIndex(hY1) ) = averageHydroYear ;
-        else
-        indexhY(rt,hY,y)$( ord(y) = hydroYrIndex(hY1) ) = hydroYearNum(hY1) ;
+* Compute the hydro inflows for each modelled year
+    loop(y,
+      chooseYear(hY) = no ;
+      chooseYear(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+      chooseYear(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+      modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
+        sum((mapv_g(v,g), mapm_t(m, t), chooseYear), historicalHydroOutput(v,chooseYear,m)) / sum(chooseYear, 1) ;
       ) ;
-    ) ;
-  ) ;
 
-* Solve the RMIP (i.e. DISP):
-  Solve DISP using %DISPtype% minimizing TOTALCOST ;
+*   Solve the RMIP (i.e. DISP):
+    Solve DISP using %DISPtype% minimizing TOTALCOST ;
 
 * Figure out if run is to be aborted and report that fact before aborting.
-  slacks = %AddUp10Slacks% ;
-  counter = 0 ;
-  counter$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) = 1 ;
+    slacks = %AddUp10Slacks% ;
+    counter = 0 ;
+    counter$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) = 1 ;
 
 * Post a progress message to report for use by GUI and to the console.
-  if(counter = 1,
-    putclose rep // 'The ' rt.tl '-' hY.tl ' solve finished with some sort of problem and the job is now going to abort.' /
+    if(counter = 1,
+      putclose rep // 'The ' rt.tl '-' outcomes.tl ' solve finished with some sort of problem and the job is now going to abort.' /
                     'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
     else
-    putclose rep // 'The ' rt.tl '-' hY.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
-  ) ;
-  putclose con // '    The ' rt.tl '-' hY.tl ' solve for "%runName% -- %scenarioName% has just finished' /
+      putclose rep // 'The ' rt.tl '-' outcomes.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
+    ) ;
+    putclose con // '    The ' rt.tl '-' outcomes.tl ' solve for "%runName% -- %scenarioName% has just finished' /
                   '    Objective function value: ' TOTALCOST.l:<12:1 // ;
 
-  abort$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) "Problem encountered when solving DISP..." ;
+    abort$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) "Problem encountered when solving DISP..." ;
 
-* Collect information for solve summary report
-  solveReport(rt,hY,'','ObjFnValue') = TOTALCOST.l ;
-  solveReport(rt,hY,'','ModStat') = disp.modelstat ;
-  solveReport(rt,hY,'','SolStat') = disp.solvestat ;
-  solveReport(rt,hY,'','Vars') = disp.numvar ;
-  solveReport(rt,hY,'','Eqns') = disp.numequ ;
-  solveReport(rt,hY,'','Iter') = disp.iterusd ;
-  solveReport(rt,hY,'','Time') = disp.resusd ;
-  if(slacks > 0, solveReport(rt,hY,'','Slacks') = 1 else solveReport(rt,hY,'','Slacks') = -99 ) ;
+*   Collect information for solve summary report
+    solveReport(rt,outcomes,'','ObjFnValue') = TOTALCOST.l ;
+    solveReport(rt,outcomes,'','ModStat') = disp.modelstat ;
+    solveReport(rt,outcomes,'','SolStat') = disp.solvestat ;
+    solveReport(rt,outcomes,'','Vars') = disp.numvar ;
+    solveReport(rt,outcomes,'','Eqns') = disp.numequ ;
+    solveReport(rt,outcomes,'','Iter') = disp.iterusd ;
+    solveReport(rt,outcomes,'','Time') = disp.resusd ;
+    if(slacks > 0, solveReport(rt,outcomes,'','Slacks') = 1 else solveReport(rt,outcomes,'','Slacks') = -99 ) ;
 
 * Now, collect up solution values - by Run type (rt) and hydro year (hY):
 $ include CollectResults.txt
 
-* Close loop on run type DIS:
+    modelledHydroOutput(g,y,t,outcomes) = 0 ;
+*    oc(outcomes) = no ;
+
+* Close loop on outcomes
   ) ;
 
-* End of loop over hydro years (hY) for the RMIP/DISP model:
+* Close "loop" on dispatch run type
 ) ;
 
 $label NoDISP
@@ -599,19 +568,15 @@ putclose rep // 'All models in the scenario called "%scenarioName%" have now bee
 ** to the s_ param. Be aware that averaging over hY makes no sense for TMG and REO if they ever get done for more than one
 ** hY (which to date they have not been). But this may change when we code up Geoff's stochastic stuff. 
 
-* Re-declared and initialised sets.
-Set dum(outcomes)  'The dummy element of outcomes set'   / dum / ;
-
-Parameters
+* Re-declared and initialised parameters
 * Misc params
+Parameter
   s2_modelledHydroOutput(rt,g,y,t,outcomes)   'Right hand side of limit_hydro constraint, i.e. energy available for dispatch'
   ;
 
 activeRT(rt)$sum(activeSolve(rt,hY), 1) = yes ;
 
 disHydYrs(hY)$sum(activeSolve(rt,hY)$dis(rt), 1) = yes ;
-disHydYrs(hY)$sameas(hY,'Multiple') = no ;
-disHydYrs(hY)$sameas(hY,'Average') = no ;
 
 numDisYrs = sum(disHydYrs(hY), 1 ) ;
 
@@ -655,7 +620,7 @@ loop(activeRT(rt),
     else
     if(numDisYrs < 1, numDisYrs = 1 ) ; ! DInflowYr must have been 1 in which case only the average year was used and numDisYrs = 1
     s2_TOTALCOST(rt)                                = sum(disHydYrs(hY), s_TOTALCOST(rt,hY) ) / numDisYrs ;
-    s2_TX(rt,paths,y,t,lb,dum)                      = sum(disHydYrs(hY), s_TX(rt,hY,paths,y,t,lb,dum) ) / numDisYrs ;
+    s2_TX(rt,paths,y,t,lb,outcomes)                 = sum(disHydYrs(hY), s_TX(rt,hY,paths,y,t,lb,outcomes) ) / numDisYrs ;
     s2_BRET(rt,g,y)                                 = sum(disHydYrs(hY), s_BRET(rt,hY,g,y) ) / numDisYrs ;
     s2_ISRETIRED(rt,g)                              = sum(disHydYrs(hY), s_ISRETIRED(rt,hY,g) ) / numDisYrs ;
     s2_BTX(rt,paths,ps,y)                           = sum(disHydYrs(hY), s_BTX(rt,hY,paths,ps,y) ) / numDisYrs ;
@@ -664,15 +629,15 @@ loop(activeRT(rt),
     s2_RETIRE(rt,g,y)                               = sum(disHydYrs(hY), s_RETIRE(rt,hY,g,y) ) / numDisYrs ;
     s2_CAPACITY(rt,g,y)                             = sum(disHydYrs(hY), s_CAPACITY(rt,hY,g,y) ) / numDisYrs ;
     s2_TXCAPCHARGES(rt,paths,y)                     = sum(disHydYrs(hY), s_TXCAPCHARGES(rt,hY,paths,y) ) / numDisYrs ;
-    s2_GEN(rt,g,y,t,lb,dum)                         = sum(disHydYrs(hY), s_GEN(rt,hY,g,y,t,lb,dum) ) / numDisYrs ;
-    s2_VOLLGEN(rt,s,y,t,lb,dum)                     = sum(disHydYrs(hY), s_VOLLGEN(rt,hY,s,y,t,lb,dum) ) / numDisYrs ;
-    s2_PUMPEDGEN(rt,g,y,t,lb,dum)                   = sum(disHydYrs(hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,dum) ) / numDisYrs ;
-    s2_LOSS(rt,paths,y,t,lb,dum)                    = sum(disHydYrs(hY), s_LOSS(rt,hY,paths,y,t,lb,dum) ) / numDisYrs ;
+    s2_GEN(rt,g,y,t,lb,outcomes)                    = sum(disHydYrs(hY), s_GEN(rt,hY,g,y,t,lb,outcomes) ) / numDisYrs ;
+    s2_VOLLGEN(rt,s,y,t,lb,outcomes)                = sum(disHydYrs(hY), s_VOLLGEN(rt,hY,s,y,t,lb,outcomes) ) / numDisYrs ;
+    s2_PUMPEDGEN(rt,g,y,t,lb,outcomes)              = sum(disHydYrs(hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,outcomes) ) / numDisYrs ;
+    s2_LOSS(rt,paths,y,t,lb,outcomes)               = sum(disHydYrs(hY), s_LOSS(rt,hY,paths,y,t,lb,outcomes) ) / numDisYrs ;
     s2_TXPROJVAR(rt,tupg,y)                         = sum(disHydYrs(hY), s_TXPROJVAR(rt,hY,tupg,y) ) / numDisYrs ;
     s2_TXUPGRADE(rt,paths,ps,pss,y)                 = sum(disHydYrs(hY), s_TXUPGRADE(rt,hY,paths,ps,pss,y) ) / numDisYrs ;
-    s2_RESV(rt,g,rc,y,t,lb,dum)                     = sum(disHydYrs(hY), s_RESV(rt,hY,g,rc,y,t,lb,dum) ) / numDisYrs ;
-    s2_RESVVIOL(rt,rc,ild,y,t,lb,dum)               = sum(disHydYrs(hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,dum) ) / numDisYrs ;
-    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,dum)          = sum(disHydYrs(hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,dum) ) / numDisYrs ;
+    s2_RESV(rt,g,rc,y,t,lb,outcomes)                = sum(disHydYrs(hY), s_RESV(rt,hY,g,rc,y,t,lb,outcomes) ) / numDisYrs ;
+    s2_RESVVIOL(rt,rc,ild,y,t,lb,outcomes)          = sum(disHydYrs(hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,outcomes) ) / numDisYrs ;
+    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)     = sum(disHydYrs(hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,outcomes) ) / numDisYrs ;
     s2_RENNRGPENALTY(rt,y)                          = sum(disHydYrs(hY), s_RENNRGPENALTY(rt,hY,y) ) / numDisYrs ;
     s2_ANNMWSLACK(rt,y)                             = sum(disHydYrs(hY), s_ANNMWSLACK(rt,hY,y) ) / numDisYrs ;
     s2_SEC_NZ_PENALTY(rt,outcomes,y)                = sum(disHydYrs(hY), s_SEC_NZ_PENALTY(rt,outcomes,y) ) / numDisYrs ;
@@ -684,15 +649,15 @@ loop(activeRT(rt),
     s2_HYDROSLACK(rt,y)                             = sum(disHydYrs(hY), s_HYDROSLACK(rt,hY,y) ) / numDisYrs ;
     s2_MINUTILSLACK(rt,y)                           = sum(disHydYrs(hY), s_MINUTILSLACK(rt,hY,y) ) / numDisYrs ;
     s2_FUELSLACK(rt,y)                              = sum(disHydYrs(hY), s_FUELSLACK(rt,hY,y) ) / numDisYrs ;
-    s2_bal_supdem(rt,r,y,t,lb,dum)                  = sum(disHydYrs(hY), s_bal_supdem(rt,hY,r,y,t,lb,dum) ) / numDisYrs ;
+    s2_bal_supdem(rt,r,y,t,lb,outcomes)             = sum(disHydYrs(hY), s_bal_supdem(rt,hY,r,y,t,lb,outcomes) ) / numDisYrs ;
 *++++++++++
 *   More non-free reserves code.
-    s2_RESVCOMPONENTS(rt,paths,y,t,lb,dum,stp)      = sum(disHydYrs(hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,dum,stp) ) / numDisYrs ;
+    s2_RESVCOMPONENTS(rt,paths,y,t,lb,outcomes,stp) = sum(disHydYrs(hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,outcomes,stp) ) / numDisYrs ;
 *++++++++++
   ) ;
 ) ;
 
-Display s2_TOTALCOST, disHydYrs, activeSolve, activeOC, indexhY, solveReport ;
+Display s2_TOTALCOST, disHydYrs, activeSolve, solveReport ;
 
 
 
@@ -702,7 +667,7 @@ Display s2_TOTALCOST, disHydYrs, activeSolve, activeOC, indexhY, solveReport ;
 * Dump output prepared for report writing into a GDX file.
 Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
 * Miscellaneous sets
-  oc activeSolve activeOC activeRT solveGoal
+  oc activeSolve activeRT solveGoal
 * Miscellaneous parameters
   solveReport numDisYrs
 * The 's2' output parameters
