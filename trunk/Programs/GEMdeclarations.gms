@@ -281,7 +281,7 @@ Parameters
   penaltyLostPeak                               'Blah blah blah'
   outcomePeakLoadFactor(outcomes)               'Blah blah blah'
   rt_outcomeWeight(rt,outcomes)                 'Blah blah blah'
-  outcomeWeight(oc)                             'blah blah blah'
+  outcomeWeight(outcomes)                       'blah blah blah'
   modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
   slacks                                        'A flag indicating slacks or penalty variables exist in at least one solution'
   timeAllowed(goal)                             'CPU seconds available for solver to spend solving the model'

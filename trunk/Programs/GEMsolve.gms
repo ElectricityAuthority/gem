@@ -277,8 +277,8 @@ loop((tmg(rt)),
   activeSolve(tmg,'default') = yes ;
 
 * Select appropriate hydro year(s) in order to do the timing solve.
-*  oc(outcomes) = no ;
-*  oc(outcomes)$map_rt_oc(rt,outcomes) = yes ;
+  oc(outcomes) = no ;
+  oc(outcomes)$map_rt_oc(rt,outcomes) = yes ;
 
   modelledHydroOutput(g,y,t,oc) =  hydroOutputScalar * i_hydroOutputAdj(y) *
     sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(oc,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(oc,hY), 1) ;
@@ -360,8 +360,8 @@ loop((reo(rt)),
   activeSolve(rt,'default') = yes ;
 
 * Select appropriate hydro year(s) in order to do the re-optimise solve.
-*  oc(outcomes) = no ;
-*  oc(outcomes)$map_rt_oc(rt,outcomes) = yes ;
+  oc(outcomes) = no ;
+  oc(outcomes)$map_rt_oc(rt,outcomes) = yes ;
 
   modelledHydroOutput(g,y,t,oc) = 0 ;
   modelledHydroOutput(g,y,t,oc) = hydroOutputScalar * i_hydroOutputAdj(y) *
@@ -492,7 +492,7 @@ $label CarryOn1
 
 
 set chooseYear(hY) ;
-*oc(outcomes) = no ;
+oc(outcomes) = no ;
 modelledHydroOutput(g,y,t,outcomes) = 0 ;
 
 * Select the dispatch run type
@@ -500,7 +500,7 @@ loop(dis(rt),
 
 * Loop over each outcome
   loop(map_rt_oc(rt,outcomes),
-*    oc(outcomes) = yes ;
+    oc(outcomes) = yes ;
 
 * Compute the hydro inflows for each modelled year
     loop(y,
@@ -545,7 +545,7 @@ loop(dis(rt),
 $ include CollectResults.txt
 
     modelledHydroOutput(g,y,t,outcomes) = 0 ;
-*    oc(outcomes) = no ;
+    oc(outcomes) = no ;
 
 * Close loop on outcomes
   ) ;
