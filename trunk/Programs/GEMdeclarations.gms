@@ -1,12 +1,12 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 09/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/02/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
 
  Code sections:
-  1. Declare sets and parameters - data to be imported from the GDX file created by EAME.
+  1. Declare sets and parameters - the data for which is imported from the GDX file created by EAME.
   2. Declare sets and parameters
      - hard-coded in GEMdata
      - hard-coded in GEMsolve
@@ -30,9 +30,9 @@ $offsymxref offsymlist
 
 
 *===============================================================================================
-* 1. Declare sets and parameters - data to be imported from the GDX file created by EAME.
+* 1. Declare sets and parameters - the data for which is imported from the GDX file created by EAME.
 
-* 25 fundamental sets
+* 24 fundamental sets
 Sets
   k            'Generation technologies'
   f            'Fuels'
@@ -51,7 +51,6 @@ Sets
   tgc          'Transmission group constraints'
   y            'Modelled calendar years'
   t            'Time periods (within a year)'
-  prf          'Load growth profiles'
   lb           'Load blocks'
   rc           'Reserve classes'
   hY           'Hydrology output years'
@@ -73,7 +72,7 @@ Sets
   fuelGrpcolor(fg,red,green,blue)               'RGB color mix for fuel groups - to pass to plotting applications'
   movers(k)                                     'Technologies for which commissioning date can move during re-optimisation of build timing'
   refurbish(k)                                  'Technologies eligible for endogenous "refurbish or retire" decision'
-  endogRetire(k)                                'Technologies eligible for endogenous retirement - in years prior to and including the refurbish or retire decision'
+  endogRetire(k)                                'Technologies eligible for endogenous retirement in years prior to and including the refurbish/retire decision'
   cogen(k)                                      'Cogeneration technologies'
   peaker(k)                                     'Peaking plant technologies'
   hydroSched(k)                                 'Schedulable hydro technologies'
@@ -84,7 +83,7 @@ Sets
   CCStech(k)                                    'Carbon capture and storage technologies'
   minUtilTechs(k)                               'Technologies to which minimum utilisation constraints may apply'
   demandGen(k)                                  'Demand side technologies modelled as generation'
-  randomiseCapex(k)                             'Specify the technologies able to have their capital costs randomised - within some narrow user-defined range'
+  randomiseCapex(k)                             'Specify the technologies able to have their capital costs randomised within some narrow user-defined range'
   linearBuildTech(k)                            'Specify the technologies able to be partially or linearly built'
   coal(f)                                       'Coal fuel'
   lignite(f)                                    'Lignite fuel'
@@ -191,9 +190,9 @@ Parameters
   i_firstDataYear                               'First data year - as a scalar, not a set'
   i_lastDataYear                                'Last data year - as a scalar, not a set'
   i_HalfHrsPerBlk(m,lb)                         'Count of half hours per load block in each month'
-  i_peakLoadNZp(y,prf)                          'Peak load for New Zealand by year and load growth profile, MW'
-  i_peakLoadNIp(y,prf)                          'Peak load for North Island by year and load growth profile, MW'
-  i_NrgDemand(prf,r,y,t,lb)                     'Load by growth profile, region, year, time period and load block, GWh'
+  i_peakLoadNZ(y)                               'Peak load for New Zealand by year, MW'
+  i_peakLoadNI(y)                               'Peak load for North Island by year, MW'
+  i_NrgDemand(r,y,t,lb)                         'Load by region, year, time period and load block, GWh'
   i_inflation(y)                                'Inflation rates by year'
 * 12 reserves and security
   i_ReserveSwitch(rc)                           'Switch to activate reserves by reserves class'
@@ -232,7 +231,6 @@ Sets
 * Initialised in GEMdata using input from GEMsettings/GEMstochastic
   outcomes                                      'Stochastic outcomes or uncertainty states'
   n                                             'Piecewise linear vertices'
-  selectedGrowthProfile(prf)                    'User-specified load growth profile (Low, Medium, or High)'
 * Hard-coded in GEMsolve
   rt                                            'Model run types'
   goal                                          'Goals for MIP solution procedure'
@@ -335,7 +333,6 @@ Sets
   endogenousRetireYrs(g,y)                      'The years in which generation plant able to be endogenously retired can actually be retired'
   validYrOperate(g,y,t)                         'Valid years and periods in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years'
 * Load data.
-  selectedGrowthProfile(prf)                    'User-specified load growth profile (Low, Medium, or High)'
 * Transmission data.
   slackBus(r)                                   'Designate a region to be the slack or reference bus'
   regLower(r,rr)                                'The lower triangular part of region-region matrix, i.e. where ord(r) > ord(rr)'
@@ -404,10 +401,10 @@ Parameters
   minCapFactPlant(g,y,t)                        'Minimum capacity factor - only defined for schedulable hydro and wind at this stage'
 * Load data.
   AClossFactors(ild)                            'Upwards adjustment to load to account for AC (or intraregional) losses'
-  NrgDemand(r,y,t,lb)                           'Load (or energy demand) by region, year, time period and load block for selected growth profile, GWh (used to create ldcMW)'
+  NrgDemand(r,y,t,lb)                           'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
   ldcMW(r,y,t,lb)                               'MW at each block by region, year and period'
-  peakLoadNZ(y,outcomes)                        'Peak load for New Zealand by year for selected growth profile, MW'
-  peakLoadNI(y,outcomes)                        'Peak load for North Island by year for selected growth profile, MW'
+  peakLoadNZ(y,outcomes)                        'Peak load for New Zealand by year, MW'
+  peakLoadNI(y,outcomes)                        'Peak load for North Island by year, MW'
   bigNIgen(y)                                   'Largest North Island generation plant by year, MW'
   nxtbigNIgen(y)                                'Next (second) largest North Island generation plant by year, MW'
 * Transmission data.

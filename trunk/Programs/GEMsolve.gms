@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 09/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/02/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -74,7 +74,7 @@ DISP.OptFile = 0 ;
 * NB: The following symbols from input data file may have been changed in GEMdata. So procure from
 *     GEMdataGDX rather than from GDXinputFile, or make commensurate change.
 *     Sets: y, exist, commit, new, neverBuild
-*     Parameters: i_txCapacity, i_txCapacityPO
+*     Parameters: i_nrgtxCapacity, i_txCapacityPO
 
 * Get set y from %GEMdataGDX% rather than %GDXinputFile% (years to solve for may be less than years data was prepared for).
 $gdxin '%ProgPath%%GEMdataGDX%'

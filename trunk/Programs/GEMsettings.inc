@@ -90,8 +90,6 @@ $setglobal NumVertices 3
 
 
 *** Load ***
-$setglobal GrowthProfile Medium
-* User-specified load growth profile (Low, Medium, or High)
 $setglobal AClossesNI 0.0368
 * Upwards adjustment to load to account for NI AC (or intraregional) losses - .0368 for 2-region and .0120 for 18-region
 $setglobal AClossesSI 0.0368

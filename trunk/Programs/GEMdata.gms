@@ -1,9 +1,14 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 09/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/02/2011 (imm@ea.govt.nz)
 
 $ontext
-  This program does....
+ This program prepares the data for a single scenario. It imports the raw scenario-specific data
+ from a GDX file; undertakes some manipulations, transformations, and intergrity checks; and then
+ produces another GDX file in order to pass the prepared data to GEMsolve whereupon GEM is solved.
+
+ The GEMdata invocation requires GEMdata to be restarted from GEMdeclarations. The files called
+ GEMpaths.inc and GEMsettings.inc are included in GEMdata.
 
  Code sections:
   1. Load input data that comes from input GDX file or is hard-coded.
@@ -46,12 +51,15 @@ $offsymxref offsymlist
 *===============================================================================================
 * 1. Load input data that comes from input GDX file or is hard-coded.
 
-* Re-initialise set y with the modelled years (set y in the GDX file contains data years).
+* Initialise set y with the modelled years as specified in GEMsettings.inc.
+* NB: set y in the GDX file contains all years on which data is defined, i.e. %firstYear% and %lastYear%
+*     define a subset of data years. This means that all parameters defined on set y are loaded without
+*     domain checking, i.e. $load c.f. $loaddc.
 Set y  / %firstYear% * %lastYear% / ;
 
 $gdxin "%DataPath%%GDXinputFile%"
-* 24 fundamental sets (i.e. all 25 less set y)
-$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v m geo col
+* 23 fundamental sets (i.e. all 24 less set y)
+$loaddc k f fg g s o fc i r e ild p ps tupg tgc t lb rc hY v m geo col
 * 41 mapping sets and subsets
 * 24 technology and fuel
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
@@ -85,7 +93,7 @@ $loaddc i_substnCoordinates i_zonalLocFacs
 $load   i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
 $load   i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS i_HVDClevy i_HVDCreqRevenue
 * 7 load and time
-$load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_peakLoadNZp i_peakLoadNIp i_NrgDemand i_inflation
+$load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_peakLoadNZ i_peakLoadNI i_NrgDemand i_inflation
 * 12 reserves and security
 $load   i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
 * 3 hydrology
@@ -93,7 +101,7 @@ $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
 
 
 * Initialise hard-coded sets (NB: previously declared in GEMdeclarations).
-* - ct, d, and dt hard-coded; n and selectedGrowthProfile receive info from GEMsettings.
+* - ct, d, and dt are hard-coded; n receives info from GEMsettings.
 Sets
   ct                             'Capital expenditure types'    / genplt   'New generation plant'
                                                                   refplt   'Refurbish existing generation plant' /
@@ -105,7 +113,6 @@ Sets
   dt                             'Types of discounting'         / mid      'Middle of the period within each year'
                                                                   eoy      'End of year'   /
   n                              'Piecewise linear vertices'    / n1 * n%NumVertices% /
-  selectedGrowthProfile(prf)     'User-specified load growth profile (Low, Medium, or High)'  / %GrowthProfile% /
   ;
 
 
@@ -398,16 +405,16 @@ AClossFactors('ni') = %AClossesNI% ;
 AClossFactors('si') = %AClossesSI% ;
 
 
-* Transfer i_NrgDemand to NrgDemand for the selected growth profile and adjust for intraregional AC transmission losses.
-NrgDemand(r,y,t,lb) = sum((selectedGrowthProfile(prf),mapild_r(ild,r)), (1 + AClossFactors(ild)) * i_NrgDemand(prf,r,y,t,lb)) ;
+* Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses.
+NrgDemand(r,y,t,lb) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) ;
 
 * Use GWh of NrgDemand and hours per LDC block to get ldcMW (MW).
 ldcMW(r,y,t,lb)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb) / hoursPerBlock(t,lb) ;
 
 * i) System security data.
-* Pull out peak load (MW) for the selected growth profile and adjust for embedded generation.
-peakLoadNZ(y,outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNZp(y,prf)) + %embedAdjNZ%) * outcomePeakLoadFactor(outcomes) ;
-peakLoadNI(y,outcomes) = (sum(selectedGrowthProfile(prf), i_peakLoadNIp(y,prf)) + %embedAdjNI%) * outcomePeakLoadFactor(outcomes) ;
+* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation.
+peakLoadNZ(y,outcomes) = ( i_peakLoadNZ(y) + %embedAdjNZ% ) * outcomePeakLoadFactor(outcomes) ;
+peakLoadNI(y,outcomes) = ( i_peakLoadNI(y) + %embedAdjNI% ) * outcomePeakLoadFactor(outcomes) ;
 
 bigNIgen(y) = i_BigNIgen(y) ;
 nxtbigNIgen(y) = i_nxtBigNIgen(y) ;
@@ -592,7 +599,6 @@ Display
   noExist, nigen, sigen, schedHydroPlant, pumpedHydroPlant, moverExceptions, validYrBuild, integerPlantBuild, linearPlantBuild
   possibleToBuild, possibleToRefurbish, possibleToEndogRetire, possibleToRetire, endogenousRetireDecisnYrs, endogenousRetireYrs, validYrOperate
 * Load data.
-  selectedGrowthProfile
 * Transmission data.
   slackBus, regLower, interIsland, nwd, swd, paths, uniPaths, biPaths, transitions, validTransitions, allowedStates, notAllowedStates
   upgradedStates, txEarlyComYrSet, txFixedComYrSet, vtgc, nSegment,
@@ -680,7 +686,6 @@ Execute_Unload "%GEMdataGDX%",
   possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire endogenousRetireDecisnYrs endogenousRetireYrs
   validYrOperate
 * Load data.
-  selectedGrowthProfile
 * Transmission data.
   slackBus regLower interIsland nwd swd paths uniPaths biPaths transitions validTransitions allowedStates notAllowedStates
   upgradedStates txEarlyComYrSet txFixedComYrSet vtgc nSegment
