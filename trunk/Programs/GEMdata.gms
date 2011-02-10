@@ -240,10 +240,10 @@ CO2taxByPlant(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2
 
 CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
 
-SRMC(g,y) = i_varOM(g) + totalFuelCost(g,y) + CO2taxByPlant(g,y) + CO2CaptureStorageCost(g,y) ;
+SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y) + CO2taxByPlant(g,y) + CO2CaptureStorageCost(g,y) ;
 
 * If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
-SRMC(g,y)$( SRMC(g,y) < .05 ) = .05 * ord(g) / card(g) ;
+SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = .05 * ord(g) / card(g) ;
 
 
 * e) Generation data.

@@ -380,7 +380,7 @@ Parameters
   txCapRecFac(y)                                'Capital recovery factor for transmission - including a nominal accounting treatment of depreciation tax credit'
   txDeptCRecFac(y)                              'Recovery factor for just the depreciation tax credit portion of txcaprecfac'
 * Fuel prices and quantity limits.
-  SRMC(g,y)                                     'Short run marginal cost of each generation project by year, $/MWh'
+  SRMC(g,y,outcomes)                            'Short run marginal cost of each generation project by year and outcome, $/MWh'
   totalFuelCost(g,y)                            'Total fuel cost - price plus fuel delivery charge all times heatrate - by plant and year, $/MWh'
   CO2taxByPlant(g,y)                            'CO2 tax by plant and year, $/MWh'
   CO2CaptureStorageCost(g,y)                    'Carbon capture and storage cost by plant and year, $/MWh'
@@ -466,6 +466,7 @@ Equations
 
 Free Variables
   TOTALCOST                                     'Discounted total system costs over all modelled years, $m (objective function value)'
+  OUTCOME_OBJECTIVE(outcomes)
   TX(r,rr,y,t,lb,outcomes)                      'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
   THETA(r,y,t,lb,outcomes)                      'Bus voltage angle'
 
@@ -512,6 +513,7 @@ Positive Variables
 
 Equations
   objectivefn                                   'Calculate discounted total system costs over all modelled years, $m'
+  outcomeobjective(outcomes)
   calc_refurbcost(g,y)                          'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
   calc_txcapcharges(r,rr,y)                     'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
   bldgenonce(g)                                 'If new generating plant is to be built, ensure it is built only once'
@@ -577,18 +579,12 @@ objectivefn..
   9995 * sum(y, HYDROSLACK(y) ) +
   9994 * sum(y, MINUTILSLACK(y) ) +
   9993 * sum(y, FUELSLACK(y) ) +
-* Reserve violation costs (really a 'slack' but not called a slack), $m
-  1e-6 * sum((rc,ild,y,t,lb,oc), outcomeWeight(oc) * RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
 * Add in penalties at user-defined high, but not necessarily arbitrarily high, cost.
   penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
-  penaltyLostPeak * sum((y,oc)$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
-  penaltyLostPeak * sum((y,oc), NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
 * Fixed, variable and HVDC costs - discounted and adjusted for tax
 * NB: Fixed costs are scaled by 1/card(t) to convert annual costs to a periodic basis coz discounting is done by period.
 * NB: The HVDC charge applies only to committed and new SI projects.
   1e-6 * sum((y,t), PVfacG(y,t) * (1 - taxRate) * (
-           sum(oc, sum((s,lb), 1e3 * outcomeWeight(oc) * VOLLGEN(s,y,t,lb,oc) * i_VOLLcost(s) ) ) +
-           sum(oc, sum((g,lb)$validYrOperate(g,y,t), 1e3 * outcomeWeight(oc) * GEN(g,y,t,lb,oc) * srmc(g,y) * sum(mapg_e(g,e), locFac_Recip(e)) ) ) +
            ( 1/card(t) ) * 1e3 * (
            sum(g, i_fixedOM(g) * CAPACITY(g,y)) +
            sum((g,k,o)$((not demandGen(k)) * sigen(g) * possibleToBuild(g) * mapg_k(g,k) * mapg_o(g,o)), i_HVDCshr(o) * i_HVDClevy(y) * CAPACITY(g,y))
@@ -600,13 +596,31 @@ objectivefn..
   1e-6 * sum((y,firstPeriod(t),PossibleToRefurbish(g))$refurbcapcharge(g,y), PVfacG(y,t) * REFURBCOST(g,y) ) +
 * Transmission capital expenditure - discounted
   sum((paths,y,firstPeriod(t)),   PVfacT(y,t) * TXCAPCHARGES(paths,y) ) +
-* Cost of providing reserves ($m) - discounted and adjusted for tax.
-  1e-6 * sum((g,rc,y,t,lb,oc), PVfacG(y,t) * (1 - taxRate) * outcomeWeight(oc) * RESV(g,rc,y,t,lb,oc) * i_plantreservescost(g,rc) ) +
-*+++++++++++++++++
+* Costs by outcome
+  sum(oc, outcomeWeight(oc) * OUTCOME_OBJECTIVE(oc))
+  ;
+
+outcomeobjective(oc)..
+  OUTCOME_OBJECTIVE(oc) =e=
+* Reserve violation costs (really a 'slack' but not called a slack), $m
+  1e-6 * sum((rc,ild,y,t,lb), RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
+* Lost peak penalties
+  penaltyLostPeak * sum(y$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
+  penaltyLostPeak * sum(y, NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
+* Costs discounted and adjusted for tax (should this apply to lost peak penalties?)
+  1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(y,t) *
+  (
+* Lost load
+    sum(s, 1e3 * VOLLGEN(s,y,t,lb,oc) * i_VOLLcost(s) ) +
+* Generation costs
+    sum(g$validYrOperate(g,y,t), 1e3 * GEN(g,y,t,lb,oc) * srmc(g,y,oc) * sum(mapg_e(g,e), locFac_Recip(e)) ) +
+* Cost of providing reserves ($m)
+    sum((g,rc), RESV(g,rc,y,t,lb,oc) * i_plantreservescost(g,rc) ) +
 * More non-free reserves code.
-* Cost of providing reserves ($m) - discounted and adjusted for tax (last term of objective function).
-  1e-6 * sum((paths,y,t,lb,oc,stp)$( nwd(paths) or swd(paths) ),
-                               PVfacG(y,t) * (1 - taxRate) * outcomeWeight(oc) * (hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp)) * pnfresvcost(paths,stp) ) ;
+* Cost of providing reserves ($m)
+    sum((paths,stp)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp) * pnfresvcost(paths,stp) )
+  ) )
+  ;
 
 * Calculate non-free reserve components. 
 calc_nfreserves(paths(r,rr),y,t,lb,oc)$( nwd(r,rr) or swd(r,rr) )..
@@ -859,7 +873,7 @@ resvreqwind(rc,ild,y,t,lb,oc)$( useReserves * ( (i_reserveReqMW(y,ild,rc) = -2) 
   =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y,t) ), 1000 * GEN(g,y,t,lb,oc) ) ;
 
 Model GEM Generation expansion model  /
-  objectivefn, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
+  objectivefn, outcomeobjective, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
   bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire, endogretonce
   security_nz, security_ni1,  security_ni2, nowind_nz, nowind_ni
   limit_maxgen, limit_mingen, minutil, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
@@ -877,7 +891,7 @@ Model GEM Generation expansion model  /
 * DISPatch is identical to GEM except 6 constraints are dropped:
 * - bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire and endogretonce.
 Model DISP Dispatch model with build forced and timing fixed  /
-  objectivefn, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
+  objectivefn, outcomeobjective, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
   security_nz, security_ni1,  security_ni2, nowind_nz, nowind_ni
   limit_maxgen, limit_mingen, minutil, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
   limit_pumpgen1, limit_pumpgen2, limit_pumpgen3
