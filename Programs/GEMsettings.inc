@@ -39,10 +39,7 @@ $setglobal Mode 0
 
 
 *** Hydrology ***
-$setglobal hydroYrForTiming Average
-* inflow year used to determine timing of new builds. Choices are Multiple, Average, 1932, 1933, ... 2007
 Scalar hydroOutputScalar / .97 / ;
-$setglobal hydroYrForReopt 1932
 * Hydro inflow year used to determine timing of new builds when re-optimising initial decision. 
 $setglobal DInflowYr 0
 * 
