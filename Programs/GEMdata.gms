@@ -234,13 +234,13 @@ if(depType = 0,
 
 * d) Fuel prices and quantity limits.
 * Define short run marginal cost (and its components) of each generating plant.
-totalFuelCost(g,y) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) + i_FuelDeliveryCost(g) ) ) ;
+totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) + i_FuelDeliveryCost(g) ) ) ;
 
-CO2taxByPlant(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
+CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
 
 CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
 
-SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y) + CO2taxByPlant(g,y) + CO2CaptureStorageCost(g,y) ;
+SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
 
 * If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
 SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = .05 * ord(g) / card(g) ;

@@ -381,8 +381,8 @@ Parameters
   txDeptCRecFac(y)                              'Recovery factor for just the depreciation tax credit portion of txcaprecfac'
 * Fuel prices and quantity limits.
   SRMC(g,y,outcomes)                            'Short run marginal cost of each generation project by year and outcome, $/MWh'
-  totalFuelCost(g,y)                            'Total fuel cost - price plus fuel delivery charge all times heatrate - by plant and year, $/MWh'
-  CO2taxByPlant(g,y)                            'CO2 tax by plant and year, $/MWh'
+  totalFuelCost(g,y,outcomes)                   'Total fuel cost - price plus fuel delivery charge all times heatrate - by plant, year and outcome, $/MWh'
+  CO2taxByPlant(g,y,outcomes)                   'CO2 tax by plant and year, $/MWh'
   CO2CaptureStorageCost(g,y)                    'Carbon capture and storage cost by plant and year, $/MWh'
 * Generation data.
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'
@@ -619,8 +619,7 @@ outcomeobjective(oc)..
 * More non-free reserves code.
 * Cost of providing reserves ($m)
     sum((paths,stp)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp) * pnfresvcost(paths,stp) )
-  ) )
-  ;
+  ) )  ;
 
 * Calculate non-free reserve components. 
 calc_nfreserves(paths(r,rr),y,t,lb,oc)$( nwd(r,rr) or swd(r,rr) )..
