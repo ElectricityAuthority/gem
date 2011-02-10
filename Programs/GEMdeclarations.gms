@@ -382,7 +382,7 @@ Parameters
 * Fuel prices and quantity limits.
   SRMC(g,y,outcomes)                            'Short run marginal cost of each generation project by year and outcome, $/MWh'
   totalFuelCost(g,y,outcomes)                   'Total fuel cost - price plus fuel delivery charge all times heatrate - by plant, year and outcome, $/MWh'
-  CO2taxByPlant(g,y,outcomes)                   'CO2 tax by plant and year, $/MWh'
+  CO2taxByPlant(g,y,outcomes)                   'CO2 tax by plant, year and outcome, $/MWh'
   CO2CaptureStorageCost(g,y)                    'Carbon capture and storage cost by plant and year, $/MWh'
 * Generation data.
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'

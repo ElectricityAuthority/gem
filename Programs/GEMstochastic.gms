@@ -24,7 +24,9 @@ map_rt_oc('dis','average') = yes ;
 
 
 * Parameters:
-Parameter outcomePeakLoadFactor(outcomes) /  average 1, m1992 0, m1998 0, m2000 0, m2002 0, m2003 0 / ;
+Parameter outcomePeakLoadFactor(outcomes) / average 1, m1992 1, m1998 1, m2000 1, m2002 1, m2003 1 / ;
+parameter outcomeCO2TaxFactor(outcomes)   / average 1, m1992 1, m1998 0, m2000 1, m2002 1, m2003 1 / ;
+parameter outcomeFuelCostFactor(outcomes) / average 1, m1992 1, m1998 1, m2000 1, m2002 1, m2003 1 / ;
 
 Parameter rt_outcomeWeight(rt,outcomes)   /  tmg.average 1, reo.average 1, dis.average 1   / ;
 
