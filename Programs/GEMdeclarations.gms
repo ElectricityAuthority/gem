@@ -401,8 +401,8 @@ Parameters
   minCapFactPlant(g,y,t)                        'Minimum capacity factor - only defined for schedulable hydro and wind at this stage'
 * Load data.
   AClossFactors(ild)                            'Upwards adjustment to load to account for AC (or intraregional) losses'
-  NrgDemand(r,y,t,lb)                           'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
-  ldcMW(r,y,t,lb)                               'MW at each block by region, year and period'
+  NrgDemand(r,y,t,lb,outcomes)                  'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
+  ldcMW(r,y,t,lb,outcomes)                      'MW at each block by region, year and period'
   peakLoadNZ(y,outcomes)                        'Peak load for New Zealand by year, MW'
   peakLoadNI(y,outcomes)                        'Peak load for North Island by year, MW'
   bigNIgen(y)                                   'Largest North Island generation plant by year, MW'
