@@ -234,9 +234,9 @@ if(depType = 0,
 
 * d) Fuel prices and quantity limits.
 * Define short run marginal cost (and its components) of each generating plant.
-totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) + i_FuelDeliveryCost(g) ) ) ;
+totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
 
-CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
+CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
 
 CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
 
@@ -406,10 +406,10 @@ AClossFactors('si') = %AClossesSI% ;
 
 
 * Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses.
-NrgDemand(r,y,t,lb) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) ;
+NrgDemand(r,y,t,lb,outcomes) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * outcomeNRGFactor(outcomes) ;
 
 * Use GWh of NrgDemand and hours per LDC block to get ldcMW (MW).
-ldcMW(r,y,t,lb)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb) / hoursPerBlock(t,lb) ;
+ldcMW(r,y,t,lb,outcomes)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,outcomes) / hoursPerBlock(t,lb) ;
 
 * i) System security data.
 * Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation.

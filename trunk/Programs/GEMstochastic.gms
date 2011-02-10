@@ -24,12 +24,14 @@ map_rt_oc('dis','average') = yes ;
 
 
 * Parameters:
-Parameter outcomePeakLoadFactor(outcomes) / average 1, m1992 1, m1998 1, m2000 1, m2002 1, m2003 1 / ;
-parameter outcomeCO2TaxFactor(outcomes)   / average 1, m1992 1, m1998 0, m2000 1, m2002 1, m2003 1 / ;
-parameter outcomeFuelCostFactor(outcomes) / average 1, m1992 1, m1998 1, m2000 1, m2002 1, m2003 1 / ;
+Parameters
+  outcomePeakLoadFactor(outcomes)  / average 1, m1992 1, m1998 1, m2000 1, m2002 1, m2003 1 /
+  outcomeCO2TaxFactor(outcomes)    / average 1, m1992 1, m1998 0, m2000 1, m2002 1, m2003 1 /
+  outcomeFuelCostFactor(outcomes)  / average 1, m1992 1, m1998 1, m2000 1, m2002 1, m2003 1 /
+  outcomeNRGFactor(outcomes)       / average 1, m1992 1, m1998 1, m2000 1, m2002 1, m2003 1 /
+  rt_outcomeWeight(rt,outcomes)    /  tmg.average 1, reo.average 1, dis.average 1   /
+  penaltyLostPeak                  / 9998 /
+  ;
 
-Parameter rt_outcomeWeight(rt,outcomes)   /  tmg.average 1, reo.average 1, dis.average 1   / ;
-
-parameter penaltyLostPeak / 9998 / ;
 
 * End of file.
