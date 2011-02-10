@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 10/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 11/02/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -676,7 +676,7 @@ bal_supdem(r,y,t,lb,oc)..
 * Transmission and losses with DC load flow formulation
  (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,oc) - 0.5 * LOSS(rr,r,y,t,lb,oc) ) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 1 )
   =g=
-  ldcMW(r,y,t,lb) * hoursPerBlock(t,lb) * 0.001 +
+  ldcMW(r,y,t,lb,oc) * hoursPerBlock(t,lb) * 0.001 +
   sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y,t) ), PUMPEDGEN(g,y,t,lb,oc)) ;
 
 * Ensure reserve requirements can be met at peak in both islands with largest NI unit out.

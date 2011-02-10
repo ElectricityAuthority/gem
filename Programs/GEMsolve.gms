@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 10/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 11/02/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -13,7 +13,7 @@ $ontext
   2. Read in required data from GDX files.
   3. Re-declare and/or initialise sets and parameters.
   4. Set bounds, initial levels and fixes.
-  5. Enter the rt-hY loop, solve the model, and collect results.
+  5. Solve the model and collect results.
   6. Prepare results to pass along to report codes in the form of a GDX file. 
   7. Dump results out to GDX files and rename/relocate certain output files.
 
@@ -265,25 +265,39 @@ $set AddUp10Slacks "sum((y,oc), SEC_NZ_PENALTY.l(y,oc) + SEC_NI1_PENALTY.l(y,oc)
 
 
 *===============================================================================================
-* 5. Enter the rt-hY loop, solve the model, and collect results.
+* 5. Solve the model and collect results.
 
 $if %RunType%==2 $goto NoGEM
 
-** Solve the MIP to determine investment timing.
-* This is not a loop, we're setting tmg and rt to 'tmg' and hydroYrForTiming and hY to %hydroYrForTiming%.
-loop((tmg(rt)),
+* Solve the MIP to determine investment timing:
+* Loop on the single element (tmg) of the set called run type (rt).
+loop(tmg(rt),
 
 * Capture the current elements of the run type-hydro year tuple.
   activeSolve(tmg,'default') = yes ;
 
-* Select appropriate hydro year(s) in order to do the timing solve.
+* Select appropriate outcomes in order to do the timing solve.
   oc(outcomes) = no ;
+  outcomeWeight(outcomes) = 0 ;
+  modelledHydroOutput(g,y,t,outcomes) = 0 ;
+
   oc(outcomes)$map_rt_oc(rt,outcomes) = yes ;
-
-  modelledHydroOutput(g,y,t,oc) =  hydroOutputScalar * i_hydroOutputAdj(y) *
-    sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(oc,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(oc,hY), 1) ;
-
   outcomeWeight(oc) = rt_outcomeWeight(rt,oc) ;
+
+  loop(oc(outcomes),
+    if(hydroType(outcomes,'same'),
+      modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar * i_hydroOutputAdj(y) *
+        sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
+    else
+      loop(y,
+        chooseHydroYears(hY) = no ;
+        chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+        chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+        modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
+          sum((mapv_g(v,g), mapm_t(m, t), chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+      ) ;
+    )
+  ) ;
 
 * Make sure renewable energy share constraint is not suppressed unless i_renewNrgShare(y) = 0 for all y.
   renNrgShrOn$( sum(y, i_renewNrgShare(y)) = 0 ) = 0 ;
@@ -345,29 +359,42 @@ $   label NoTrace3
 * Collect up solution values - by run type (rt) and hydro year (hY).
 $include CollectResults.txt
 
-* Close the loop on run type (rt = TMG) and hydro year (hY = hydroYrForTiming).
+* Close the loop on run type (rt = TMG).
 ) ;
 
 
 $if %SuppressReopt%==1 $goto NoReOpt
 
 
-** Solve the MIP again to re-optimise investment timing.
-* Open loop on run type REO.
-loop((reo(rt)),
+* Solve the MIP again to re-optimise investment timing:
+* Loop on the single element (reo) of the set called run type (rt).
+loop(reo(rt),
 
 * Capture the current elements of the run type-hydro year tuple.
-  activeSolve(rt,'default') = yes ;
+  activeSolve(reo,'default') = yes ;
 
-* Select appropriate hydro year(s) in order to do the re-optimise solve.
+* Select appropriate outcomes in order to do the re-optimisation solve.
   oc(outcomes) = no ;
+  outcomeWeight(outcomes) = 0 ;
+  modelledHydroOutput(g,y,t,outcomes) = 0 ;
+
   oc(outcomes)$map_rt_oc(rt,outcomes) = yes ;
-
-  modelledHydroOutput(g,y,t,oc) = 0 ;
-  modelledHydroOutput(g,y,t,oc) = hydroOutputScalar * i_hydroOutputAdj(y) *
-    sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(oc,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(oc,hY), 1) ;
-
   outcomeWeight(oc) = rt_outcomeWeight(rt,oc) ;
+
+  loop(oc(outcomes),
+    if(hydroType(outcomes,'same'),
+      modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar * i_hydroOutputAdj(y) *
+        sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
+    else
+      loop(y,
+        chooseHydroYears(hY) = no ;
+        chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+        chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+        modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
+          sum((mapv_g(v,g), mapm_t(m, t), chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+      ) ;
+    )
+  ) ;
 
 * Make sure renewable energy share constraint is not suppressed unless SprsRenShrReo = 1 or i_renewNrgShare(y) = 0 for all y.
   renNrgShrOn$( ( %SprsRenShrReo% = 1 ) or ( sum(y, i_renewNrgShare(y)) = 0 ) ) = 0 ;
@@ -444,7 +471,7 @@ $   label NoTrace4
 * Collect up solution values - by run type (rt) and hydro year (hY).
 $ include CollectResults.txt
 
-* Close the loop on run type (rt = REO) and hydro year (hY = hydroYrForReopt).
+* Close the loop on run type (rt = REO).
 ) ;
 
 
@@ -491,35 +518,51 @@ $offtext
 $label CarryOn1
 
 
-set chooseYear(hY) ;
-oc(outcomes) = no ;
-modelledHydroOutput(g,y,t,outcomes) = 0 ;
-
 * Select the dispatch run type
 loop(dis(rt),
 
+* Select appropriate outcomes in order to do the timing solve.
+  oc(outcomes) = no ;
+  outcomeWeight(outcomes) = 0 ;
+  modelledHydroOutput(g,y,t,outcomes) = 0 ;
+
 * Loop over each outcome
   loop(map_rt_oc(rt,outcomes),
+
     oc(outcomes) = yes ;
+    outcomeWeight(oc) = rt_outcomeWeight(rt,oc) ;
 
 * Compute the hydro inflows for each modelled year
-    loop(y,
-      chooseYear(hY) = no ;
-      chooseYear(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
-      chooseYear(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
-      modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
-        sum((mapv_g(v,g), mapm_t(m, t), chooseYear), historicalHydroOutput(v,chooseYear,m)) / sum(chooseYear, 1) ;
+*    loop(y,
+*      chooseHydroYears(hY) = no ;
+*      chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+*      chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+*      modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
+*        sum((mapv_g(v,g), mapm_t(m, t), chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+*      ) ;
+
+    if(hydroType(outcomes,'same'),
+      modelledHydroOutput(g,y,t,outcomes) =  hydroOutputScalar * i_hydroOutputAdj(y) *
+        sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
+    else
+      loop(y,
+        chooseHydroYears(hY) = no ;
+        chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+        chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+        modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
+          sum((mapv_g(v,g), mapm_t(m, t), chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
       ) ;
+    ) ;
 
 *   Solve the RMIP (i.e. DISP):
     Solve DISP using %DISPtype% minimizing TOTALCOST ;
 
-* Figure out if run is to be aborted and report that fact before aborting.
+*   Figure out if run is to be aborted and report that fact before aborting.
     slacks = %AddUp10Slacks% ;
     counter = 0 ;
     counter$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) = 1 ;
 
-* Post a progress message to report for use by GUI and to the console.
+*   Post a progress message to report for use by GUI and to the console.
     if(counter = 1,
       putclose rep // 'The ' rt.tl '-' outcomes.tl ' solve finished with some sort of problem and the job is now going to abort.' /
                     'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
