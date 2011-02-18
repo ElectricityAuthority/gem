@@ -1,4 +1,4 @@
-$inlinecom { }
+inlinecom$inlinecom { }
 $eolcom !
 $setglobal ProgPath         "%system.fp%"
 $setglobal DataPath         "%system.fp%..\Data\"
@@ -18,13 +18,13 @@ $setglobal firstScenario    "Final GEM2.0 input data (2Reg 9Block mds2).gdx"
 *** Model ***
 $setglobal firstYear 2010
 * First modelled year.
-$setglobal lastYear 2035
+$setglobal lastYear 2020
 * Last modelled year.
 $setglobal RunType 0
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
-$setglobal GEMtype RMIP
+$setglobal GEMtype MIP
 * Specify whether GEM is to be a MIP or an RMIP - take care to get the spelling exact (default = MIP).
-$setglobal DISPtype RMIP
+$setglobal DISPtype MIP
 * Specify whether DISP is to be a MIP or an RMIP - take care to get the spelling exact (default = RMIP).
 $setglobal SuppressReopt 1
 * Select 1 when in GEM/DISP or GEM-only mode (i.e. RunType = 0 or 1) to skip re-optimisation of the GEM MIP; Otherwise select 0 to invoke re-optimisation.
@@ -40,26 +40,6 @@ $setglobal Mode 0
 
 *** Hydrology ***
 Scalar hydroOutputScalar / .97 / ;
-* Hydro inflow year used to determine timing of new builds when re-optimising initial decision. 
-$setglobal DInflowYr 0
-* 
-* Indicator used to determine hydroYrForDispatch, which in turn determines the hydro year looped over when                                      
-* solving DISPatch and, therefore, the year used in the first modelled year to kick off development of                                      
-* the hydro sequences for all modelled years (default = 0).                                      
-* 0    --> use all hydro years including the average hydro year (but excluding the 'multiple' inflow year)                                      
-* 1    --> use only the average hydro year                                      
-* xxxx --> use the single hydro year indicated by xxxx (i.e. pick one from 1932...2007)
-$setglobal DInflwYrType 1
-* 
-* Set equal to 1 or 2 to determine how the hydro sequence is developed, i.e. sequentially or constant (default = 1)                                      
-* Note that DInflwYrType works in conjunction with DInflowYr. DInflowYr initiates the start of the sequence for the                                      
-* first modelled year, while DInflwYrType controls how the initiated sequence develops for subsequent modelled years.                                      
-* 1 --> hydro years are mapped into modelled years in sequence for each modelled year, e.g. if modelled year                                      
-* 2010 started with hydro year 1932, then modelled year 2011 would use hydro year 1933, and the 2012                                      
-* modelled year would use 1934 hydrology and so on and so on. DInflowYr determines how the sequence starts.                                      
-* 2 --> the same, or constant, hydro year is used for each modelled year i.e. if looping over hydro year                                      
-* 1951, say, then the 1951 hydro would be used for all modelled years from FirstYr to LastYr.                                      
-* See 'XXX - hydro years mapped to modelled years.csv' for a complete enumeration.
 
 
 *** CapitalExpenditure ***
