@@ -1,4 +1,4 @@
-inlinecom$inlinecom { }
+$inlinecom { }
 $eolcom !
 $setglobal ProgPath         "%system.fp%"
 $setglobal DataPath         "%system.fp%..\Data\"
