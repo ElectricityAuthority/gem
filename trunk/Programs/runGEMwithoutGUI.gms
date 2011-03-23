@@ -4,9 +4,9 @@
 
 $ontext
  Purpose:
- This file describes the process to manually operate GEM, i.e. without resort to EAMUI. Manual operation of
+ This file describes the process to manually operate GEM, i.e. without resort to EAME. Manual operation of
  GEM may be undertaken using the GAMS IDE, or a text editor and the command line. Note that the files called
- GEMpaths.inc and GEMsettings.inc are produced automatically by EAMUI and are used by GEM. If they haven't been
+ GEMpaths.inc and GEMsettings.inc are produced automatically by EAME and are used by GEM. If they haven't been
  deleted, they will reside in the GEM programs directory.
    
  Steps:

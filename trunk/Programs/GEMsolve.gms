@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 18/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 24/03/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -151,26 +151,29 @@ $set AddUp10Slacks "sum((y,oc), SEC_NZ_PENALTY.l(y,oc) + SEC_NI1_PENALTY.l(y,oc)
 * Open loop over all the timing runs
 loop((rtTiming,timingRun)$( map_rt_runs(rtTiming,timingRun) and sameas(rtTiming,'tmg') ),
 
+  oc(outcomes) = no ;
+  oc(outcomes)$map_runs_outcomes(timingRun,outcomes) = yes ;
+
 * Variables that are to be fixed, first need to be unfixed - this is probably redundant now that we're not going around the old MDS loop.
   BUILD.lo(g,y) = 0 ;                                  BUILD.up(g,y) = i_nameplate(g) ;
   REFURBCOST.lo(g,y) = 0 ;                             REFURBCOST.up(g,y) = +inf ;
   ISRETIRED.lo(g) = 0 ;                                ISRETIRED.up(g) = 1 ;
   BRET.lo(g,y) = 0 ;                                   BRET.up(g,y) = 1 ;
   RETIRE.lo(g,y) = 0 ;                                 RETIRE.up(g,y) = +inf ;
-  GEN.lo(g,y,t,lb,outcomes) = 0 ;                      GEN.up(g,y,t,lb,outcomes) = +inf ;
-  VOLLGEN.lo(s,y,t,lb,outcomes) = 0 ;                  VOLLGEN.up(s,y,t,lb,outcomes) = +inf ;
-  TX.lo(paths,y,t,lb,outcomes) = -inf ;                TX.up(paths,y,t,lb,outcomes) = +inf ;
+  GEN.lo(g,y,t,lb,oc) = 0 ;                            GEN.up(g,y,t,lb,oc) = +inf ;
+  VOLLGEN.lo(s,y,t,lb,oc) = 0 ;                        VOLLGEN.up(s,y,t,lb,oc) = +inf ;
+  TX.lo(paths,y,t,lb,oc) = -inf ;                      TX.up(paths,y,t,lb,oc) = +inf ;
   CGEN.lo(g,y) = 0 ;                                   CGEN.up(g,y) = 1 ;
   BGEN.lo(g,y) = 0 ;                                   BGEN.up(g,y) = 1 ;
   TXUPGRADE.lo(validTransitions(paths,ps,pss),y) = 0 ; TXUPGRADE.up(validTransitions(paths,ps,pss),y) = 1 ;
   TXPROJVAR.lo(tupg,y) = 0 ;                           TXPROJVAR.up(tupg,y) = 1 ;
   BTX.lo(paths,ps,y) = 0 ;                             BTX.up(paths,ps,y) = 1 ;
-  THETA.lo(r,y,t,lb,outcomes) = -inf ;                 THETA.up(r,y,t,lb,outcomes) = +inf ;
-  RESV.lo(g,rc,y,t,lb,outcomes) = 0 ;                  RESV.up(g,rc,y,t,lb,outcomes) = +inf ;
-  RESVVIOL.lo(rc,ild,y,t,lb,outcomes) = 0 ;            RESVVIOL.up(rc,ild,y,t,lb,outcomes) = +inf ;
-  RESVTRFR.lo(rc,ild1,ild,y,t,lb,outcomes) = 0 ;       RESVTRFR.up(rc,ild1,ild,y,t,lb,outcomes) = +inf ;
-  RESVREQINT.lo(rc,ild,y,t,lb,outcomes) = 0 ;          RESVREQINT.up(rc,ild,y,t,lb,outcomes) = +inf ;
-  NORESVTRFR.lo(ild,ild,y,t,lb,outcomes) = 0 ;         NORESVTRFR.up(ild,ild,y,t,lb,outcomes) = 1 ;
+  THETA.lo(r,y,t,lb,oc) = -inf ;                       THETA.up(r,y,t,lb,oc) = +inf ;
+  RESV.lo(g,rc,y,t,lb,oc) = 0 ;                        RESV.up(g,rc,y,t,lb,oc) = +inf ;
+  RESVVIOL.lo(rc,ild,y,t,lb,oc) = 0 ;                  RESVVIOL.up(rc,ild,y,t,lb,oc) = +inf ;
+  RESVTRFR.lo(rc,ild1,ild,y,t,lb,oc) = 0 ;             RESVTRFR.up(rc,ild1,ild,y,t,lb,oc) = +inf ;
+  RESVREQINT.lo(rc,ild,y,t,lb,oc) = 0 ;                RESVREQINT.up(rc,ild,y,t,lb,oc) = +inf ;
+  NORESVTRFR.lo(ild,ild,y,t,lb,oc) = 0 ;               NORESVTRFR.up(ild,ild,y,t,lb,oc) = 1 ;
 
 * Restrict the build variable (i.e. MW) to be zero depending on input assumptions:
 * a) Don't allow capacity to be built in years outside the valid range of build years.
@@ -197,22 +200,22 @@ loop((rtTiming,timingRun)$( map_rt_runs(rtTiming,timingRun) and sameas(rtTiming,
 * Restrict generation:
 * a) Don't allow generation from units prior to committed date or earliest allowable operation or if plant is retired.
 *    NB: 'validYrOperate embodies the appropriate date for existing, committed, and new units - i.e., all units.
-  GEN.fx(g,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
+  GEN.fx(g,y,t,lb,oc)$( not validYrOperate(g,y,t) ) = 0 ;
 
 * b) Force generation from the 'must run' (i.e base load) plant.
 *    Convert MW capacity to GWh in the load block, as in the lim_maxgen constraint. 
-  GEN.fx(g,y,t,lb,outcomes)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y,t) ) =  1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
+  GEN.fx(g,y,t,lb,oc)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y,t) ) =  1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
 
 * Place restrictions on VOLL plants:
 * a) Respect the capacity of VOLL plants 
-  VOLLGEN.up(s,y,t,lb,outcomes) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;
+  VOLLGEN.up(s,y,t,lb,oc) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;
 
 * b) Don't allow VOLL in user-specified top load blocks 
-  VOLLGEN.fx(s,y,t,lb,outcomes)$( ord(lb) <= noVOLLblks ) = 0 ;
+  VOLLGEN.fx(s,y,t,lb,oc)$( ord(lb) <= noVOLLblks ) = 0 ;
 
 * Fix lower bound on TX to zero if transportation formulation is being used. Reset level to zero each time too.
-  TX.l(paths,y,t,lb,outcomes) = 0 ;
-  TX.lo(paths,y,t,lb,outcomes)$(DCloadFlow = 0) = 0 ;
+  TX.l(paths,y,t,lb,oc) = 0 ;
+  TX.lo(paths,y,t,lb,oc)$(DCloadFlow = 0) = 0 ;
  
 * Impose upper bound of 1 on continuous 0-1 transmission-related variables.
   TXUPGRADE.up(validTransitions(paths,ps,pss),y) = 1 ;
@@ -232,34 +235,34 @@ loop((rtTiming,timingRun)$( map_rt_runs(rtTiming,timingRun) and sameas(rtTiming,
   BTX.fx(notAllowedStates,y) = 0 ;
 
 * Fix the reference bus angle to zero.
-  THETA.fx(slackBus(r),y,t,lb,outcomes) = 0 ;
+  THETA.fx(slackBus(r),y,t,lb,oc) = 0 ;
 
 * Fix reserve variables to zero if they are not needed.
-  RESV.fx(g,rc,y,t,lb,outcomes)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
-  RESVVIOL.fx(rc,ild,y,t,lb,outcomes)$(        not useReserves ) = 0 ;
-  RESVTRFR.fx(rc,ild,ild1,y,t,lb,outcomes)$( ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
-  RESVREQINT.fx(rc,ild,y,t,lb,outcomes)$(      not useReserves ) = 0 ;
-  NORESVTRFR.fx(ild,ild1,y,t,lb,outcomes)$(    not useReserves ) = 0 ;
+  RESV.fx(g,rc,y,t,lb,oc)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
+  RESVVIOL.fx(rc,ild,y,t,lb,oc)$(        not useReserves ) = 0 ;
+  RESVTRFR.fx(rc,ild,ild1,y,t,lb,oc)$( ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
+  RESVREQINT.fx(rc,ild,y,t,lb,oc)$(      not useReserves ) = 0 ;
+  NORESVTRFR.fx(ild,ild1,y,t,lb,oc)$(    not useReserves ) = 0 ;
 
 * Fix to zero the intra-island reserve variables.
-  RESVTRFR.fx(rc,ild,ild,y,t,lb,outcomes) = 0 ;
-  NORESVTRFR.fx(ild,ild,y,t,lb,outcomes)  = 0 ;
+  RESVTRFR.fx(rc,ild,ild,y,t,lb,oc) = 0 ;
+  NORESVTRFR.fx(ild,ild,y,t,lb,oc)  = 0 ;
 
 * Set the lower bound on the reserve requirement if there is an external requirement specified.
-  RESVREQINT.lo(rc,ild,y,t,lb,outcomes)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
+  RESVREQINT.lo(rc,ild,y,t,lb,oc)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
 
 * Reserve contribution cannot exceed the specified capability during peak or other periods.
-  RESV.up(g,rc,y,t,lb,outcomes)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
+  RESV.up(g,rc,y,t,lb,oc)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
 
 * Don't allow reserves from units prior to committed date or earliest allowable operation or if plant is retired.
 * NB: 'validYrOperate' embodies the appropriate date for existing, committed, and new units - i.e., all units.
-  RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
+  RESV.fx(g,rc,y,t,lb,oc)$( not validYrOperate(g,y,t) ) = 0 ;
 
 * Reset all penalties/violations and slacks to zero.
-  RESVVIOL.l(rc,ild,y,t,lb,outcomes) = 0 ;
+  RESVVIOL.l(rc,ild,y,t,lb,oc) = 0 ;
   RENNRGPENALTY.l(y) = 0 ;
-  SEC_NZ_PENALTY.l(y,outcomes) = 0 ;      SEC_NI1_PENALTY.l(y,outcomes) = 0 ;   SEC_NI2_PENALTY.l(y,outcomes) = 0 ;
-  NOWIND_NZ_PENALTY.l(y,outcomes) = 0 ;   NOWIND_NI_PENALTY.l(y,outcomes) = 0 ;
+  SEC_NZ_PENALTY.l(y,oc) = 0 ;      SEC_NI1_PENALTY.l(y,oc) = 0 ;   SEC_NI2_PENALTY.l(y,oc) = 0 ;
+  NOWIND_NZ_PENALTY.l(y,oc) = 0 ;   NOWIND_NI_PENALTY.l(y,oc) = 0 ;
 
   ANNMWSLACK.l(y) = 0 ;                   RENCAPSLACK.l(y) = 0 ;
   HYDROSLACK.l(y) = 0 ;                   MINUTILSLACK.l(y) = 0 ;               FUELSLACK.l(y) = 0 ;
@@ -275,24 +278,23 @@ $if %RunType%==2 $goto NoGEM
     activeSolve(tmg,'default') = yes ;
 
 * Select appropriate outcomes in order to do the timing solve.
-    oc(outcomes) = no ;
-    outcomeWeight(outcomes) = 0 ;
-    modelledHydroOutput(g,y,t,outcomes) = 0 ;
 
-    oc(outcomes)$map_runs_outcomes(timingRun,outcomes) = yes ;
+    outcomeWeight(oc) = 0 ;
+    modelledHydroOutput(g,y,t,oc) = 0 ;
+
     outcomeWeight(oc) = run_outcomeWeight(timingRun,oc) ;
 
     loop(oc(outcomes),
       if(hydroType(outcomes,'same'),
         modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar * i_hydroOutputAdj(y) *
-          sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
+          sum((mapv_g(v,g),mapm_t(m,t),hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
       else
         loop(y,
           chooseHydroYears(hY) = no ;
           chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
           chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
           modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
-            sum((mapv_g(v,g), mapm_t(m, t), chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+            sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
         ) ;
       ) ;
     ) ;
@@ -355,7 +357,7 @@ $     label NoTrace3
     ) ;
 
 * Collect up solution values - by run type (rt) and hydro year (hY).
-    loop(dispatchRun$sameas(dispatchRun, 'timing'),
+    loop(dispatchRun$sameas(dispatchRun,'timing'),
 $    include CollectResults.txt
     ) ;
 
@@ -384,14 +386,14 @@ $  if %SuppressReopt%==1 $goto NoReOpt
     loop(oc(outcomes),
       if(hydroType(outcomes,'same'),
         modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar * i_hydroOutputAdj(y) *
-          sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
+          sum((mapv_g(v,g),mapm_t(m,t),hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
       else
         loop(y,
           chooseHydroYears(hY) = no ;
-          chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
-          chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+          chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes,hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+          chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes,hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
           modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
-            sum((mapv_g(v,g), mapm_t(m, t), chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+            sum((mapv_g(v,g), mapm_t(m,t), chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
         ) ;
       ) ;
     ) ;
@@ -469,7 +471,7 @@ $     label NoTrace4
     ) ;
 
 * Collect up solution values - by run type (rt) and hydro year (hY).
-    loop(dispatchRun$sameas(dispatchRun, 'reopt'),
+    loop(dispatchRun$sameas(dispatchRun,'reopt'),
 $     include CollectResults.txt
     );
 
@@ -546,14 +548,14 @@ $  label CarryOn1
     loop(oc(outcomes),
       if(hydroType(outcomes,'same'),
         modelledHydroOutput(g,y,t,outcomes) =  hydroOutputScalar * i_hydroOutputAdj(y) *
-          sum((mapv_g(v,g), mapm_t(m,t), hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
+          sum((mapv_g(v,g),mapm_t(m,t),hY1)$(mapoc_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapoc_hY(outcomes,hY), 1) ;
       else
         loop(y,
           chooseHydroYears(hY) = no ;
-          chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
-          chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+          chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes,hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+          chooseHydroYears(hY)$(sum(hY1$(mapoc_hY(outcomes,hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
           modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
-            sum((mapv_g(v,g), mapm_t(m, t), chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+            sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
         ) ;
       ) ;
     ) ;
@@ -627,140 +629,67 @@ Parameter
 
 activeRT(rt)$sum(activeSolve(rt,hY), 1) = yes ;
 
-disHydYrs(hY)$sum(activeSolve(rt,hY)$dis(rt), 1) = yes ;
-
-numDisYrs = sum(disHydYrs(hY), 1 ) ;
-
 set sumRuns(runs) ;
 parameter numRuns ;
 
 loop(rt,
   sumRuns(runs) = no;
-  if(sameas(rt, 'tmg'),
-    sumRuns(runs)$sameas(runs, 'timing') = yes ;
-  elseif sameas(rt, 'reo'),
-    sumRuns(runs)$sameas(runs, 'reopt') = yes ;
+  if(sameas(rt,'tmg'),
+    sumRuns(runs)$sameas(runs,'timing') = yes ;
+  elseif sameas(rt,'reo'),
+    sumRuns(runs)$sameas(runs,'reopt') = yes ;
   else
-    sumRuns(runs)$map_rt_runs(rt, runs) = yes ;
+    sumRuns(runs)$map_rt_runs(rt,runs) = yes ;
   ) ;
 
   numRuns = sum(sumRuns, 1);
 
-  s2_TOTALCOST(rt,timingRun)                                = sum(sumRuns, s_TOTALCOST(timingRun,sumRuns)) / numRuns ;
-  s2_TX(rt,timingRun,paths,y,t,lb,outcomes)                 = sum(sumRuns, s_TX(timingRun,sumRuns,paths,y,t,lb,outcomes) ) / numRuns ;
-  s2_BRET(rt,timingRun,g,y)                                 = sum(sumRuns, s_BRET(timingRun,sumRuns,g,y) ) / numRuns ;
-  s2_ISRETIRED(rt,timingRun,g)                              = sum(sumRuns, s_ISRETIRED(timingRun,sumRuns,g) ) / numRuns ;
-  s2_BTX(rt,timingRun,paths,ps,y)                           = sum(sumRuns, s_BTX(timingRun,sumRuns,paths,ps,y) ) / numRuns ;
-  s2_REFURBCOST(rt,timingRun,g,y)                           = sum(sumRuns, s_REFURBCOST(timingRun,sumRuns,g,y) ) / numRuns ;
-  s2_BUILD(rt,timingRun,g,y)                                = sum(sumRuns, s_BUILD(timingRun,sumRuns,g,y) ) / numRuns ;
-  s2_RETIRE(rt,timingRun,g,y)                               = sum(sumRuns, s_RETIRE(timingRun,sumRuns,g,y) ) / numRuns ;
-  s2_CAPACITY(rt,timingRun,g,y)                             = sum(sumRuns, s_CAPACITY(timingRun,sumRuns,g,y) ) / numRuns ;
-  s2_TXCAPCHARGES(rt,timingRun,paths,y)                     = sum(sumRuns, s_TXCAPCHARGES(timingRun,sumRuns,paths,y) ) / numRuns ;
-  s2_GEN(rt,timingRun,g,y,t,lb,outcomes)                    = sum(sumRuns, s_GEN(timingRun,sumRuns,g,y,t,lb,outcomes) ) / numRuns ;
-  s2_VOLLGEN(rt,timingRun,s,y,t,lb,outcomes)                = sum(sumRuns, s_VOLLGEN(timingRun,sumRuns,s,y,t,lb,outcomes) ) / numRuns ;
-  s2_PUMPEDGEN(rt,timingRun,g,y,t,lb,outcomes)              = sum(sumRuns, s_PUMPEDGEN(timingRun,sumRuns,g,y,t,lb,outcomes) ) / numRuns ;
-  s2_LOSS(rt,timingRun,paths,y,t,lb,outcomes)               = sum(sumRuns, s_LOSS(timingRun,sumRuns,paths,y,t,lb,outcomes) ) / numRuns ;
-  s2_TXPROJVAR(rt,timingRun,tupg,y)                         = sum(sumRuns, s_TXPROJVAR(timingRun,sumRuns,tupg,y) ) / numRuns ;
-  s2_TXUPGRADE(rt,timingRun,paths,ps,pss,y)                 = sum(sumRuns, s_TXUPGRADE(timingRun,sumRuns,paths,ps,pss,y) ) / numRuns ;
-  s2_RESV(rt,timingRun,g,rc,y,t,lb,outcomes)                = sum(sumRuns, s_RESV(timingRun,sumRuns,g,rc,y,t,lb,outcomes) ) / numRuns ;
-  s2_RESVVIOL(rt,timingRun,rc,ild,y,t,lb,outcomes)          = sum(sumRuns, s_RESVVIOL(timingRun,sumRuns,rc,ild,y,t,lb,outcomes) ) / numRuns ;
-  s2_RESVTRFR(rt,timingRun,rc,ild,ild1,y,t,lb,outcomes)     = sum(sumRuns, s_RESVTRFR(timingRun,sumRuns,rc,ild,ild1,y,t,lb,outcomes) ) / numRuns ;
-  s2_RENNRGPENALTY(rt,timingRun,y)                          = sum(sumRuns, s_RENNRGPENALTY(timingRun,sumRuns,y) ) / numRuns ;
-  s2_ANNMWSLACK(rt,timingRun,y)                             = sum(sumRuns, s_ANNMWSLACK(timingRun,sumRuns,y) ) / numRuns ;
-  s2_SEC_NZ_PENALTY(rt,timingRun,outcomes,y)                = sum(sumRuns, s_SEC_NZ_PENALTY(timingRun,sumRuns,outcomes,y) ) / numRuns ;
-  s2_SEC_NI1_PENALTY(rt,timingRun,outcomes,y)               = sum(sumRuns, s_SEC_NI1_PENALTY(timingRun,sumRuns,outcomes,y) ) / numRuns ;
-  s2_SEC_NI2_PENALTY(rt,timingRun,outcomes,y)               = sum(sumRuns, s_SEC_NI2_PENALTY(timingRun,sumRuns,outcomes,y) ) / numRuns ;
-  s2_NOWIND_NZ_PENALTY(rt,timingRun,outcomes,y)             = sum(sumRuns, s_NOWIND_NZ_PENALTY(timingRun,sumRuns,outcomes,y) ) / numRuns ;
-  s2_NOWIND_NI_PENALTY(rt,timingRun,outcomes,y)             = sum(sumRuns, s_NOWIND_NI_PENALTY(timingRun,sumRuns,outcomes,y) ) / numRuns ;
-  s2_RENCAPSLACK(rt,timingRun,y)                            = sum(sumRuns, s_RENCAPSLACK(timingRun,sumRuns,y) ) / numRuns ;
-  s2_HYDROSLACK(rt,timingRun,y)                             = sum(sumRuns, s_HYDROSLACK(timingRun,sumRuns,y) ) / numRuns ;
-  s2_MINUTILSLACK(rt,timingRun,y)                           = sum(sumRuns, s_MINUTILSLACK(timingRun,sumRuns,y) ) / numRuns ;
-  s2_FUELSLACK(rt,timingRun,y)                              = sum(sumRuns, s_FUELSLACK(timingRun,sumRuns,y) ) / numRuns ;
-  s2_bal_supdem(rt,timingRun,r,y,t,lb,outcomes)             = sum(sumRuns, s_bal_supdem(timingRun,sumRuns,r,y,t,lb,outcomes) ) / numRuns ;
+  loop(timingRun,
+    oc(outcomes) = no;
+    if(sameas(rt,'reo'),
+      oc(outcomes)$map_reopt_outcomes(timingRun,outcomes) = yes;
+    else
+      oc(outcomes)$map_runs_outcomes(timingRun,outcomes) = yes;
+    );
 
+    s2_TOTALCOST(rt,timingRun)                          = sum(sumRuns, s_TOTALCOST(timingRun,sumRuns)) / numRuns ;
+    s2_TX(rt,timingRun,paths,y,t,lb,oc)                 = sum(sumRuns, s_TX(timingRun,sumRuns,paths,y,t,lb,oc) ) / numRuns ;
+    s2_BRET(rt,timingRun,g,y)                           = sum(sumRuns, s_BRET(timingRun,sumRuns,g,y) ) / numRuns ;
+    s2_ISRETIRED(rt,timingRun,g)                        = sum(sumRuns, s_ISRETIRED(timingRun,sumRuns,g) ) / numRuns ;
+    s2_BTX(rt,timingRun,paths,ps,y)                     = sum(sumRuns, s_BTX(timingRun,sumRuns,paths,ps,y) ) / numRuns ;
+    s2_REFURBCOST(rt,timingRun,g,y)                     = sum(sumRuns, s_REFURBCOST(timingRun,sumRuns,g,y) ) / numRuns ;
+    s2_BUILD(rt,timingRun,g,y)                          = sum(sumRuns, s_BUILD(timingRun,sumRuns,g,y) ) / numRuns ;
+    s2_RETIRE(rt,timingRun,g,y)                         = sum(sumRuns, s_RETIRE(timingRun,sumRuns,g,y) ) / numRuns ;
+    s2_CAPACITY(rt,timingRun,g,y)                       = sum(sumRuns, s_CAPACITY(timingRun,sumRuns,g,y) ) / numRuns ;
+    s2_TXCAPCHARGES(rt,timingRun,paths,y)               = sum(sumRuns, s_TXCAPCHARGES(timingRun,sumRuns,paths,y) ) / numRuns ;
+    s2_GEN(rt,timingRun,g,y,t,lb,oc)                    = sum(sumRuns, s_GEN(timingRun,sumRuns,g,y,t,lb,oc) ) / numRuns ;
+    s2_VOLLGEN(rt,timingRun,s,y,t,lb,oc)                = sum(sumRuns, s_VOLLGEN(timingRun,sumRuns,s,y,t,lb,oc) ) / numRuns ;
+    s2_PUMPEDGEN(rt,timingRun,g,y,t,lb,oc)              = sum(sumRuns, s_PUMPEDGEN(timingRun,sumRuns,g,y,t,lb,oc) ) / numRuns ;
+    s2_LOSS(rt,timingRun,paths,y,t,lb,oc)               = sum(sumRuns, s_LOSS(timingRun,sumRuns,paths,y,t,lb,oc) ) / numRuns ;
+    s2_TXPROJVAR(rt,timingRun,tupg,y)                   = sum(sumRuns, s_TXPROJVAR(timingRun,sumRuns,tupg,y) ) / numRuns ;
+    s2_TXUPGRADE(rt,timingRun,paths,ps,pss,y)           = sum(sumRuns, s_TXUPGRADE(timingRun,sumRuns,paths,ps,pss,y) ) / numRuns ;
+    s2_RESV(rt,timingRun,g,rc,y,t,lb,oc)                = sum(sumRuns, s_RESV(timingRun,sumRuns,g,rc,y,t,lb,oc) ) / numRuns ;
+    s2_RESVVIOL(rt,timingRun,rc,ild,y,t,lb,oc)          = sum(sumRuns, s_RESVVIOL(timingRun,sumRuns,rc,ild,y,t,lb,oc) ) / numRuns ;
+    s2_RESVTRFR(rt,timingRun,rc,ild,ild1,y,t,lb,oc)     = sum(sumRuns, s_RESVTRFR(timingRun,sumRuns,rc,ild,ild1,y,t,lb,oc) ) / numRuns ;
+    s2_RENNRGPENALTY(rt,timingRun,y)                    = sum(sumRuns, s_RENNRGPENALTY(timingRun,sumRuns,y) ) / numRuns ;
+    s2_ANNMWSLACK(rt,timingRun,y)                       = sum(sumRuns, s_ANNMWSLACK(timingRun,sumRuns,y) ) / numRuns ;
+    s2_SEC_NZ_PENALTY(rt,timingRun,oc,y)                = sum(sumRuns, s_SEC_NZ_PENALTY(timingRun,sumRuns,oc,y) ) / numRuns ;
+    s2_SEC_NI1_PENALTY(rt,timingRun,oc,y)               = sum(sumRuns, s_SEC_NI1_PENALTY(timingRun,sumRuns,oc,y) ) / numRuns ;
+    s2_SEC_NI2_PENALTY(rt,timingRun,oc,y)               = sum(sumRuns, s_SEC_NI2_PENALTY(timingRun,sumRuns,oc,y) ) / numRuns ;
+    s2_NOWIND_NZ_PENALTY(rt,timingRun,oc,y)             = sum(sumRuns, s_NOWIND_NZ_PENALTY(timingRun,sumRuns,oc,y) ) / numRuns ;
+    s2_NOWIND_NI_PENALTY(rt,timingRun,oc,y)             = sum(sumRuns, s_NOWIND_NI_PENALTY(timingRun,sumRuns,oc,y) ) / numRuns ;
+    s2_RENCAPSLACK(rt,timingRun,y)                      = sum(sumRuns, s_RENCAPSLACK(timingRun,sumRuns,y) ) / numRuns ;
+    s2_HYDROSLACK(rt,timingRun,y)                       = sum(sumRuns, s_HYDROSLACK(timingRun,sumRuns,y) ) / numRuns ;
+    s2_MINUTILSLACK(rt,timingRun,y)                     = sum(sumRuns, s_MINUTILSLACK(timingRun,sumRuns,y) ) / numRuns ;
+    s2_FUELSLACK(rt,timingRun,y)                        = sum(sumRuns, s_FUELSLACK(timingRun,sumRuns,y) ) / numRuns ;
+    s2_bal_supdem(rt,timingRun,r,y,t,lb,oc)             = sum(sumRuns, s_bal_supdem(timingRun,sumRuns,r,y,t,lb,oc) ) / numRuns ;
 
-* More non-free reserves code.
-  s2_RESVCOMPONENTS(rt,timingRun,paths,y,t,lb,outcomes,stp) = sum(sumRuns, s_RESVCOMPONENTS(timingRun,sumRuns,paths,y,t,lb,outcomes,stp) ) / numRuns ;
+*   More non-free reserves code.
+    s2_RESVCOMPONENTS(rt,timingRun,paths,y,t,lb,outcomes,stp) = sum(sumRuns, s_RESVCOMPONENTS(timingRun,sumRuns,paths,y,t,lb,outcomes,stp) ) / numRuns ;
+  );
 ) ;
 
-*loop(activeRT(rt),
-*  if(not sameas(rt,'dis'),
-*    s2_TOTALCOST(rt)                                = sum(activeSolve(rt,hY), s_TOTALCOST(rt,hY) ) ;
-*    s2_TX(rt,paths,y,t,lb,outcomes)                 = sum(activeSolve(rt,hY), s_TX(rt,hY,paths,y,t,lb,outcomes) ) ;
-*    s2_BRET(rt,g,y)                                 = sum(activeSolve(rt,hY), s_BRET(rt,hY,g,y) ) ;
-*    s2_ISRETIRED(rt,g)                              = sum(activeSolve(rt,hY), s_ISRETIRED(rt,hY,g) ) ;
-*    s2_BTX(rt,paths,ps,y)                           = sum(activeSolve(rt,hY), s_BTX(rt,hY,paths,ps,y) ) ;
-*    s2_REFURBCOST(rt,g,y)                           = sum(activeSolve(rt,hY), s_REFURBCOST(rt,hY,g,y) ) ;
-*    s2_BUILD(rt,g,y)                                = sum(activeSolve(rt,hY), s_BUILD(rt,hY,g,y) ) ;
-*    s2_RETIRE(rt,g,y)                               = sum(activeSolve(rt,hY), s_RETIRE(rt,hY,g,y) ) ;
-*    s2_CAPACITY(rt,g,y)                             = sum(activeSolve(rt,hY), s_CAPACITY(rt,hY,g,y) ) ;
-*    s2_TXCAPCHARGES(rt,paths,y)                     = sum(activeSolve(rt,hY), s_TXCAPCHARGES(rt,hY,paths,y) ) ;
-*    s2_GEN(rt,g,y,t,lb,outcomes)                    = sum(activeSolve(rt,hY), s_GEN(rt,hY,g,y,t,lb,outcomes) ) ;
-*    s2_VOLLGEN(rt,s,y,t,lb,outcomes)                = sum(activeSolve(rt,hY), s_VOLLGEN(rt,hY,s,y,t,lb,outcomes) ) ;
-*    s2_PUMPEDGEN(rt,g,y,t,lb,outcomes)              = sum(activeSolve(rt,hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,outcomes) ) ;
-*    s2_LOSS(rt,paths,y,t,lb,outcomes)               = sum(activeSolve(rt,hY), s_LOSS(rt,hY,paths,y,t,lb,outcomes) ) ;
-*    s2_TXPROJVAR(rt,tupg,y)                         = sum(activeSolve(rt,hY), s_TXPROJVAR(rt,hY,tupg,y) ) ;
-*    s2_TXUPGRADE(rt,paths,ps,pss,y)                 = sum(activeSolve(rt,hY), s_TXUPGRADE(rt,hY,paths,ps,pss,y) ) ;
-*    s2_RESV(rt,g,rc,y,t,lb,outcomes)                = sum(activeSolve(rt,hY), s_RESV(rt,hY,g,rc,y,t,lb,outcomes) ) ;
-*    s2_RESVVIOL(rt,rc,ild,y,t,lb,outcomes)          = sum(activeSolve(rt,hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,outcomes) ) ;
-*    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)     = sum(activeSolve(rt,hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,outcomes) ) ;
-*    s2_RENNRGPENALTY(rt,y)                          = sum(activeSolve(rt,hY), s_RENNRGPENALTY(rt,hY,y) ) ;
-*    s2_ANNMWSLACK(rt,y)                             = sum(activeSolve(rt,hY), s_ANNMWSLACK(rt,hY,y) ) ;
-*    s2_SEC_NZ_PENALTY(rt,outcomes,y)                = sum(activeSolve(rt,hY), s_SEC_NZ_PENALTY(rt,outcomes,y) ) ;
-*    s2_SEC_NI1_PENALTY(rt,outcomes,y)               = sum(activeSolve(rt,hY), s_SEC_NI1_PENALTY(rt,outcomes,y) ) ;
-*    s2_SEC_NI2_PENALTY(rt,outcomes,y)               = sum(activeSolve(rt,hY), s_SEC_NI2_PENALTY(rt,outcomes,y) ) ;
-*    s2_NOWIND_NZ_PENALTY(rt,outcomes,y)             = sum(activeSolve(rt,hY), s_NOWIND_NZ_PENALTY(rt,outcomes,y) ) ;
-*    s2_NOWIND_NI_PENALTY(rt,outcomes,y)             = sum(activeSolve(rt,hY), s_NOWIND_NI_PENALTY(rt,outcomes,y) ) ;
-*    s2_RENCAPSLACK(rt,y)                            = sum(activeSolve(rt,hY), s_RENCAPSLACK(rt,hY,y) ) ;
-*    s2_HYDROSLACK(rt,y)                             = sum(activeSolve(rt,hY), s_HYDROSLACK(rt,hY,y) ) ;
-*    s2_MINUTILSLACK(rt,y)                           = sum(activeSolve(rt,hY), s_MINUTILSLACK(rt,hY,y) ) ;
-*    s2_FUELSLACK(rt,y)                              = sum(activeSolve(rt,hY), s_FUELSLACK(rt,hY,y) ) ;
-*    s2_bal_supdem(rt,r,y,t,lb,outcomes)             = sum(activeSolve(rt,hY), s_bal_supdem(rt,hY,r,y,t,lb,outcomes) ) ;
-*++++++++++
-*   More non-free reserves code.
-*    s2_RESVCOMPONENTS(rt,paths,y,t,lb,outcomes,stp) = sum(activeSolve(rt,hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,outcomes,stp) ) ;
-*++++++++++
-*    else
-*    if(numDisYrs < 1, numDisYrs = 1 ) ; ! DInflowYr must have been 1 in which case only the average year was used and numDisYrs = 1
-*    s2_TOTALCOST(rt)                                = sum(disHydYrs(hY), s_TOTALCOST(rt,hY) ) / numDisYrs ;
-*    s2_TX(rt,paths,y,t,lb,outcomes)                 = sum(disHydYrs(hY), s_TX(rt,hY,paths,y,t,lb,outcomes) ) / numDisYrs ;
-*    s2_BRET(rt,g,y)                                 = sum(disHydYrs(hY), s_BRET(rt,hY,g,y) ) / numDisYrs ;
-*    s2_ISRETIRED(rt,g)                              = sum(disHydYrs(hY), s_ISRETIRED(rt,hY,g) ) / numDisYrs ;
-*    s2_BTX(rt,paths,ps,y)                           = sum(disHydYrs(hY), s_BTX(rt,hY,paths,ps,y) ) / numDisYrs ;
-*    s2_REFURBCOST(rt,g,y)                           = sum(disHydYrs(hY), s_REFURBCOST(rt,hY,g,y) ) / numDisYrs ;
-*    s2_BUILD(rt,g,y)                                = sum(disHydYrs(hY), s_BUILD(rt,hY,g,y) ) / numDisYrs ;
-*    s2_RETIRE(rt,g,y)                               = sum(disHydYrs(hY), s_RETIRE(rt,hY,g,y) ) / numDisYrs ;
-*    s2_CAPACITY(rt,g,y)                             = sum(disHydYrs(hY), s_CAPACITY(rt,hY,g,y) ) / numDisYrs ;
-*    s2_TXCAPCHARGES(rt,paths,y)                     = sum(disHydYrs(hY), s_TXCAPCHARGES(rt,hY,paths,y) ) / numDisYrs ;
-*    s2_GEN(rt,g,y,t,lb,outcomes)                    = sum(disHydYrs(hY), s_GEN(rt,hY,g,y,t,lb,outcomes) ) / numDisYrs ;
-*    s2_VOLLGEN(rt,s,y,t,lb,outcomes)                = sum(disHydYrs(hY), s_VOLLGEN(rt,hY,s,y,t,lb,outcomes) ) / numDisYrs ;
-*    s2_PUMPEDGEN(rt,g,y,t,lb,outcomes)              = sum(disHydYrs(hY), s_PUMPEDGEN(rt,hY,g,y,t,lb,outcomes) ) / numDisYrs ;
-*    s2_LOSS(rt,paths,y,t,lb,outcomes)               = sum(disHydYrs(hY), s_LOSS(rt,hY,paths,y,t,lb,outcomes) ) / numDisYrs ;
-*    s2_TXPROJVAR(rt,tupg,y)                         = sum(disHydYrs(hY), s_TXPROJVAR(rt,hY,tupg,y) ) / numDisYrs ;
-*    s2_TXUPGRADE(rt,paths,ps,pss,y)                 = sum(disHydYrs(hY), s_TXUPGRADE(rt,hY,paths,ps,pss,y) ) / numDisYrs ;
-*    s2_RESV(rt,g,rc,y,t,lb,outcomes)                = sum(disHydYrs(hY), s_RESV(rt,hY,g,rc,y,t,lb,outcomes) ) / numDisYrs ;
-*    s2_RESVVIOL(rt,rc,ild,y,t,lb,outcomes)          = sum(disHydYrs(hY), s_RESVVIOL(rt,hY,rc,ild,y,t,lb,outcomes) ) / numDisYrs ;
-*    s2_RESVTRFR(rt,rc,ild,ild1,y,t,lb,outcomes)     = sum(disHydYrs(hY), s_RESVTRFR(rt,hY,rc,ild,ild1,y,t,lb,outcomes) ) / numDisYrs ;
-*    s2_RENNRGPENALTY(rt,y)                          = sum(disHydYrs(hY), s_RENNRGPENALTY(rt,hY,y) ) / numDisYrs ;
-*    s2_ANNMWSLACK(rt,y)                             = sum(disHydYrs(hY), s_ANNMWSLACK(rt,hY,y) ) / numDisYrs ;
-*    s2_SEC_NZ_PENALTY(rt,outcomes,y)                = sum(disHydYrs(hY), s_SEC_NZ_PENALTY(rt,outcomes,y) ) / numDisYrs ;
-*    s2_SEC_NI1_PENALTY(rt,outcomes,y)               = sum(disHydYrs(hY), s_SEC_NI1_PENALTY(rt,outcomes,y) ) / numDisYrs ;
-*    s2_SEC_NI2_PENALTY(rt,outcomes,y)               = sum(disHydYrs(hY), s_SEC_NI2_PENALTY(rt,outcomes,y) ) / numDisYrs ;
-*    s2_NOWIND_NZ_PENALTY(rt,outcomes,y)             = sum(disHydYrs(hY), s_NOWIND_NZ_PENALTY(rt,outcomes,y) ) / numDisYrs ;
-*    s2_NOWIND_NI_PENALTY(rt,outcomes,y)             = sum(disHydYrs(hY), s_NOWIND_NI_PENALTY(rt,outcomes,y) ) / numDisYrs ;
-*    s2_RENCAPSLACK(rt,y)                            = sum(disHydYrs(hY), s_RENCAPSLACK(rt,hY,y) ) / numDisYrs ;
-*    s2_HYDROSLACK(rt,y)                             = sum(disHydYrs(hY), s_HYDROSLACK(rt,hY,y) ) / numDisYrs ;
-*    s2_MINUTILSLACK(rt,y)                           = sum(disHydYrs(hY), s_MINUTILSLACK(rt,hY,y) ) / numDisYrs ;
-*    s2_FUELSLACK(rt,y)                              = sum(disHydYrs(hY), s_FUELSLACK(rt,hY,y) ) / numDisYrs ;
-*    s2_bal_supdem(rt,r,y,t,lb,outcomes)             = sum(disHydYrs(hY), s_bal_supdem(rt,hY,r,y,t,lb,outcomes) ) / numDisYrs ;
-*++++++++++
-*   More non-free reserves code.
-*    s2_RESVCOMPONENTS(rt,paths,y,t,lb,outcomes,stp) = sum(disHydYrs(hY), s_RESVCOMPONENTS(rt,hY,paths,y,t,lb,outcomes,stp) ) / numDisYrs ;
-*++++++++++
-*  ) ;
-*) ;
-
-Display s2_TOTALCOST, disHydYrs, activeSolve, solveReport ;
+Display s2_TOTALCOST, activeSolve, solveReport ;
 
 
 
@@ -772,7 +701,7 @@ Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
 * Miscellaneous sets
   oc activeSolve activeRT solveGoal
 * Miscellaneous parameters
-  solveReport numDisYrs
+  solveReport
 * The 's2' output parameters
   s2_TOTALCOST s2_TX s2_BRET s2_ISRETIRED s2_BTX s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY s2_TXCAPCHARGES s2_GEN s2_VOLLGEN
   s2_PUMPEDGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL s2_RESVTRFR s2_bal_supdem

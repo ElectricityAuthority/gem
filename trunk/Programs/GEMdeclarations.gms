@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 18/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 24/03/2011 (imm@ea.govt.nz)
 
 $ontext
   This program does....
@@ -252,7 +252,6 @@ Sets
   hydroYrForDispatch(hY)                        'Hydro years used to loop over when solving DISpatch'
   activeSolve(rt,*)                             'Collect the rt-hY index used for each solve' 
   activeRT(rt)                                  'Identify the run types actually employed in this model run'
-  disHydYrs(hY)                                 'Hydro years for which DISpatch model was solved or looped over - excludes multiple and average hydro years'
   ;
 
 Alias (rt,rtTiming,rtDispatch), (runs,timingRun,dispatchRun) ;
@@ -295,9 +294,7 @@ Parameters
   slacks                                        'A flag indicating slacks or penalty variables exist in at least one solution'
   timeAllowed(goal)                             'CPU seconds available for solver to spend solving the model'
   solveReport(*,*,*,*)                          'Collect various details about each solve of the models (both GEM and DISP)'
-*  indexhY(rt,hY,y)                              'Collect the hydro year number used for each modelled year of each solve'
   hydroYrIndex(hY)                              'Index to enable assignment of hydro years over the modelled years'
-  numDisYrs                                     'Number of hydro years for which DISpatch model was solved or looped over - excludes multiple and average hydro years'
   ;
 
 
@@ -882,24 +879,6 @@ resvreqwind(rc,ild,y,t,lb,oc)$( useReserves * ( (i_reserveReqMW(y,ild,rc) = -2) 
   RESVREQINT(rc,ild,y,t,lb,oc)
   =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y,t) ), 1000 * GEN(g,y,t,lb,oc) ) ;
 
-Model GEM Generation expansion model  /
-  objectivefn, outcomeobjective, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
-  bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire, endogretonce
-  security_nz, security_ni1,  security_ni2, nowind_nz, nowind_ni
-  limit_maxgen, limit_mingen, minutil, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
-  limit_pumpgen1, limit_pumpgen2, limit_pumpgen3
-  boundTxloss, tx_capacity, tx_projectdef, tx_onestate, tx_upgrade, tx_oneupgrade
-  tx_dcflow, tx_dcflow0, equatetxloss, txGrpConstraint
-  resvsinglereq1, genmaxresv1, resvtrfr1, resvtrfr2, resvtrfr3, resvrequnit
-  resvreq2, resvreqhvdc, resvtrfr4, resvtrfrdef, resvoffcap, resvreqwind
-*++++++++++
-* More non-free reserves code.
-  calc_nfreserves, resv_capacity
-*++++++++++
-  / ;
-
-* DISPatch is identical to GEM except 6 constraints are dropped:
-* - bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire and endogretonce.
 Model DISP Dispatch model with build forced and timing fixed  /
   objectivefn, outcomeobjective, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
   security_nz, security_ni1,  security_ni2, nowind_nz, nowind_ni
@@ -913,6 +892,11 @@ Model DISP Dispatch model with build forced and timing fixed  /
 * More non-free reserves code.
   calc_nfreserves, resv_capacity
 *++++++++++
+  / ;
+
+* Model GEM is just model DISP with 6 additional constraints added:
+Model GEM Generation expansion model  /
+  DISP, bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire, endogretonce
   / ;
 
 

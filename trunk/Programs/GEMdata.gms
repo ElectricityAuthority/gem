@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 18/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/03/2011 (imm@ea.govt.nz)
 
 $ontext
  This program prepares the data for a single scenario. It imports the raw scenario-specific data
