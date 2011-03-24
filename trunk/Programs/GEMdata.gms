@@ -23,8 +23,7 @@ $ontext
      h) Reserve energy data.
      i) Hydrology output data.
   3. Display sets and parameters.
-  4. Dump newly created sets and parameters into a GDX file.
-  5. Archive/save input files.
+  4. Archive/save input files.
 $offtext
 
 
@@ -100,6 +99,9 @@ $load   i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty i_reserv
 $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
 
 
+***
+$load i_fuelPrices i_FuelDeliveryCost i_co2tax i_CCSfactor i_CCScost i_emissionFactors i_varOM i_NrgDemand i_peakLoadNZ i_peakLoadNI
+
 * Initialise hard-coded sets (NB: previously declared in GEMdeclarations).
 * - ct, d, and dt are hard-coded; n receives info from GEMsettings.
 Sets
@@ -117,8 +119,8 @@ Sets
 
 
 * Only need set rt here so that including GEMstochastic works.... 
-Sets rt 'Model run types' / tmg, reo, dis / ;
-$include GEMstochastic.gms
+*Sets rt 'Model run types' / tmg, reo, dis / ;
+*$include GEMstochastic.gms
 
 
 
@@ -608,8 +610,7 @@ $offtext
 
 
 *===============================================================================================
-* 4. Dump newly created sets and parameters into a GDX file.
-
+* 4. Archive/save input files.
 
 *+++++++++++++++++++++++++
 * More code to do the non-free reserves stuff. 
@@ -643,67 +644,12 @@ pNFresvCost(paths(r,rr),stp)$( pNFresvCost(paths,stp) > 500 ) = 500 ;
 *+++++++++++++++++++++++++
 
 
-
-
-Execute_Unload "%GEMdataGDX%",
-*+++++++++++++++++++++++++
-* More code to do the non-free reserves stuff. 
-  freeReserves nonFreeReservesCap bigSwd bigNwd pNFresvCap pNFresvCost
-*+++++++++++++++++++++++++
-* Sets
-* Re-declared and initialised
-  y ct d dt n
-* Time/date-related sets
-  firstYr lastYr allButFirstYr firstPeriod
-* Various mappings, subsets and counts.
-  mapg_k mapg_f mapg_o mapg_i mapg_r mapg_e mapg_ild mapg_fc mapi_r mapi_e mapild_r mapv_g thermalFuel
-* Financial
-* Fuel prices and quantity limits.
-* Generation data.
-  exist commit new neverBuild
-  noExist nigen sigen schedHydroPlant pumpedHydroPlant moverExceptions validYrBuild integerPlantBuild linearPlantBuild
-  possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire endogenousRetireDecisnYrs endogenousRetireYrs
-  validYrOperate
-* Load data.
-* Transmission data.
-  slackBus regLower interIsland nwd swd paths uniPaths biPaths transitions validTransitions allowedStates notAllowedStates
-  upgradedStates txEarlyComYrSet txFixedComYrSet vtgc nSegment
-* Parameters
-* Time/date-related sets and parameters.
-  lastYear yearNum hydroYearNum lastHydroYear hoursPerBlock
-* Various mappings, subsets and counts.
-  numReg
-* Financial parameters.
-  CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR txAnnuityFacN txAnnuityFacR
-  capRecFac depTCrecFac txCapRecFac txDeptCRecFac
-* Fuel prices and quantity limits.
-  SRMC totalFuelCost CO2taxByPlant CO2CaptureStorageCost
-* Generation data.
-  initialCapacity capitalCost capexPlant capCharge refurbCapexPlant refurbCapCharge exogMWretired continueAftaEndogRetire
-  WtdAvgFOFmultiplier reservesCapability peakConPlant NWpeakConPlant maxCapFactPlant minCapFactPlant
-* Load data.
-  AClossFactors NrgDemand ldcMW peakLoadNZ peakLoadNI bigNIgen nxtbigNIgen
-* Transmission data.
-  locFac_Recip txEarlyComYr txFixedComYr reactanceYr susceptanceYr BBincidence pCap pLoss bigLoss slope intercept
-  txCapitalCost txCapCharge
-* Reserve energy data.
-  reservesAreas reserveViolationPenalty windCoverPropn bigM singleReservesReqF
-* Hydrology output data.
-  historicalHydroOutput
-  ;
-
-
-
-*===============================================================================================
-* 5. Archive/save input files.
-
 * Create and execute a batch file to archive/save selected files.
 File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
 putclose bat
   'copy "%DataPath%%GDXinputFile%"      "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
   'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %scenarioName%.inc"' /
-  'copy "%ProgPath%%GEMdataGDX%"        "%OutPath%\%runName%\GDX\"' /
   ;
 execute 'temp.bat' ;
 
