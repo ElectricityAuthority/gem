@@ -76,14 +76,14 @@ $loaddc mapm_t
 * 1 hydrology
 $loaddc mapReservoirs
 
-* 88 parameters 
-* 20 technology and fuel parameters
+* 78 parameters 
+* 15 technology and fuel parameters
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate i_capCostAdjByTech i_CapexExposure
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech
-$load   i_minUtilByTech i_CCSfactor i_CCScost i_FOFmultiplier i_maxNrgByFuel i_fuelPrices i_fuelQuantities i_emissionFactors i_co2tax
-* 32 generation parameters
+$load   i_minUtilByTech i_FOFmultiplier i_maxNrgByFuel i_fuelQuantities
+* 30 generation parameters
 $loaddc i_nameplate i_UnitLargestProp i_baseload i_minUtilisation i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear
-$loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_FuelDeliveryCost
+$loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM
 $loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_plantReservesCap i_plantReservesCost i_PltCapFact
 $loaddc i_VOLLcap i_VOLLcost i_HVDCshr i_exRates
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
@@ -92,8 +92,8 @@ $loaddc i_substnCoordinates i_zonalLocFacs
 * 12 transmission
 $load   i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
 $load   i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS i_HVDClevy i_HVDCreqRevenue
-* 7 load and time
-$load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_peakLoadNZ i_peakLoadNI i_NrgDemand i_inflation
+* 4 load and time
+$load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
 * 12 reserves and security
 $load   i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
 * 3 hydrology
@@ -232,18 +232,7 @@ if(depType = 0,
 ) ;
 
 
-* d) Fuel prices and quantity limits.
-* Define short run marginal cost (and its components) of each generating plant.
-totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
-
-CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
-
-CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
-
-SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
-
-* If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
-SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = .05 * ord(g) / card(g) ;
+* d) Fuel prices and quantity limits.  MOVED TO GEMSOLVE
 
 
 * e) Generation data.
@@ -400,21 +389,11 @@ refurbCapCharge(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 refurbCapCharge(g,y)$( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) = 0 ;
 
 
-* f) Load data.
-AClossFactors('ni') = %AClossesNI% ;
-AClossFactors('si') = %AClossesSI% ;
+* f) Load data.  MOVED TO GEMSOLVE
 
-
-* Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses.
-NrgDemand(r,y,t,lb,outcomes) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * outcomeNRGFactor(outcomes) ;
-
-* Use GWh of NrgDemand and hours per LDC block to get ldcMW (MW).
-ldcMW(r,y,t,lb,outcomes)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,outcomes) / hoursPerBlock(t,lb) ;
 
 * i) System security data.
-* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation.
-peakLoadNZ(y,outcomes) = ( i_peakLoadNZ(y) + %embedAdjNZ% ) * outcomePeakLoadFactor(outcomes) ;
-peakLoadNI(y,outcomes) = ( i_peakLoadNI(y) + %embedAdjNI% ) * outcomePeakLoadFactor(outcomes) ;
+* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation.  MOVED TO GEMSOLVE
 
 bigNIgen(y) = i_BigNIgen(y) ;
 nxtbigNIgen(y) = i_nxtBigNIgen(y) ;
