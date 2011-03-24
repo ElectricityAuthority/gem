@@ -90,6 +90,8 @@ $load i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_fixedOM i_HVDCshr
 $load i_distdGenRenew i_distdGenFossil i_VOLLcap i_VOLLcost i_renewNrgShare i_renewCapShare
 $load i_firstHydroYear i_hydroOutputAdj i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
 $load i_txGrpConstraintsRHS i_txGrpConstraintsLHS i_maxReservesTrnsfr i_reserveReqMW i_txCapacity i_txCapacityPO
+$load i_fuelPrices i_fuelDeliveryCost i_co2tax i_CCSFactor i_emissionFactors i_CCSCost i_varOM
+$load i_NrgDemand i_peakLoadNZ i_peakLoadNI
 
 * Make sure intraregional transmission capacities are zero.
 i_txCapacity(r,r,ps) = 0 ; i_txCapacityPO(r,r,ps) = 0 ;
@@ -140,6 +142,40 @@ Sets
 timeAllowed('QDsol')  = %QDsolSecs% ;
 timeAllowed('VGsol')  = %VGsolSecs% ;
 timeAllowed('MinGap') = %MinGapSecs% ;
+
+
+
+*===============================================================================================
+* 3.5. Set up outcome-dependent data
+
+
+* d) Fuel prices and quantity limits.
+* Define short run marginal cost (and its components) of each generating plant.
+totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
+
+CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
+
+CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
+
+SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
+
+* If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
+SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = .05 * ord(g) / card(g) ;
+
+* f) Load data.
+AClossFactors('ni') = %AClossesNI% ;
+AClossFactors('si') = %AClossesSI% ;
+
+* Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses.
+NrgDemand(r,y,t,lb,outcomes) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * outcomeNRGFactor(outcomes) ;
+
+* Use GWh of NrgDemand and hours per LDC block to get ldcMW (MW).
+ldcMW(r,y,t,lb,outcomes)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,outcomes) / hoursPerBlock(t,lb) ;
+
+* i) System security data.
+* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation.
+peakLoadNZ(y,outcomes) = ( i_peakLoadNZ(y) + %embedAdjNZ% ) * outcomePeakLoadFactor(outcomes) ;
+peakLoadNI(y,outcomes) = ( i_peakLoadNI(y) + %embedAdjNI% ) * outcomePeakLoadFactor(outcomes) ;
 
 
 
