@@ -21,11 +21,11 @@ $ontext
   x. Create an awk script, which when executed, will produce a file containing the number of integer solutions per MIP model.
 $offtext
 
-$include GEMpaths.inc
-$include GEMsettings.inc
+*$include GEMpaths.inc
+*$include GEMsettings.inc
 $offupper onempty inlinecom { } eolcom !
 option seed = 101 ;
-File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ;   bat.lw = 0 ; bat.ap = 0 ;
+*File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ;   bat.lw = 0 ; bat.ap = 0 ;
 File rep "Write to a report"       / "%ProgPath%Report.txt" / ; rep.lw = 0 ; rep.ap = 1 ;
 File con "Write to the console"    / con / ;                    con.lw = 0 ;
 
@@ -67,6 +67,96 @@ DISP.OptFile = 0 ;
 
 
 
+*===============================================================================================
+* 1.5. Set up outcome-dependent data and write the GEMdataGDX file - this stuff was previously done in GEMdata
+
+* Make sure intraregional transmission capacities are zero.
+i_txCapacity(r,r,ps) = 0 ; i_txCapacityPO(r,r,ps) = 0 ;
+
+* Only need set rt here so that including GEMstochastic works.... 
+Sets rt 'Model run types' / tmg, reo, dis / ;
+$include GEMstochastic.gms
+
+
+* d) Fuel prices and quantity limits.
+* Define short run marginal cost (and its components) of each generating plant.
+totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
+
+CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
+
+CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
+
+SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
+
+* If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
+SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = .05 * ord(g) / card(g) ;
+
+* f) Load data.
+AClossFactors('ni') = %AClossesNI% ;
+AClossFactors('si') = %AClossesSI% ;
+
+* Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses.
+NrgDemand(r,y,t,lb,outcomes) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * outcomeNRGFactor(outcomes) ;
+
+* Use GWh of NrgDemand and hours per LDC block to get ldcMW (MW).
+ldcMW(r,y,t,lb,outcomes)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,outcomes) / hoursPerBlock(t,lb) ;
+
+* i) System security data.
+* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation.
+peakLoadNZ(y,outcomes) = ( i_peakLoadNZ(y) + %embedAdjNZ% ) * outcomePeakLoadFactor(outcomes) ;
+peakLoadNI(y,outcomes) = ( i_peakLoadNI(y) + %embedAdjNI% ) * outcomePeakLoadFactor(outcomes) ;
+
+Execute_Unload "%GEMdataGDX%",
+*+++++++++++++++++++++++++
+* More code to do the non-free reserves stuff. 
+  freeReserves nonFreeReservesCap bigSwd bigNwd pNFresvCap pNFresvCost
+*+++++++++++++++++++++++++
+* Sets
+* Re-declared and initialised
+  y ct d dt n
+* Time/date-related sets
+  firstYr lastYr allButFirstYr firstPeriod
+* Various mappings, subsets and counts.
+  mapg_k mapg_f mapg_o mapg_i mapg_r mapg_e mapg_ild mapg_fc mapi_r mapi_e mapild_r mapv_g thermalFuel
+* Financial
+* Fuel prices and quantity limits.
+* Generation data.
+  exist commit new neverBuild
+  noExist nigen sigen schedHydroPlant pumpedHydroPlant moverExceptions validYrBuild integerPlantBuild linearPlantBuild
+  possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire endogenousRetireDecisnYrs endogenousRetireYrs
+  validYrOperate
+* Load data.
+* Transmission data.
+  slackBus regLower interIsland nwd swd paths uniPaths biPaths transitions validTransitions allowedStates notAllowedStates
+  upgradedStates txEarlyComYrSet txFixedComYrSet vtgc nSegment
+* Parameters
+* Time/date-related sets and parameters.
+  lastYear yearNum hydroYearNum lastHydroYear hoursPerBlock
+* Various mappings, subsets and counts.
+  numReg
+* Financial parameters.
+  CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR txAnnuityFacN txAnnuityFacR
+  capRecFac depTCrecFac txCapRecFac txDeptCRecFac
+* Fuel prices and quantity limits.
+  SRMC totalFuelCost CO2taxByPlant CO2CaptureStorageCost
+* Generation data.
+  initialCapacity capitalCost capexPlant capCharge refurbCapexPlant refurbCapCharge exogMWretired continueAftaEndogRetire
+  WtdAvgFOFmultiplier reservesCapability peakConPlant NWpeakConPlant maxCapFactPlant minCapFactPlant
+* Load data.
+  AClossFactors NrgDemand ldcMW peakLoadNZ peakLoadNI bigNIgen nxtbigNIgen
+* Transmission data.
+  locFac_Recip txEarlyComYr txFixedComYr reactanceYr susceptanceYr BBincidence pCap pLoss bigLoss slope intercept
+  txCapitalCost txCapCharge
+* Reserve energy data.
+  reservesAreas reserveViolationPenalty windCoverPropn bigM singleReservesReqF
+* Hydrology output data.
+  historicalHydroOutput
+  ;
+
+putclose bat 'copy "%ProgPath%%GEMdataGDX%"  "%OutPath%\%runName%\GDX\"' / ;
+execute 'temp.bat' ;
+
+$ontext
 *===============================================================================================
 * 2. Read in required data from GDX files.
 
@@ -118,6 +208,7 @@ $loaddc singleReservesReqF historicalHydroOutput
 * More code to do the non-free reserves stuff. 
 $loaddc freeReserves pNFresvCap pNFresvCost
 *+++++++++++++++++++++++++
+$offtext
 
 
 
@@ -142,40 +233,6 @@ Sets
 timeAllowed('QDsol')  = %QDsolSecs% ;
 timeAllowed('VGsol')  = %VGsolSecs% ;
 timeAllowed('MinGap') = %MinGapSecs% ;
-
-
-
-*===============================================================================================
-* 3.5. Set up outcome-dependent data
-
-
-* d) Fuel prices and quantity limits.
-* Define short run marginal cost (and its components) of each generating plant.
-totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
-
-CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
-
-CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
-
-SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
-
-* If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
-SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = .05 * ord(g) / card(g) ;
-
-* f) Load data.
-AClossFactors('ni') = %AClossesNI% ;
-AClossFactors('si') = %AClossesSI% ;
-
-* Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses.
-NrgDemand(r,y,t,lb,outcomes) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * outcomeNRGFactor(outcomes) ;
-
-* Use GWh of NrgDemand and hours per LDC block to get ldcMW (MW).
-ldcMW(r,y,t,lb,outcomes)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,outcomes) / hoursPerBlock(t,lb) ;
-
-* i) System security data.
-* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation.
-peakLoadNZ(y,outcomes) = ( i_peakLoadNZ(y) + %embedAdjNZ% ) * outcomePeakLoadFactor(outcomes) ;
-peakLoadNI(y,outcomes) = ( i_peakLoadNI(y) + %embedAdjNI% ) * outcomePeakLoadFactor(outcomes) ;
 
 
 

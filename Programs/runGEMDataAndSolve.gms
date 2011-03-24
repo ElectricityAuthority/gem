@@ -5,7 +5,7 @@ $call gams GEMdata rf=GEMdata r=GEMdeclarations s=GEMdata gdx=GEMdata %ide%
 $if errorlevel 1 $abort +++ Check GEMdata.lst for errors +++
 
 * Invoke GEMsolve:
-$call gams GEMsolve rf=GEMsolve r=GEMdeclarations s=GEMsolve gdx=GEMsolve %ideSolve%
+$call gams GEMsolve rf=GEMsolve r=GEMdata s=GEMsolve gdx=GEMsolve %ideSolve%
 $if errorlevel 1 $abort +++ Check GEMsolve.lst for errors +++
 
 * Create a progress report file indicating that runGEMdataAndSolve is now finished.
