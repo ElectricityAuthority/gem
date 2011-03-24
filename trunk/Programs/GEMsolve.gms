@@ -153,8 +153,6 @@ Execute_Unload "%GEMdataGDX%",
   historicalHydroOutput
   ;
 
-putclose bat 'copy "%ProgPath%%GEMdataGDX%"  "%OutPath%\%runName%\GDX\"' / ;
-execute 'temp.bat' ;
 
 $ontext
 *===============================================================================================
@@ -837,13 +835,13 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
 
 bat.ap = 0 ;
 putclose bat
+  'copy "%ProgPath%%GEMdataGDX%"                                "%OutPath%\%runName%\GDX\"' / ;
   'copy "PreparedOutput - %runName% - %scenarioName%.gdx"       "%OutPath%\%runName%\GDX\"' /
   'copy "Slacks and penalties - %runName% - %scenarioName%.gdx" "%OutPath%\%runName%\GDX\"' /
   'copy "Levels and marginals - %runName% - %scenarioName%.gdx" "%OutPath%\%runName%\GDX\"' /
   'copy "GEMsolve.log"                                          "%OutPath%\%runName%\%runName% - %scenarioName% - GEMsolve.log"' /
   ;
 execute 'temp.bat' ;
-
 
 
 
