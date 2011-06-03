@@ -2,6 +2,10 @@
 
 * Last modified by Dr Phil Bishop, 23/03/2011 (imm@ea.govt.nz)
 
+
+*** See comment on line #455
+
+
 $ontext
  This program prepares the data for a single scenario. It imports the raw scenario-specific data
  from a GDX file; undertakes some manipulations, transformations, and intergrity checks; and then
@@ -452,6 +456,7 @@ transitions(tupg,r,rr,ps,ps) = no ;
 allowedStates(r,rr,'initial')$i_txCapacity(r,rr,'initial') = yes ;
 counter = 0 ;
 repeat
+*** Should this next line be ord or card?
   counter = card(allowedStates) ;
   allowedStates(r,rr,pss)$sum(transitions(tupg,r,rr,ps,pss)$allowedStates(r,rr,ps), 1 ) = yes ;
 until counter = card(allowedStates) ;
