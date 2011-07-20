@@ -3,29 +3,33 @@
 * Last modified by Dr Phil Bishop, 23/03/2011 (imm@ea.govt.nz)
 
 
-*** See comment on line #455
+*** To do:
+*** add i_NorthwardHVDCtransfer(y) = 500 to GDX file.
+*** CBAdiscountRates are hard-coded - need to take values from UI.
+*** exist(g) is hard coded <= 46
+*** See comment on line #434
+*** Add the old GEMbaseOut stuff at end and put result in Data checks folder
+*** Make sure nothng remains that should go to GEMsolve, i.e. all stuff susceptible to stochastic settings
 
 
 $ontext
  This program prepares the data for a single scenario. It imports the raw scenario-specific data
- from a GDX file; undertakes some manipulations, transformations, and intergrity checks; and then
- produces another GDX file in order to pass the prepared data to GEMsolve whereupon GEM is solved.
+ from a GDX file, and undertakes some manipulations, transformations, and intergrity checks. This
+ program is followed by GEMsolve, which solves the model, and restarts from GEMdata.g00.
 
  The GEMdata invocation requires GEMdata to be restarted from GEMdeclarations. The files called
  GEMpaths.inc and GEMsettings.inc are included in GEMdata.
 
  Code sections:
-  1. Load input data that comes from input GDX file or is hard-coded.
+  1. Load input data that comes from input GDX file (or the paths/settings include files).
   2. Initialise sets and parameters.
      a) Time/date-related sets and parameters.
      b) Various mappings, subsets and counts.
      c) Financial parameters.
-     d) Fuel prices and quantity limits.
-     e) Generation data.
-     f) Load data.
-     g) Transmission data.
-     h) Reserve energy data.
-     i) Hydrology output data.
+     d) Generation data.
+     e) System security data.
+     f) Transmission data.
+     g) Reserve energy data.
   3. Display sets and parameters.
   4. Archive/save input files.
 $offtext
@@ -40,24 +44,23 @@ $offtext
 option seed = 101 ;
 $include GEMpaths.inc
 $include GEMsettings.inc
-*$offupper onempty inlinecom { } eolcom !
 
-* Turn the following maps on/off as desired.
+* Turn the following stuff on/off as desired.
+*$offupper onempty inlinecom { } eolcom !
 $offuelxref offuellist	
 *$onuelxref  onuellist	
-
 $offsymxref offsymlist
 *$onsymxref  onsymlist
 
 
 
 *===============================================================================================
-* 1. Load input data that comes from input GDX file or is hard-coded.
+* 1. Load input data that comes from input GDX file (or the paths/settings include files).
 
 * Initialise set y with the modelled years as specified in GEMsettings.inc.
-* NB: set y in the GDX file contains all years on which data is defined, i.e. %firstYear% and %lastYear%
-*     define a subset of data years. This means that all parameters defined on set y are loaded without
-*     domain checking, i.e. $load c.f. $loaddc.
+* NB: set y in the GDX file contains all years on which data is defined whereas %firstYear% and %lastYear%
+*     define a subset of data years. This means that all parameters in the GDX file that defined on set y
+*     are loaded without domain checking, i.e. $load c.f. $loaddc.
 Set y  / %firstYear% * %lastYear% / ;
 
 $gdxin "%DataPath%%GDXinputFile%"
@@ -68,7 +71,7 @@ $loaddc k f fg g s o fc i r e ild p ps tupg tgc t lb rc hY v m geo col
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
 $loaddc wind renew thermalTech CCStech minUtilTechs demandGen randomiseCapex linearBuildTech coal lignite gas diesel
 * 7 generation
-$loaddc mapGenPlant exist commit new neverBuild mapg_fc maps_r
+$loaddc mapGenPlant exist commit new neverBuild maps_r mapg_fc
 * 6 location
 $loaddc mapLocations Haywards Benmore regionCentroid zoneCentroid islandCentroid
 * 2 transmission
@@ -79,52 +82,36 @@ $loaddc mapm_t
 * 1 hydrology
 $loaddc mapReservoirs
 
-* 78 parameters 
-* 15 technology and fuel parameters
+* 88 parameters 
+* 20 technology and fuel
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate i_capCostAdjByTech i_CapexExposure
-$loaddc i_peakContribution i_NWpeakContribution i_capFacTech
-$load   i_minUtilByTech i_FOFmultiplier i_maxNrgByFuel i_fuelQuantities
-* 30 generation parameters
+$loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
+$load   i_minUtilByTech  i_CCSfactor i_CCScost i_fuelPrices i_fuelQuantities i_co2tax
+* 32 generation
 $loaddc i_nameplate i_UnitLargestProp i_baseload i_minUtilisation i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear
-$loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM
+$loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_FuelDeliveryCost
 $loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_plantReservesCap i_plantReservesCost i_PltCapFact
 $loaddc i_VOLLcap i_VOLLcost i_HVDCshr i_exRates
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
 * 2 location
 $loaddc i_substnCoordinates i_zonalLocFacs
 * 12 transmission
-$load   i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
-$load   i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS i_HVDClevy i_HVDCreqRevenue
-* 4 load and time
+$loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
+$loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
+$load   i_HVDClevy i_HVDCreqRevenue
+* 7 load and time
 $load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
+$load i_peakLoadNZ i_peakLoadNI i_NrgDemand
 * 12 reserves and security
-$load   i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
+$loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
+$load   i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
 * 3 hydrology
 $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
 
+* Initialise set 'n' - data comes from GEMsettings.inc.
+Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
 ***
-$load i_fuelPrices i_FuelDeliveryCost i_co2tax i_CCSfactor i_CCScost i_emissionFactors i_varOM i_NrgDemand i_peakLoadNZ i_peakLoadNI
-
-* Initialise hard-coded sets (NB: previously declared in GEMdeclarations).
-* - ct, d, and dt are hard-coded; n receives info from GEMsettings.
-Sets
-  ct                             'Capital expenditure types'    / genplt   'New generation plant'
-                                                                  refplt   'Refurbish existing generation plant' /
-  d                              'Discount rate classes'        / d1       "Generation investor's post-tax real weighted average cost of capital"
-                                                                  d2       "Transmission investor's post-tax real weighted average cost of capital"
-                                                                  d3       'Lower discount rate for CBA sensitivity analysis' 
-                                                                  d4       'Central discount rate for CBA sensitivity analysis'
-                                                                  d5       'Upper discount rate for CBA sensitivity analysis'    /
-  dt                             'Types of discounting'         / mid      'Middle of the period within each year'
-                                                                  eoy      'End of year'   /
-  n                              'Piecewise linear vertices'    / n1 * n%NumVertices% /
-  ;
-
-
-* Only need set rt here so that including GEMstochastic works.... 
-*Sets rt 'Model run types' / tmg, reo, dis / ;
-*$include GEMstochastic.gms
 
 
 
@@ -148,7 +135,7 @@ firstPeriod(t)$( ord(t) = 1 ) = yes ;
 abort$( %firstYear% < i_firstDataYear ) "First modelled year precedes first data year",        i_firstDataYear, firstYr ;
 abort$( %lastYear%  > i_lastDataYear )  "Last modelled year is later than the last data year", i_lastDataYear, lastYr ;
 
-* Denote each hydro year set element with a real number corresponding to that year, i.e. 1932 = 1932, 1933 = 1933, ... 2007 = 2007.
+* Denote each hydro year set element with a real number corresponding to that year, i.e. 1932 = 1932, 1933 = 1933,...2002 = 2002, etc.
 hydroYearNum(hY) = i_firstHydroYear + ord(hY) - 1 ;
 
 lastHydroYear = sum(hY$( ord(hY) = card(hY) ), hydroYearNum(hY)) ;
@@ -163,8 +150,6 @@ hoursPerBlock(t,lb) = sum(mapm_t(m,t), 0.5 * i_HalfHrsPerBlk(m,lb)) ;
 loop(maplocations(i,r,e,ild),
   mapi_r(i,r) = yes ;
   mapi_e(i,e) = yes ;
-*  mapi_ild(i,ild) = yes ;
-*  mape_r(e,r) = yes ;
   mapild_r(ild,r) = yes ;
 ) ;
 * Generation plant mappings
@@ -174,19 +159,15 @@ loop(mapgenplant(g,k,i,o),
   mapg_i(g,i) = yes ;
 ) ;
 mapg_f(g,f)     = yes$sum(mapg_k(g,k), mapf_k(f,k) ) ;
-*mapg_fg(g,fg)   = yes$sum(mapg_f(g,f), mapf_fg(f,fg) ) ;
 mapg_r(g,r)     = yes$sum(mapg_i(g,i), mapi_r(i,r) ) ;
 mapg_e(g,e)     = yes$sum(mapg_i(g,i), mapi_e(i,e) ) ;
 mapg_ild(g,ild) = yes$sum(mapg_r(g,r), mapild_r(ild,r) ) ;
 * Reservoir mappings
 loop(mapreservoirs(v,i,g),
   mapv_g(v,g) = yes ;
-*  mapv_i(v,i) = yes ;
 ) ;
 * Fuel mappings
-loop((f,fg,thermalTech(k))$( mapf_fg(f,fg) * mapf_k(f,k) ),
-  thermalFuel(f) = yes ;
-) ;
+loop((f,fg,thermalTech(k))$( mapf_fg(f,fg) * mapf_k(f,k) ), thermalFuel(f) = yes ) ;
 
 * Count number of regions
 numreg = card(r) ;
@@ -197,11 +178,11 @@ loop(hydroPumped(k), pumpedHydroPlant(g)$mapg_k(g,k) = yes ) ;
 
 
 * c) Financial parameters.
-CBAdiscountRates('d1') = WACCg ;
-CBAdiscountRates('d2') = WACCt ;
-CBAdiscountRates('d3') = .04 ;
-CBAdiscountRates('d4') = .07 ;
-CBAdiscountRates('d5') = .10 ;
+CBAdiscountRates('WACCg') = WACCg ;
+CBAdiscountRates('WACCt') = WACCt ;
+CBAdiscountRates('dLow')  = .04 ;
+CBAdiscountRates('dMed')  = .07 ;
+CBAdiscountRates('dHigh') = .10 ;
 
 PVfacG(y,t) = 1 / ( 1 + WACCg ) ** ( (yearNum(y) - firstYear) + (ord(t) * 2 - 1) / ( 2 * card(t) ) ) ;
 
@@ -238,10 +219,7 @@ if(depType = 0,
 ) ;
 
 
-* d) Fuel prices and quantity limits.  MOVED TO GEMSOLVE
-
-
-* e) Generation data.
+* d) Generation data.
 * Calculate reserve capability per generating plant.
 reservesCapability(g,rc)$i_plantReservesCap(g,rc) = i_nameplate(g) * i_plantReservesCap(g,rc) ;
 
@@ -395,12 +373,7 @@ refurbCapCharge(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 refurbCapCharge(g,y)$( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) = 0 ;
 
 
-* f) Load data.  MOVED TO GEMSOLVE
-
-
-* i) System security data.
-* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation.  MOVED TO GEMSOLVE
-
+* e) System security data.
 bigNIgen(y) = i_BigNIgen(y) ;
 nxtbigNIgen(y) = i_nxtBigNIgen(y) ;
 
@@ -412,7 +385,7 @@ nxtBigNIgen(y)$( gridSecurity = 0 ) = 0 ;
 nxtBigNIgen(y)$( gridSecurity = 1 ) = 0 ;
 
 
-* g) Transmission data.
+* f) Transmission data.
 * Let the last region declared be the slack bus (note that set r may not be ordered if users don't maintain unique set elements).
 slackBus(r) = no ;
 slackBus(r)$( ord(r) = card(r) ) = yes ;
@@ -509,7 +482,7 @@ loop(mapArcNode(p,r,rr),
 ) ;
 
 * Identify transmission group constraints as valid if LHS and RHS coefficients are non-zero. 
-vtgc(tgc)$( sum(p$i_txGrpConstraintsLHS(tgc,p), 1) * i_txGrpConstraintsRHS(tgc) ) = yes ;
+validTGC(tgc)$( sum(p$i_txGrpConstraintsLHS(tgc,p), 1) * i_txGrpConstraintsRHS(tgc) ) = yes ;
 
 * Initialise the line segment set (i.e. number segments = number of vertices - 1).
 nsegment(n)$( ord(n) < card(n) ) = yes ;
@@ -541,7 +514,7 @@ txCapitalCost(r,rr,ps)$( unipaths(r,rr) and (txCapitalCost(r,rr,ps) = 0) ) = i_t
 txCapCharge(r,rr,ps,y) = txCapitalCost(r,rr,ps) * txCapRecFac(y) ;
 
 
-* h) Reserve energy data.
+* g) Reserve energy data.
 reservesAreas(rc) = min(2, max(1, i_ReserveAreas(rc) ) ) ;
 
 singleReservesReqF(rc)$( reservesAreas(rc) = 1 ) = 1 ;
@@ -553,16 +526,6 @@ windCoverPropn(rc) = min(1, max(0, i_propWindCover(rc) ) ) ;
 bigM(ild1,ild) =
  smax((paths(r,rr),ps)$( mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacity(paths,ps) ) -
  smin((paths(r,rr),ps)$( mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacityPO(paths,ps) ) ;
-
-
-* i) Hydrology output data.
-* Assign hydro output for all hydro years and compute the simple arithmetic average hydro sequence.
-*historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
-*historicalHydroOutput(v,'Average',m) = sum(hY, historicalHydroOutput(v,hY,m)) / ( lastHydroYear - i_firstHydroYear + 1 ) ;
-
-* i) Hydrology output data.
-* Assign hydro output for all hydro years and compute the simple arithmetic average hydro sequence.
-historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 
 
 
@@ -587,7 +550,7 @@ Display
 * Load data.
 * Transmission data.
   slackBus, regLower, interIsland, nwd, swd, paths, uniPaths, biPaths, transitions, validTransitions, allowedStates, notAllowedStates
-  upgradedStates, txEarlyComYrSet, txFixedComYrSet, vtgc, nSegment,
+  upgradedStates, txEarlyComYrSet, txFixedComYrSet, validTGC, nSegment,
 * Reserve energy data.
 * Parameters
 * Time/date-related sets and parameters.
@@ -598,12 +561,11 @@ Display
   CBAdiscountRates, PVfacG, PVfacT, PVfacsM, PVfacsEY, PVfacs, capexLife, annuityFacN, annuityFacR, txAnnuityFacN, txAnnuityFacR
   capRecFac, depTCrecFac, txCapRecFac, txDeptCRecFac
 * Fuel prices and quantity limits.
-  SRMC, totalFuelCost, CO2taxByPlant, CO2CaptureStorageCost
 * Generation data.
   initialCapacity, capitalCost, capexPlant, capCharge, refurbCapexPlant, refurbCapCharge, exogMWretired, continueAftaEndogRetire
   WtdAvgFOFmultiplier, reservesCapability, peakConPlant, NWpeakConPlant, maxCapFactPlant, minCapFactPlant
 * Load data.
-  AClossFactors, NrgDemand, ldcMW, peakLoadNZ, peakLoadNI, bigNIgen, nxtbigNIgen,
+  bigNIgen, nxtbigNIgen,
 * Transmission data.
   locFac_Recip, txEarlyComYr, txFixedComYr, reactanceYr, susceptanceYr, BBincidence, pCap, pLoss, bigLoss, slope, intercept
   txCapitalCost, txCapCharge
@@ -662,3 +624,26 @@ execute 'temp.bat' ;
 
 
 * End of file.
+
+$ontext
+File newdata / xxx.csv / ; newdata.pc = 5 ;
+put newdata 'PlantName', '', 'Technology', '', 'Region', '', 'Status', 'Nameplate MW', 'Fixed O&M', 'Variable O&M', 'Capex - NZD/MW'  ;
+loop((g,k,r)$( mapg_k(g,k) * mapg_r(g,r) ),
+  put / g.tl, g.te(g), k.tl, k.te(k), r.tl, r.te(r) ;
+  if(exist(g), put 'Exist',
+    else if(commit(g), put 'Committed',
+      else if(new(g), put 'New',
+        else put 'Never build'
+      ) ;
+    ) ;
+  ) ;
+  put i_nameplate(g), i_fixedOM(g), i_varOM(g), capexPlant(g) ;
+) ;
+$offtext
+*File mapR / mapR.txt / ; mapR.lw = 0 ; put mapR ;
+*loop((g,r)$mapg_r(g,r), put g.tl, '.', r.tl / ) ;
+
+*File mapK / mapK.txt / ; mapK.lw = 0 ; put mapK ;
+*loop((g,k)$mapg_k(g,k), put g.tl, '.', k.tl / ) ;
+
+display maxCapFactPlant, paths ;

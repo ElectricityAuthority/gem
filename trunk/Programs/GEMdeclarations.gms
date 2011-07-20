@@ -6,14 +6,9 @@ $ontext
   This program does....
 
  Code sections:
-  1. Declare sets and parameters - the data for which is imported from the GDX file created by EAME.
-  2. Declare sets and parameters
-     - hard-coded in GEMdata
-     - hard-coded in GEMsolve
-     - initialised in GEMdata using input from GEMsettings/GEMstochastic
-     - initialised in GEMsolve using input from GEMsettings/GEMstochastic
-     - initialised in GEMsolve
-  3. Declare sets and parameters to be initialised/computed in GEMdata.
+  1. Declare sets and parameters - the data for which is imported from an input GDX file.
+  2. Declare sets and parameters - those that are hard-coded or come from GEMsettings and GEMstochastic.
+  3. Declare sets and parameters to be initialised/computed in GEMdata or GEMsolve.
   4. Declare model variables and equations.
   5. Specify the equations and declare the models.
   6. Declare the 's' parameters and specify the statements used to collect up results after each solve.
@@ -30,7 +25,7 @@ $offsymxref offsymlist
 
 
 *===============================================================================================
-* 1. Declare sets and parameters - the data for which is imported from the GDX file created by EAME.
+* 1. Declare sets and parameters - the data for which is imported from an input GDX file.
 
 * 24 fundamental sets
 Sets
@@ -95,8 +90,8 @@ Sets
   commit(g)                                     'Generation plant that are assumed to be committed'
   new(g)                                        'Potential generation plant that are neither existing nor committed'
   neverBuild(g)                                 'Generation plant that are determined a priori by user never to be built'
+  maps_r(s,r)                                   'Map regions to VOLL plants'
   mapg_fc(g,fc)                                 'Map currency types to generating plant - used to convert capex values to NZD'
-  maps_r(s,r)                                   'Map VOLL plants to regions'
 * 6 location
   mapLocations(i,r,e,ild)                       'Location mappings'
   Haywards(i)                                   'Haywards substation'
@@ -108,7 +103,7 @@ Sets
   txUpgradeTransitions(tupg,r,rr,ps,pss)        'Define the allowable transitions from one transmission path state to another'
   mapArcNode(p,r,rr)                            'Map nodes (actually, regions) to arcs (paths) in order to build the bus-branch incidence matrix'
 * 1 load and time
-  mapm_t(m,t)                                   'Map months into time periods'
+  mapm_t(m,t)                                   'Map time periods to months'
 * 0 reserves and security
 * 1 hydrology
   mapReservoirs(v,i,g)                          'Reservoir mappings'
@@ -128,14 +123,14 @@ Parameters
   i_peakContribution(k)                         'Contribution to peak by technology'
   i_NWpeakContribution(k)                       'The no wind contribution to peak by technology'
   i_capFacTech(k)                               'An assumed (rather than modelled) technology-specific capacity factor - used when computing LRMCs based on input data (i.e. prior to solving the model)'
+  i_FOFmultiplier(k,lb)                         'Forced outage factor multiplier (default = 1)'
+  i_maxNrgByFuel(f)                             'Maximum proportion of total energy from any one fuel type (0-1)'
+  i_emissionFactors(f)                          'CO2e emissions, tonnes CO2/PJ'
   i_minUtilByTech(y,k)                          'Minimum utilisation of plant by technology type, proportion (0-1 but define only when > 0)'
   i_CCSfactor(y,k)                              'Carbon capture and storage factor, i.e. share of emissions sequestered'
   i_CCScost(y,k)                                'Carbon capture and storage cost, $/t CO2e sequestered'
-  i_FOFmultiplier(k,lb)                         'Forced outage factor multiplier (default = 1)'
-  i_maxNrgByFuel(f)                             'Maximum proportion of total energy from any one fuel type (0-1)'
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantities(f,y)                         'Quantitative limit on availability of various fuels by year, PJ'
-  i_emissionFactors(f)                          'CO2e emissions, tonnes CO2/PJ'
   i_co2tax(y)                                   'CO2 tax by year, $/tonne CO2-equivalent'
 * 32 generation
   i_nameplate(g)                                'Nameplate capacity of generating plant, MW'
@@ -216,51 +211,53 @@ Parameters
 
 
 *===============================================================================================
-* 2. Declare sets and parameters
-*    - hard-coded in GEMdata
-*    - hard-coded in GEMsolve
-*    - initialised in GEMdata using input from GEMsettings/GEMstochastic
-*    - initialised in GEMsolve using input from GEMsettings/GEMstochastic
-*    - initialised in GEMsolve
+* 2. Declare sets and parameters - those that are hard-coded or come from GEMsettings and GEMstochastic.
+*    - Some are initialised (hard-coded) right here.
+*    - Some are initialised in GEMsettings/GEMstochastic.
+*    - Some are initialised in GEMdata or GEMsolve using data/values obtained from GEMsettings/GEMstochastic.
 
 Sets
-* Hard-coded in GEMdata
-  ct                                            'Capital expenditure types'
-  d                                             'Discount rate classes'
-  dt                                            'Types of discounting'
-* Initialised in GEMdata using input from GEMsettings/GEMstochastic
-  runs                                          'Separate runs of timing or dispatch'
-  outcomes                                      'Stochastic outcomes or uncertainty states'
-  hydroTypes                                    'Types of hydro sequences to use'
   n                                             'Piecewise linear vertices'
-* Hard-coded in GEMsolve
-  rt                                            'Model run types'
-  goal                                          'Goals for MIP solution procedure'
-  tmg(rt)                                       'Run type TMG - determine timing'
-  reo(rt)                                       'Run type REO - re-optimise timing'
-  dis(rt)                                       'Run type DIS - dispatch'
-* Initialised in GEMsolve using input from GEMsettings/GEMstochastic
-  chooseHydroYears(hY)                          'Used for calculation of hydro sequences'
-  mapoc_hY(outcomes,hY)                         'Map historical hydro output years to outcomes'
-  hydroType(outcomes,hydroTypes)                'Map the way hydrology sequences are developed (same or sequential) to outcomes'
-  map_runs_outcomes(runs,outcomes)              'Which outcomes are in which run?' 
-  map_reopt_outcomes(runs,outcomes)             'Which outcomes are in each reopt run?'
-  map_rt_runs(rt,runs)                          'Which runs do do for each run type?' 
-  solveGoal(goal)                               'User-selected solve goal'
-* Initialised in GEMsolve
+  ct                                            'Capital expenditure types'           / genplt   'New generation plant'
+                                                                                        refplt   'Refurbish existing generation plant' /
+  d                                             'Discount rate classes'               / WACCg    "Generation investor's post-tax real weighted average cost of capital"
+                                                                                        WACCt    "Transmission investor's post-tax real weighted average cost of capital"
+                                                                                        dLow     'Lower discount rate for CBA sensitivity analysis' 
+                                                                                        dMed     'Central discount rate for CBA sensitivity analysis'
+                                                                                        dHigh    'Upper discount rate for CBA sensitivity analysis'    /
+  dt                                            'Types of discounting'                / mid      'Middle of the period within each year'
+                                                                                        eoy      'End of year'   /
+  mt                                            'Model types to be solved'            / tmg      'Solve model GEM to determine optimal timing of new investment'
+                                                                                        reo      'Solve model GEM to re-optimise investment timing - only certain generation plant (peakers) are free to move'
+                                                                                        dis      'Solve model DISP to get dispatch with investment timing fixed'   /
+  tmg(mt)                                       'Model type TMG - determine timing'   / tmg /
+  reo(mt)                                       'Model type REO - re-optimise timing' / reo /
+  dis(mt)                                       'Model type DIS - dispatch'           / dis /
+  goal                                          'Goals for MIP solution procedure'    / QDsol    'Find a quick and dirty solution using a user-specified optcr'
+                                                                                        VGsol    'Find a very good solution reasonably quickly'
+                                                                                        MinGap   'Minimize the gap between best possible and best found'  /
+  solveGoal(goal)                               'The user-selected solve goal'
+  runs                                          'Separate runs of timing, re-optimisation or dispatch model types'
+  outcomes                                      'Stochastic outcomes or states of uncertainty'
   oc(outcomes)                                  'Selected elements of outcomes'
+  mapRuns_Outcomes(runs,outcomes)               'Which outcomes are in which run?' 
+  mapReopt_Outcomes(runs,outcomes)              'Which outcomes are in each re-optimisation run?'
+  mapMT_Runs(mt,runs)                           'Which runs to do for each model type?' 
+  hydroSeqTypes                                 "Types of hydro sequences to use (don't alter these without making commensurate changes to GEMsolve)"
   hydroYrForDispatch(hY)                        'Hydro years used to loop over when solving DISpatch'
-  activeSolve(rt,*)                             'Collect the rt-hY index used for each solve' 
-  activeRT(rt)                                  'Identify the run types actually employed in this model run'
+  chooseHydroYears(hY)                          'Used for calculation of hydro sequences'
+  mapOC_hY(outcomes,hY)                         'Map historical hydro output years to outcomes'
+  mapOC_hydroSeqTypes(outcomes,hydroSeqTypes)   'Map the way types of hydrology sequences are developed (same or sequential) to outcomes'
+  activeSolve(mt,*)                             'Collect the mt-hY index used for each solve' 
+  activeMT(mt)                                  'Identify the run types actually employed in this model run'
   ;
 
-Alias (rt,rtTiming,rtDispatch), (runs,timingRun,dispatchRun) ;
+Alias (mt,mtTiming,mtDispatch), (runs,timingRun,dispatchRun) ;
 
 Parameters
-* Parameters to be initialised in GEMdata using input from GEMsettings. 
+* Used/initialised in GEMdata.
   firstYear                                     'First modelled year - as a scalar, not a set'
   lastYear                                      'Last modelled year - as a scalar, not a set'
-* Scalars to be declared and initialised in GEMsettings.
   WACCg                                         "Generation investor's post-tax real weighted average cost of capital"
   WACCt                                         "Transmission investor's post-tax real weighted average cost of capital"
   depType                                       'Flag to indicate depreciation method - 1 for declining value, 0 for straight line'
@@ -274,6 +271,7 @@ Parameters
 *                                                   0 = run the model with n (i.e. n-0) security.
 *                                                   1 = run the model with n-1 security.
 *                                                   2 = run the model with n-2 security.
+* Used/initialised in GEMdeclarations (i.e. in model) or GEMsolve.
   AnnualMWlimit                                 'Upper bound on total MW of new plant able to be built nationwide in any single year'
   penaltyViolateRenNrg                          'Penalty used to make renewable energy constraint feasible, $m/GWh'
   renNrgShrOn                                   'Switch to control usage of renewable energy share constraint 0=off/1=on'
@@ -282,7 +280,6 @@ Parameters
   cGenYr                                        'First year in which integer generation build decisions can become continuous, i.e. CGEN or BGEN = 0 in any year'
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
-* Initialised in GEMsolve
   penaltyLostPeak                               'Penalty for not meeting peak load constraint'
   outcomePeakLoadFactor(outcomes)               'Blah blah blah'
   outcomeCO2TaxFactor(outcomes)                 'Blah blah blah'
@@ -292,7 +289,6 @@ Parameters
   outcomeWeight(outcomes)                       'blah blah blah'
   modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
   slacks                                        'A flag indicating slacks or penalty variables exist in at least one solution'
-  timeAllowed(goal)                             'CPU seconds available for solver to spend solving the model'
   solveReport(*,*,*,*)                          'Collect various details about each solve of the models (both GEM and DISP)'
   hydroYrIndex(hY)                              'Index to enable assignment of hydro years over the modelled years'
   ;
@@ -300,7 +296,7 @@ Parameters
 
 
 *===============================================================================================
-* 3. Declare sets and parameters to be initialised/computed in GEMdata.
+* 3. Declare sets and parameters to be initialised/computed in GEMdata or GEMsolve.
 
 Sets
 * Time/date-related sets and parameters.
@@ -357,7 +353,7 @@ Sets
   upgradedStates(r,rr,ps)                       'All allowed upgraded states on each path'
   txEarlyComYrSet(tupg,r,rr,ps,pss,y)           'Years prior to the earliest year in which a particular upgrade can occur - a set form of txEarlyComYr'
   txFixedComYrSet(tupg,r,rr,ps,pss,y)           'Fixed year in which a particular upgrade must occur - set form of txFixedComYr'
-  vtgc(tgc)                                     'Valid transmission group constraints'
+  validTGC(tgc)                                 'Valid transmission group constraints'
   nSegment(n)                                   'Line segments for piecewise linear transmission losses function (number of segments = number of vertices - l)'
 * Reserve energy data.
   ;
@@ -474,7 +470,7 @@ Equations
 
 Free Variables
   TOTALCOST                                     'Discounted total system costs over all modelled years, $m (objective function value)'
-  OUTCOME_OBJECTIVE(outcomes)
+  OUTCOME_COSTS(outcomes)                       'Discounted costs that might vary by outcome, $m (a component of objective function value)'
   TX(r,rr,y,t,lb,outcomes)                      'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
   THETA(r,y,t,lb,outcomes)                      'Bus voltage angle'
 
@@ -521,7 +517,7 @@ Positive Variables
 
 Equations
   objectivefn                                   'Calculate discounted total system costs over all modelled years, $m'
-  outcomeobjective(outcomes)
+  calc_outcomeCosts(outcomes)                   'Calculate discounted costs that might vary by outcome'
   calc_refurbcost(g,y)                          'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
   calc_txcapcharges(r,rr,y)                     'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
   bldgenonce(g)                                 'If new generating plant is to be built, ensure it is built only once'
@@ -604,26 +600,25 @@ objectivefn..
   1e-6 * sum((y,firstPeriod(t),PossibleToRefurbish(g))$refurbcapcharge(g,y), PVfacG(y,t) * REFURBCOST(g,y) ) +
 * Transmission capital expenditure - discounted
   sum((paths,y,firstPeriod(t)),   PVfacT(y,t) * TXCAPCHARGES(paths,y) ) +
-* Costs by outcome
-  sum(oc, outcomeWeight(oc) * OUTCOME_OBJECTIVE(oc))
-  ;
+* Costs by outcome - computed in following equation
+  sum(oc, outcomeWeight(oc) * OUTCOME_COSTS(oc)) ;
 
-outcomeobjective(oc)..
-  OUTCOME_OBJECTIVE(oc) =e=
-* Reserve violation costs (really a 'slack' but not called a slack), $m
+calc_outcomeCosts(oc)..
+  OUTCOME_COSTS(oc) =e=
+* Reserve violation costs, $m
   1e-6 * sum((rc,ild,y,t,lb), RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
-* Lost peak penalties
+* Lost peak load penalties - why aren't they discounted and adjusted for tax?
   penaltyLostPeak * sum(y$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI1_PENALTY(y,oc) + SEC_NI2_PENALTY(y,oc) ) +
   penaltyLostPeak * sum(y, NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
-* Costs discounted and adjusted for tax (should this apply to lost peak penalties?)
-  1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(y,t) *
-  (
+* Various costs, discounted and adjusted for tax
+  1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(y,t) * (
 * Lost load
     sum(s, 1e3 * VOLLGEN(s,y,t,lb,oc) * i_VOLLcost(s) ) +
 * Generation costs
     sum(g$validYrOperate(g,y,t), 1e3 * GEN(g,y,t,lb,oc) * srmc(g,y,oc) * sum(mapg_e(g,e), locFac_Recip(e)) ) +
 * Cost of providing reserves ($m)
-    sum((g,rc), RESV(g,rc,y,t,lb,oc) * i_plantreservescost(g,rc) ) +
+    sum((g,rc), RESV(g,rc,y,t,lb,oc) * i_plantReservesCost(g,rc) ) +
+*++++++++++++++++++
 * More non-free reserves code.
 * Cost of providing reserves ($m)
     sum((paths,stp)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp) * pnfresvcost(paths,stp) )
@@ -711,7 +706,7 @@ security_NI2(y,oc)$(gridSecurity > -1)..
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacityPO(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClossesPO(y))
   =g= peakLoadNI(y,oc) ;
 
-* Ensure NZ cold-year winter peak can be met without any wind.
+* Meet NZ peak with no wind and no reserve cover.
 noWind_NZ(y,oc)$(gridSecurity > -1)..
   NOWIND_NZ_PENALTY(y,oc) +
   sum(mapg_k(g,k)$( not wind(k) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
@@ -719,9 +714,9 @@ noWind_NZ(y,oc)$(gridSecurity > -1)..
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
   =g= peakLoadNZ(y,oc) ;
 
-* Ensure NI cold-year winter peak can be met without any wind.
+* Meet NI peak with no wind and no reserve cover.
 noWind_NI(y,oc)$(gridSecurity > -1)..
-  NOWIND_NZ_PENALTY(y,oc) +
+  NOWIND_NI_PENALTY(y,oc) +
   sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClosses(y))
@@ -729,11 +724,11 @@ noWind_NI(y,oc)$(gridSecurity > -1)..
 
 * Ensure generation is less than capacity times max capacity factor in each block.
 limit_maxgen(validYrOperate(g,y,t),lb,oc)$( ( exist(g) or possibleToBuild(g) ) * ( not useReserves ) )..
-  GEN(g,y,t,lb,oc) =l= 0.001 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
+  GEN(g,y,t,lb,oc) =l= 1e-3 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Ensure generation is greater than capacity times min capacity factor in each block.
 limit_mingen(validYrOperate(g,y,t),lb,oc)$minCapFactPlant(g,y,t)..
-  GEN(g,y,t,lb,oc) =g= 0.001 * CAPACITY(g,y) * minCapFactPlant(g,y,t) * hoursPerBlock(t,lb) ;
+  GEN(g,y,t,lb,oc) =g= 1e-3 * CAPACITY(g,y) * minCapFactPlant(g,y,t) * hoursPerBlock(t,lb) ;
 
 * Minimum ultilisation of plant by technology.
 minutil(g,k,y,oc)$( i_minutilisation(g) * i_minUtilByTech(y,k) * mapg_k(g,k) )..
@@ -815,10 +810,10 @@ equatetxloss(r,rr,y,t,lb,oc)$( DCloadFlow * paths(r,rr) * regLower(r,rr) * sum(p
   LOSS(r,rr,y,t,lb,oc) =e= LOSS(rr,r,y,t,lb,oc) ;
 
 * Transmission group constraints, i.e. in addition to individual branch limits. Use to cater for contingencies, stability limits, etc.
-***txGrpConstraint(vtgc,y,t,lb,oc)$txconstraintactive(y,t,vtgc)..
-txGrpConstraint(vtgc,y,t,lb,oc)$DCloadFlow..
-  sum((p,paths(r,rr))$( (bbincidence(p,r) = 1) * (bbincidence(p,rr) = -1) ), i_txGrpConstraintsLHS(vtgc,p) * TX(paths,y,t,lb,oc) )
-  =l= i_txGrpConstraintsRHS(vtgc) ;
+***txGrpConstraint(validTGC,y,t,lb,oc)$txconstraintactive(y,t,validTGC)..
+txGrpConstraint(validTGC,y,t,lb,oc)$DCloadFlow..
+  sum((p,paths(r,rr))$( (bbincidence(p,r) = 1) * (bbincidence(p,rr) = -1) ), i_txGrpConstraintsLHS(validTGC,p) * TX(paths,y,t,lb,oc) )
+  =l= i_txGrpConstraintsRHS(validTGC) ;
 
 * Meet the single reserve requirement.
 resvsinglereq1(rc,ild,y,t,lb,oc)$( useReserves * singleReservesReqF(rc) )..
@@ -880,7 +875,7 @@ resvreqwind(rc,ild,y,t,lb,oc)$( useReserves * ( (i_reserveReqMW(y,ild,rc) = -2) 
   =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y,t) ), 1000 * GEN(g,y,t,lb,oc) ) ;
 
 Model DISP Dispatch model with build forced and timing fixed  /
-  objectivefn, outcomeobjective, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
+  objectivefn, calc_outcomeCosts, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
   security_nz, security_ni1,  security_ni2, nowind_nz, nowind_ni
   limit_maxgen, limit_mingen, minutil, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
   limit_pumpgen1, limit_pumpgen2, limit_pumpgen3
@@ -895,9 +890,7 @@ Model DISP Dispatch model with build forced and timing fixed  /
   / ;
 
 * Model GEM is just model DISP with 6 additional constraints added:
-Model GEM Generation expansion model  /
-  DISP, bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire, endogretonce
-  / ;
+Model GEM Generation expansion model / DISP, bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire, endogretonce / ;
 
 
 
@@ -1136,45 +1129,45 @@ $offecho
 
 Parameters
 * Free variables
-  s2_TOTALCOST(rt,runs)                            'Discounted total system costs over all modelled years, $m (objective function value)'
-  s2_TX(rt,runs,r,rr,y,t,lb,outcomes)              'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s2_TOTALCOST(mt,runs)                            'Discounted total system costs over all modelled years, $m (objective function value)'
+  s2_TX(mt,runs,r,rr,y,t,lb,outcomes)              'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
 * Binary Variables
-  s2_BRET(rt,runs,g,y)                             'Binary variable to identify endogenous retirement year for the eligble generation plant'
-  s2_ISRETIRED(rt,runs,g)                          'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
-  s2_BTX(rt,runs,r,rr,ps,y)                        'Binary variable indicating the current state of a transmission path'
+  s2_BRET(mt,runs,g,y)                             'Binary variable to identify endogenous retirement year for the eligble generation plant'
+  s2_ISRETIRED(mt,runs,g)                          'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
+  s2_BTX(mt,runs,r,rr,ps,y)                        'Binary variable indicating the current state of a transmission path'
 * Positive Variables
-  s2_REFURBCOST(rt,runs,g,y)                       'Annualised generation plant refurbishment expenditure charge, $'
-  s2_BUILD(rt,runs,g,y)                            'New capacity installed by generating plant and year, MW'
-  s2_RETIRE(rt,runs,g,y)                           'Capacity endogenously retired by generating plant and year, MW'
-  s2_CAPACITY(rt,runs,g,y)                         'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s2_TXCAPCHARGES(rt,runs,r,rr,y)                  'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s2_GEN(rt,runs,g,y,t,lb,outcomes)                'Generation by generating plant and block, GWh'
-  s2_VOLLGEN(rt,runs,s,y,t,lb,outcomes)            'Generation by VOLL plant and block, GWh'
-  s2_PUMPEDGEN(rt,runs,g,y,t,lb,outcomes)          'Energy from pumped hydro (treated like demand), GWh'
-  s2_LOSS(rt,runs,r,rr,y,t,lb,outcomes)            'Transmission losses along each path, MW'
-  s2_TXPROJVAR(rt,runs,tupg,y)                     'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  s2_TXUPGRADE(rt,runs,r,rr,ps,pss,y)              'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
-  s2_RESV(rt,runs,g,rc,y,t,lb,outcomes)            'Reserve energy supplied, MWh'
-  s2_RESVVIOL(rt,runs,rc,ild,y,t,lb,outcomes)      'Reserve energy supply violations, MWh'
-  s2_RESVTRFR(rt,runs,rc,ild,ild1,y,t,lb,outcomes) 'Reserve energy transferred from one island to another, MWh'
+  s2_REFURBCOST(mt,runs,g,y)                       'Annualised generation plant refurbishment expenditure charge, $'
+  s2_BUILD(mt,runs,g,y)                            'New capacity installed by generating plant and year, MW'
+  s2_RETIRE(mt,runs,g,y)                           'Capacity endogenously retired by generating plant and year, MW'
+  s2_CAPACITY(mt,runs,g,y)                         'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s2_TXCAPCHARGES(mt,runs,r,rr,y)                  'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s2_GEN(mt,runs,g,y,t,lb,outcomes)                'Generation by generating plant and block, GWh'
+  s2_VOLLGEN(mt,runs,s,y,t,lb,outcomes)            'Generation by VOLL plant and block, GWh'
+  s2_PUMPEDGEN(mt,runs,g,y,t,lb,outcomes)          'Energy from pumped hydro (treated like demand), GWh'
+  s2_LOSS(mt,runs,r,rr,y,t,lb,outcomes)            'Transmission losses along each path, MW'
+  s2_TXPROJVAR(mt,runs,tupg,y)                     'Continuous 0-1 variable indicating whether an upgrade project is applied'
+  s2_TXUPGRADE(mt,runs,r,rr,ps,pss,y)              'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
+  s2_RESV(mt,runs,g,rc,y,t,lb,outcomes)            'Reserve energy supplied, MWh'
+  s2_RESVVIOL(mt,runs,rc,ild,y,t,lb,outcomes)      'Reserve energy supply violations, MWh'
+  s2_RESVTRFR(mt,runs,rc,ild,ild1,y,t,lb,outcomes) 'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
-  s2_RENNRGPENALTY(rt,runs,y)                      'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s2_SEC_NZ_PENALTY(rt,runs,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI1_PENALTY(rt,runs,outcomes,y)           'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
-  s2_SEC_NI2_PENALTY(rt,runs,outcomes,y)           'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
-  s2_NOWIND_NZ_PENALTY(rt,runs,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NI_PENALTY(rt,runs,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  s2_RENNRGPENALTY(mt,runs,y)                      'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s2_SEC_NZ_PENALTY(mt,runs,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s2_SEC_NI1_PENALTY(mt,runs,outcomes,y)           'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
+  s2_SEC_NI2_PENALTY(mt,runs,outcomes,y)           'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
+  s2_NOWIND_NZ_PENALTY(mt,runs,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s2_NOWIND_NI_PENALTY(mt,runs,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
-  s2_ANNMWSLACK(rt,runs,y)                         'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s2_RENCAPSLACK(rt,runs,y)                        'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s2_HYDROSLACK(rt,runs,y)                         'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s2_MINUTILSLACK(rt,runs,y)                       'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s2_FUELSLACK(rt,runs,y)                          'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s2_ANNMWSLACK(mt,runs,y)                         'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s2_RENCAPSLACK(mt,runs,y)                        'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s2_HYDROSLACK(mt,runs,y)                         'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s2_MINUTILSLACK(mt,runs,y)                       'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s2_FUELSLACK(mt,runs,y)                          'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations, i.e. marginal values. (ignore the objective function)
-  s2_bal_supdem(rt,runs,r,y,t,lb,outcomes)         'Balance supply and demand in each region, year, time period and load block'
+  s2_bal_supdem(mt,runs,r,y,t,lb,outcomes)         'Balance supply and demand in each region, year, time period and load block'
 *++++++++++
 * More non-free reserves code.
-  s2_RESVCOMPONENTS(rt,runs,r,rr,y,t,lb,outcomes,stp)'Non-free reserve components, MW'
+  s2_RESVCOMPONENTS(mt,runs,r,rr,y,t,lb,outcomes,stp)'Non-free reserve components, MW'
 *++++++++++
   ;
 
