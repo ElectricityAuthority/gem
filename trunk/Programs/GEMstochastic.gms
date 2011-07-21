@@ -5,9 +5,10 @@
 
 * Sets:
 Sets
-  runs                  'Separate runs of timing or dispatch'        / timing, reopt, stochastic, lowCO2TaxRun, medCO2TaxRun, highCO2TaxRun /
+  experiments           'Complete experiments with timing, reopt and dispatch'
+                                                                     / stochasticExp, lowCO2TaxExp, medCO2TaxExp, highCO2TaxExp /
   outcomes              'Stochastic outcomes or uncertainty states'  / lowCO2TaxOC, medCO2TaxOC, highCO2TaxOC /
-  hydroSeqTypes        'Types of hydro sequences to use'            / Same, Sequential /
+  outcomeSets           'Sets of outcomes to be used in a run'       / stochasticSet, lowCO2TaxSet, medCO2TaxSet, highCO2TaxSet / 
   ;
 
 * Mapping sets:
@@ -23,22 +24,37 @@ Set mapOC_hydroSeqTypes(outcomes,hydroSeqTypes) 'Map the way hydrology sequences
     medCO2TaxOC   . Same 
     highCO2TaxOC  . Same / ;
 
-Set mapRuns_Outcomes(runs,outcomes) 'Which outcomes are in which run?' /
-    stochastic    . (lowCO2TaxOC, medCO2TaxOC, highCO2TaxOC)
-    lowCO2TaxRun  . (lowCO2TaxOC)
-    medCO2TaxRun  . (medCO2TaxOC)
-    highCO2TaxRun . (highCO2TaxOC) / ;
+Set setOutcomes(outcomeSets, outcomes) 'the outcomes that make up an outcome set' /
+    stochasticSet . (lowCO2TaxOC, medCO2TaxOC, highCO2TaxOC)
+    lowCO2TaxSet  . (lowCO2TaxOC)
+    medCO2TaxSet  . (medCO2TaxOC)
+    highCO2TaxSet . (highCO2TaxOC) / ;
 
-Set mapReopt_Outcomes(runs,outcomes) 'Which outcomes are in each reopt run?' /
-    stochastic    . (lowCO2TaxOC, medCO2TaxOC, highCO2TaxOC)
-    lowCO2TaxRun  . (lowCO2TaxOC)
-    medCO2TaxRun  . (medCO2TaxOC)
-    highCO2TaxRun . (highCO2TaxOC) / ;
+Table set_outcomeWeight(outcomeSets,outcomes)
+                lowCO2TaxOC  medCO2TaxOC  highCO2TaxOC
+  stochasticSet 0.333333333  0.333333333  0.3333333333
+  lowCO2TaxSet  1            0            0
+  medCO2TaxSet  0            1            0
+  highCO2TaxSet 0            0            1 ;
 
-Set mapMT_Runs(mt,runs) 'Which runs do do for each model type?' /
-    tmg           . (stochastic, lowCO2TaxRun, medCO2TaxRun, highCO2TaxRun)
-    dis           . (lowCO2TaxRun, medCO2TaxRun, highCO2TaxRun) / ;
 
+Set timingRuns(experiments,outcomeSets) 'Which outcome sets are used for timing in each experiment?' /
+    stochasticExp . stochasticSet
+    lowCO2TaxExp  . lowCO2TaxSet
+    medCO2TaxExp  . medCO2TaxSet
+    highCO2TaxExp . highCO2TaxSet / ;
+
+Set reoptRuns(experiments,outcomeSets)  'Which outcome sets are used for reoptimisation in each experiment?' /
+    stochasticExp . stochasticSet
+    lowCO2TaxExp  . lowCO2TaxSet
+    medCO2TaxExp  . medCO2TaxSet
+    highCO2TaxExp . highCO2TaxSet / ;
+
+Set dispatchRuns(experiments,outcomeSets) 'Which outcome sets are used for dispatch in each experiment?' /
+    stochasticExp . (lowCO2TaxSet, medCO2TaxSet, highCO2TaxSet)
+    lowCO2TaxExp  . (lowCO2TaxSet, medCO2TaxSet, highCO2TaxSet)
+    medCO2TaxExp  . (lowCO2TaxSet, medCO2TaxSet, highCO2TaxSet)
+    highCO2TaxExp . (lowCO2TaxSet, medCO2TaxSet, highCO2TaxSet) / ;
 
 * Parameters:
 Parameters
@@ -48,11 +64,9 @@ Parameters
   outcomeNRGFactor(outcomes)           / lowCO2TaxOC 1.0, medCO2TaxOC 1.0, highCO2TaxOC 1.0 /
   penaltyLostPeak                      / 9998 / ;
 
-Table run_outcomeWeight(runs,outcomes)
-                lowCO2TaxOC  medCO2TaxOC  highCO2TaxOC
-  stochastic    0.333333333  0.333333333  0.3333333333
-  lowCO2TaxRun  1            0            0
-  medCO2TaxRun  0            1            0
-  highCO2TaxRun 0            0            1 ;
+Set allRuns(experiments,steps,outcomeSets);
+allRuns(experiments, 'timing', outcomeSets) = timingRuns(experiments,outcomeSets);
+allRuns(experiments, 'reopt', outcomeSets) = reoptRuns(experiments,outcomeSets);
+allRuns(experiments, 'dispatch', outcomeSets) = dispatchRuns(experiments,outcomeSets);
 
 * End of file.

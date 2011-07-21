@@ -228,32 +228,30 @@ Sets
                                                                                         dHigh    'Upper discount rate for CBA sensitivity analysis'    /
   dt                                            'Types of discounting'                / mid      'Middle of the period within each year'
                                                                                         eoy      'End of year'   /
-  mt                                            'Model types to be solved'            / tmg      'Solve model GEM to determine optimal timing of new investment'
-                                                                                        reo      'Solve model GEM to re-optimise investment timing - only certain generation plant (peakers) are free to move'
-                                                                                        dis      'Solve model DISP to get dispatch with investment timing fixed'   /
-  tmg(mt)                                       'Model type TMG - determine timing'   / tmg /
-  reo(mt)                                       'Model type REO - re-optimise timing' / reo /
-  dis(mt)                                       'Model type DIS - dispatch'           / dis /
   goal                                          'Goals for MIP solution procedure'    / QDsol    'Find a quick and dirty solution using a user-specified optcr'
                                                                                         VGsol    'Find a very good solution reasonably quickly'
                                                                                         MinGap   'Minimize the gap between best possible and best found'  /
   solveGoal(goal)                               'The user-selected solve goal'
-  runs                                          'Separate runs of timing, re-optimisation or dispatch model types'
-  outcomes                                      'Stochastic outcomes or states of uncertainty'
-  oc(outcomes)                                  'Selected elements of outcomes'
-  mapRuns_Outcomes(runs,outcomes)               'Which outcomes are in which run?' 
-  mapReopt_Outcomes(runs,outcomes)              'Which outcomes are in each re-optimisation run?'
-  mapMT_Runs(mt,runs)                           'Which runs to do for each model type?' 
-  hydroSeqTypes                                 "Types of hydro sequences to use (don't alter these without making commensurate changes to GEMsolve)"
+  
+  steps                                         'Steps in an experiment'              / timing, reopt, dispatch /
+  hydroSeqTypes                                 'Types of hydro sequences to use'     / Same, Sequential /
+  experiments                                   'Complete experiments with timing, reopt and dispatch steps'
+  outcomes                                      'Stochastic outcomes or uncertainty states'
+  outcomeSets                                   'Sets of outcomes to be used in a run'
+
+  setOutcomes(outcomeSets, outcomes)            'The outcomes that make up an outcome set'
+  timingRuns(experiments,outcomeSets)           'Which outcome sets are used for timing in each experiment?'
+  reoptRuns(experiments,outcomeSets)            'Which outcome sets are used for reoptimisation in each experiment?'
+  dispatchRuns(experiments,outcomeSets)         'Which outcome sets are used for dispatch in each experiment?'
+  allRuns(experiments,steps,outcomeSets)        'Outcome sets for all runs'
+
+  oc(outcomes)                                   'Selected elements of outcomes'
+
   hydroYrForDispatch(hY)                        'Hydro years used to loop over when solving DISpatch'
   chooseHydroYears(hY)                          'Used for calculation of hydro sequences'
   mapOC_hY(outcomes,hY)                         'Map historical hydro output years to outcomes'
   mapOC_hydroSeqTypes(outcomes,hydroSeqTypes)   'Map the way types of hydrology sequences are developed (same or sequential) to outcomes'
-  activeSolve(mt,*)                             'Collect the mt-hY index used for each solve' 
-  activeMT(mt)                                  'Identify the run types actually employed in this model run'
   ;
-
-Alias (mt,mtTiming,mtDispatch), (runs,timingRun,dispatchRun) ;
 
 Parameters
 * Used/initialised in GEMdata.
@@ -282,15 +280,16 @@ Parameters
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
   penaltyLostPeak                               'Penalty for not meeting peak load constraint'
+
   outcomePeakLoadFactor(outcomes)               'Blah blah blah'
   outcomeCO2TaxFactor(outcomes)                 'Blah blah blah'
   outcomeFuelCostFactor(outcomes)               'Blah blah blah'
   outcomeNRGFactor(outcomes)                    'Blah blah blah'
-  run_outcomeWeight(runs,outcomes)              'Blah blah blah'
   outcomeWeight(outcomes)                       'blah blah blah'
+
   modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
   slacks                                        'A flag indicating slacks or penalty variables exist in at least one solution'
-  solveReport(*,*,*)                            'Collect various details about each solve of the models (both GEM and DISP)'
+  solveReport(experiments,steps,outcomeSets,*)  'Collect various details about each solve of the models (both GEM and DISP)'
   hydroYrIndex(hY)                              'Index to enable assignment of hydro years over the modelled years'
   ;
 
@@ -894,101 +893,101 @@ Parameters
 *+++++++++++++++++++++++++
 * More non-free reserves code.
 * Positive Variables
-  s_RESVCOMPONENTS(runs,runs,r,rr,y,t,lb,outcomes,stp)  'Non-free reserve components, MW'
+  s_RESVCOMPONENTS(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes,stp)  'Non-free reserve components, MW'
 * Equations
-  s_calc_nfreserves(runs,runs,r,rr,y,t,lb,outcomes)     'Calculate non-free reserve components' 
-  s_resv_capacity(runs,runs,r,rr,y,t,lb,outcomes,stp)   'Calculate and impose the relevant capacity on each step of free reserves'
+  s_calc_nfreserves(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)     'Calculate non-free reserve components' 
+  s_resv_capacity(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes,stp)   'Calculate and impose the relevant capacity on each step of free reserves'
 *+++++++++++++++++++++++++
 * Free Variables
-  s_TOTALCOST(runs,runs)                                'Discounted total system costs over all modelled years, $m (objective function value)'
-  s_TX(runs,runs,r,rr,y,t,lb,outcomes)                  'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice)'
-  s_THETA(runs,runs,r,y,t,lb,outcomes)                  'Bus voltage angle'
+  s_TOTALCOST(experiments,steps,outcomeSets)                                'Discounted total system costs over all modelled years, $m (objective function value)'
+  s_TX(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)                  'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice)'
+  s_THETA(experiments,steps,outcomeSets,r,y,t,lb,outcomes)                  'Bus voltage angle'
 * Binary Variables
-  s_BGEN(runs,runs,g,y)                                 'Binary variable to identify build year for new generation plant'
-  s_BRET(runs,runs,g,y)                                 'Binary variable to identify endogenous retirement year for the eligble generation plant'
-  s_ISRETIRED(runs,runs,g)                              'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
-  s_BTX(runs,runs,r,rr,ps,y)                            'Binary variable indicating the current state of a transmission path'
-  s_NORESVTRFR(runs,runs,ild,ild1,y,t,lb,outcomes)      'Is there available capacity on the HVDC link to transfer energy reserves (0 = Yes, 1 = No)'
+  s_BGEN(experiments,steps,outcomeSets,g,y)                                 'Binary variable to identify build year for new generation plant'
+  s_BRET(experiments,steps,outcomeSets,g,y)                                 'Binary variable to identify endogenous retirement year for the eligble generation plant'
+  s_ISRETIRED(experiments,steps,outcomeSets,g)                              'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
+  s_BTX(experiments,steps,outcomeSets,r,rr,ps,y)                            'Binary variable indicating the current state of a transmission path'
+  s_NORESVTRFR(experiments,steps,outcomeSets,ild,ild1,y,t,lb,outcomes)      'Is there available capacity on the HVDC link to transfer energy reserves (0 = Yes, 1 = No)'
 * Positive Variables
-  s_REFURBCOST(runs,runs,g,y)                           'Annualised generation plant refurbishment expenditure charge, $'
-  s_GENBLDCONT(runs,runs,g,y)                           'Continuous variable to identify build year for new scalable generation plant - for plant in linearPlantBuild set'
-  s_CGEN(runs,runs,g,y)                                 'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)'
-  s_BUILD(runs,runs,g,y)                                'New capacity installed by generating plant and year, MW'
-  s_RETIRE(runs,runs,g,y)                               'Capacity endogenously retired by generating plant and year, MW'
-  s_CAPACITY(runs,runs,g,y)                             'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s_TXCAPCHARGES(runs,runs,r,rr,y)                      'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s_GEN(runs,runs,g,y,t,lb,outcomes)                    'Generation by generating plant and block, GWh'
-  s_VOLLGEN(runs,runs,s,y,t,lb,outcomes)                'Generation by VOLL plant and block, GWh'
-  s_PUMPEDGEN(runs,runs,g,y,t,lb,outcomes)              'Energy from pumped hydro (treated like demand), GWh'
-  s_SPILL(runs,runs,g,y,t,outcomes)                     'Hydro spill, GWh'
-  s_LOSS(runs,runs,r,rr,y,t,lb,outcomes)                'Transmission losses along each path, MW'
-  s_TXPROJVAR(runs,runs,tupg,y)                         'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  s_TXUPGRADE(runs,runs,r,rr,ps,pss,y)                  'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
+  s_REFURBCOST(experiments,steps,outcomeSets,g,y)                           'Annualised generation plant refurbishment expenditure charge, $'
+  s_GENBLDCONT(experiments,steps,outcomeSets,g,y)                           'Continuous variable to identify build year for new scalable generation plant - for plant in linearPlantBuild set'
+  s_CGEN(experiments,steps,outcomeSets,g,y)                                 'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)'
+  s_BUILD(experiments,steps,outcomeSets,g,y)                                'New capacity installed by generating plant and year, MW'
+  s_RETIRE(experiments,steps,outcomeSets,g,y)                               'Capacity endogenously retired by generating plant and year, MW'
+  s_CAPACITY(experiments,steps,outcomeSets,g,y)                             'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s_TXCAPCHARGES(experiments,steps,outcomeSets,r,rr,y)                      'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s_GEN(experiments,steps,outcomeSets,g,y,t,lb,outcomes)                    'Generation by generating plant and block, GWh'
+  s_VOLLGEN(experiments,steps,outcomeSets,s,y,t,lb,outcomes)                'Generation by VOLL plant and block, GWh'
+  s_PUMPEDGEN(experiments,steps,outcomeSets,g,y,t,lb,outcomes)              'Energy from pumped hydro (treated like demand), GWh'
+  s_SPILL(experiments,steps,outcomeSets,g,y,t,outcomes)                     'Hydro spill, GWh'
+  s_LOSS(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)                'Transmission losses along each path, MW'
+  s_TXPROJVAR(experiments,steps,outcomeSets,tupg,y)                         'Continuous 0-1 variable indicating whether an upgrade project is applied'
+  s_TXUPGRADE(experiments,steps,outcomeSets,r,rr,ps,pss,y)                  'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
 * Reserve variables
-  s_RESV(runs,runs,g,rc,y,t,lb,outcomes)                'Reserve energy supplied, MWh'
-  s_RESVVIOL(runs,runs,rc,ild,y,t,lb,outcomes)          'Reserve energy supply violations, MWh'
-  s_RESVTRFR(runs,runs,rc,ild,ild1,y,t,lb,outcomes)     'Reserve energy transferred from one island to another, MWh'
-  s_RESVREQINT(runs,runs,rc,ild,y,t,lb,outcomes)        'Internally determined energy reserve requirement, MWh'
+  s_RESV(experiments,steps,outcomeSets,g,rc,y,t,lb,outcomes)                'Reserve energy supplied, MWh'
+  s_RESVVIOL(experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)          'Reserve energy supply violations, MWh'
+  s_RESVTRFR(experiments,steps,outcomeSets,rc,ild,ild1,y,t,lb,outcomes)     'Reserve energy transferred from one island to another, MWh'
+  s_RESVREQINT(experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)        'Internally determined energy reserve requirement, MWh'
 * Penalty variables
-  s_RENNRGPENALTY(runs,runs,y)                          'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s_SEC_NZ_PENALTY(runs,runs,outcomes,y)                'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s_SEC_NI_PENALTY(runs,runs,outcomes,y)                'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
-  s_NOWIND_NZ_PENALTY(runs,runs,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  s_NOWIND_NI_PENALTY(runs,runs,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  s_RENNRGPENALTY(experiments,steps,outcomeSets,y)                          'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s_SEC_NZ_PENALTY(experiments,steps,outcomeSets,outcomes,y)                'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s_SEC_NI_PENALTY(experiments,steps,outcomeSets,outcomes,y)                'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
+  s_NOWIND_NZ_PENALTY(experiments,steps,outcomeSets,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s_NOWIND_NI_PENALTY(experiments,steps,outcomeSets,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
-  s_ANNMWSLACK(runs,runs,y)                             'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s_RENCAPSLACK(runs,runs,y)                            'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s_HYDROSLACK(runs,runs,y)                             'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s_MINUTILSLACK(runs,runs,y)                           'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s_FUELSLACK(runs,runs,y)                              'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s_ANNMWSLACK(experiments,steps,outcomeSets,y)                             'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s_RENCAPSLACK(experiments,steps,outcomeSets,y)                            'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s_HYDROSLACK(experiments,steps,outcomeSets,y)                             'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s_MINUTILSLACK(experiments,steps,outcomeSets,y)                           'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s_FUELSLACK(experiments,steps,outcomeSets,y)                              'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations (ignore the objective function)
-  s_calc_refurbcost(runs,runs,g,y)                      'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
-  s_calc_txcapcharges(runs,runs,r,rr,y)                 'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
-  s_bldgenonce(runs,runs,g)                             'If new generating plant is to be built, ensure it is built only once'
-  s_buildcapint(runs,runs,g,y)                          'If new integer plant is built, ensure built capacity is equal to nameplate capacity'
-  s_buildcapcont(runs,runs,g,y)                         'If new scalable plant is built, ensure built capacity does not exceed nameplate capacity'
-  s_annnewmwcap(runs,runs,y)                            'Restrict aggregate new capacity built in a single year to be less than a specified MW'
-  s_endogpltretire(runs,runs,g,y)                       'Calculate the MW to endogenously retire'
-  s_endogretonce(runs,runs,g)                           'Can only endogenously retire a plant once'
-  s_balance_capacity(runs,runs,g,y)                     'Year to year capacity balance relationship for all plant, MW'
-  s_bal_supdem(runs,runs,r,y,t,lb,outcomes)             'Balance supply and demand in each region, year, time period and load block'
-  s_security_nz(runs,runs,outcomes,y)                   'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
-  s_security_ni(runs,runs,outcomes,y)                   'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
-  s_nowind_nz(runs,runs,outcomes,y)                     'Ensure enough capacity to meet peak demand in NZ when all wind is off'
-  s_nowind_ni(runs,runs,outcomes,y)                     'Ensure enough capacity to meet peak demand in NI when all wind is off'
-  s_limit_maxgen(runs,runs,g,y,t,lb,outcomes)           'Ensure generation in each block does not exceed capacity implied by max capacity factors'
-  s_limit_mingen(runs,runs,g,y,t,lb,outcomes)           'Ensure generation in each block exceeds capacity implied by min capacity factors'
-  s_minutil(runs,runs,g,k,y,outcomes)                   'Ensure generation by certain technology type meets a minimum utilisation'
-  s_limit_fueluse(runs,runs,f,y,outcomes)               'Quantum of each fuel used and possibly constrained, PJ'
-  s_limit_nrg(runs,runs,f,y,outcomes)                   'Impose a limit on total energy generated by any one fuel type'
-  s_minreq_rennrg(runs,runs,y,outcomes)                 'Impose a minimum requirement on total energy generated from all renewable sources'
-  s_minreq_rencap(runs,runs,y)                          'Impose a minimum requirement on installed renewable capacity'
-  s_limit_hydro(runs,runs,g,y,t,outcomes)               'Limit hydro generation to according to inflows and spill'
-  s_limit_pumpgen1(runs,runs,g,y,t,outcomes)            'Limit output from pumped hydro in a period to the quantity pumped'
-  s_limit_pumpgen2(runs,runs,g,y,t,outcomes)            'Limit output from pumped hydro in a period to the assumed storage'
-  s_limit_pumpgen3(runs,runs,g,y,t,lb,outcomes)         "Pumped MW can be no more than the scheme's installed MW"
-  s_boundtxloss(runs,runs,r,rr,ps,y,t,lb,n,outcomes)    'Sort out which segment of the loss function to operate on'
-  s_tx_capacity(runs,runs,r,rr,y,t,lb,outcomes)         'Calculate the relevant transmission capacity'
-  s_tx_projectdef(runs,runs,tupg,r,rr,ps,pss,y)         'Associate projects to individual upgrades'
-  s_tx_onestate(runs,runs,r,rr,y)                       'A link must be in exactly one state in any given year'
-  s_tx_upgrade(runs,runs,r,rr,ps,y)                     'Make sure the upgrade of a link corresponds to a legitimate state-to-state transition'
-  s_tx_oneupgrade(runs,runs,r,rr,y)                     'Only one upgrade per path in a single year'
-  s_tx_dcflow(runs,runs,r,rr,y,t,lb,outcomes)           'DC load flow equation'
-  s_tx_dcflow0(runs,runs,r,rr,y,t,lb,outcomes)          'DC load flow equation'
-  s_equatetxloss(runs,runs,r,rr,y,t,lb,outcomes)        'Ensure that losses in both directions are equal'
-  s_txGrpConstraint(runs,runs,tgc,y,t,lb,outcomes)      'Group transmission constraints'
-  s_resvsinglereq1(runs,runs,rc,ild,y,t,lb,outcomes)    'Single reserve energy requirement constraint 1'
-  s_genmaxresv1(runs,runs,g,y,t,lb,outcomes)            'Limit the amount of energy reserves per generator'
-  s_resvtrfr1(runs,runs,ild,ild1,y,t,lb,outcomes)       'Limit on the amount of reserve energy transfer - constraint 1'
-  s_resvtrfr2(runs,runs,rc,ild,ild1,y,t,lb,outcomes)    'Limit on the amount of reserve energy transfer - constraint 2'
-  s_resvtrfr3(runs,runs,rc,ild,ild1,y,t,lb,outcomes)    'Limit on the amount of reserve energy transfer - constraint 3'
-  s_resvrequnit(runs,runs,g,rc,ild,y,t,lb,outcomes)     'Reserve energy requirement based on the largest dispatched unit'
-  s_resvreq2(runs,runs,rc,ild,y,t,lb,outcomes)          'Island reserve energy requirement - constraint 2'
-  s_resvreqhvdc(runs,runs,rc,ild,y,t,lb,outcomes)       'Reserve energy requirement based on the HVDC transfer taking into account self-cover'
-  s_resvtrfr4(runs,runs,ild1,ild,y,t,lb,outcomes)       'Limit on the amount of reserve energy transfer - constraint 4'
-  s_resvtrfrdef(runs,runs,ild,ild1,y,t,lb,outcomes)     'Constraint that defines if reserve energy transfer is available'
-  s_resvoffcap(runs,runs,g,y,t,lb,outcomes)             'Offline energy reserve capability'
-  s_resvreqwind(runs,runs,rc,ild,y,t,lb,outcomes)       'Reserve energy requirement based on a specified proportion of dispatched wind generation'
+  s_calc_refurbcost(experiments,steps,outcomeSets,g,y)                      'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
+  s_calc_txcapcharges(experiments,steps,outcomeSets,r,rr,y)                 'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
+  s_bldgenonce(experiments,steps,outcomeSets,g)                             'If new generating plant is to be built, ensure it is built only once'
+  s_buildcapint(experiments,steps,outcomeSets,g,y)                          'If new integer plant is built, ensure built capacity is equal to nameplate capacity'
+  s_buildcapcont(experiments,steps,outcomeSets,g,y)                         'If new scalable plant is built, ensure built capacity does not exceed nameplate capacity'
+  s_annnewmwcap(experiments,steps,outcomeSets,y)                            'Restrict aggregate new capacity built in a single year to be less than a specified MW'
+  s_endogpltretire(experiments,steps,outcomeSets,g,y)                       'Calculate the MW to endogenously retire'
+  s_endogretonce(experiments,steps,outcomeSets,g)                           'Can only endogenously retire a plant once'
+  s_balance_capacity(experiments,steps,outcomeSets,g,y)                     'Year to year capacity balance relationship for all plant, MW'
+  s_bal_supdem(experiments,steps,outcomeSets,r,y,t,lb,outcomes)             'Balance supply and demand in each region, year, time period and load block'
+  s_security_nz(experiments,steps,outcomeSets,outcomes,y)                   'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
+  s_security_ni(experiments,steps,outcomeSets,outcomes,y)                   'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
+  s_nowind_nz(experiments,steps,outcomeSets,outcomes,y)                     'Ensure enough capacity to meet peak demand in NZ when all wind is off'
+  s_nowind_ni(experiments,steps,outcomeSets,outcomes,y)                     'Ensure enough capacity to meet peak demand in NI when all wind is off'
+  s_limit_maxgen(experiments,steps,outcomeSets,g,y,t,lb,outcomes)           'Ensure generation in each block does not exceed capacity implied by max capacity factors'
+  s_limit_mingen(experiments,steps,outcomeSets,g,y,t,lb,outcomes)           'Ensure generation in each block exceeds capacity implied by min capacity factors'
+  s_minutil(experiments,steps,outcomeSets,g,k,y,outcomes)                   'Ensure generation by certain technology type meets a minimum utilisation'
+  s_limit_fueluse(experiments,steps,outcomeSets,f,y,outcomes)               'Quantum of each fuel used and possibly constrained, PJ'
+  s_limit_nrg(experiments,steps,outcomeSets,f,y,outcomes)                   'Impose a limit on total energy generated by any one fuel type'
+  s_minreq_rennrg(experiments,steps,outcomeSets,y,outcomes)                 'Impose a minimum requirement on total energy generated from all renewable sources'
+  s_minreq_rencap(experiments,steps,outcomeSets,y)                          'Impose a minimum requirement on installed renewable capacity'
+  s_limit_hydro(experiments,steps,outcomeSets,g,y,t,outcomes)               'Limit hydro generation to according to inflows and spill'
+  s_limit_pumpgen1(experiments,steps,outcomeSets,g,y,t,outcomes)            'Limit output from pumped hydro in a period to the quantity pumped'
+  s_limit_pumpgen2(experiments,steps,outcomeSets,g,y,t,outcomes)            'Limit output from pumped hydro in a period to the assumed storage'
+  s_limit_pumpgen3(experiments,steps,outcomeSets,g,y,t,lb,outcomes)         "Pumped MW can be no more than the scheme's installed MW"
+  s_boundtxloss(experiments,steps,outcomeSets,r,rr,ps,y,t,lb,n,outcomes)    'Sort out which segment of the loss function to operate on'
+  s_tx_capacity(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)         'Calculate the relevant transmission capacity'
+  s_tx_projectdef(experiments,steps,outcomeSets,tupg,r,rr,ps,pss,y)         'Associate projects to individual upgrades'
+  s_tx_onestate(experiments,steps,outcomeSets,r,rr,y)                       'A link must be in exactly one state in any given year'
+  s_tx_upgrade(experiments,steps,outcomeSets,r,rr,ps,y)                     'Make sure the upgrade of a link corresponds to a legitimate state-to-state transition'
+  s_tx_oneupgrade(experiments,steps,outcomeSets,r,rr,y)                     'Only one upgrade per path in a single year'
+  s_tx_dcflow(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)           'DC load flow equation'
+  s_tx_dcflow0(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)          'DC load flow equation'
+  s_equatetxloss(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)        'Ensure that losses in both directions are equal'
+  s_txGrpConstraint(experiments,steps,outcomeSets,tgc,y,t,lb,outcomes)      'Group transmission constraints'
+  s_resvsinglereq1(experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)    'Single reserve energy requirement constraint 1'
+  s_genmaxresv1(experiments,steps,outcomeSets,g,y,t,lb,outcomes)            'Limit the amount of energy reserves per generator'
+  s_resvtrfr1(experiments,steps,outcomeSets,ild,ild1,y,t,lb,outcomes)       'Limit on the amount of reserve energy transfer - constraint 1'
+  s_resvtrfr2(experiments,steps,outcomeSets,rc,ild,ild1,y,t,lb,outcomes)    'Limit on the amount of reserve energy transfer - constraint 2'
+  s_resvtrfr3(experiments,steps,outcomeSets,rc,ild,ild1,y,t,lb,outcomes)    'Limit on the amount of reserve energy transfer - constraint 3'
+  s_resvrequnit(experiments,steps,outcomeSets,g,rc,ild,y,t,lb,outcomes)     'Reserve energy requirement based on the largest dispatched unit'
+  s_resvreq2(experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)          'Island reserve energy requirement - constraint 2'
+  s_resvreqhvdc(experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)       'Reserve energy requirement based on the HVDC transfer taking into account self-cover'
+  s_resvtrfr4(experiments,steps,outcomeSets,ild1,ild,y,t,lb,outcomes)       'Limit on the amount of reserve energy transfer - constraint 4'
+  s_resvtrfrdef(experiments,steps,outcomeSets,ild,ild1,y,t,lb,outcomes)     'Constraint that defines if reserve energy transfer is available'
+  s_resvoffcap(experiments,steps,outcomeSets,g,y,t,lb,outcomes)             'Offline energy reserve capability'
+  s_resvreqwind(experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)       'Reserve energy requirement based on a specified proportion of dispatched wind generation'
   ;
 
 * Now push the statements that collect up results into a file called CollectResults.txt. This file gets $include'd into GEMsolve.gms
@@ -996,112 +995,112 @@ $onecho > CollectResults.txt
 *++++++++++
 * More non-free reserves code.
 * Positive Variables
-  s_RESVCOMPONENTS(timingRun,dispatchRun,r,rr,y,t,lb,oc,stp)    = RESVCOMPONENTS.l(r,rr,y,t,lb,oc,stp) ;
+  s_RESVCOMPONENTS(experiments,steps,outcomeSets,r,rr,y,t,lb,oc,stp)    = RESVCOMPONENTS.l(r,rr,y,t,lb,oc,stp) ;
 * Equations
-  s_calc_nfreserves(timingRun,dispatchRun,r,rr,y,t,lb,oc)       = calc_nfreserves.m(r,rr,y,t,lb,oc) ;
-  s_resv_capacity(timingRun,dispatchRun,r,rr,y,t,lb,oc,stp)     = resv_capacity.m(r,rr,y,t,lb,oc,stp) ;
+  s_calc_nfreserves(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)       = calc_nfreserves.m(r,rr,y,t,lb,oc) ;
+  s_resv_capacity(experiments,steps,outcomeSets,r,rr,y,t,lb,oc,stp)     = resv_capacity.m(r,rr,y,t,lb,oc,stp) ;
 *++++++++++
 * Misc params
-*  s_modelledHydroOutput(timingRun,dispatchRun,g,y,t,oc)        = modelledHydroOutput(g,y,t,oc) ;
+*  s_modelledHydroOutput(experiments,steps,outcomeSets,g,y,t,oc)        = modelledHydroOutput(g,y,t,oc) ;
 * Free variables.
-  s_TOTALCOST(timingRun,dispatchRun)                            = TOTALCOST.l ;
+  s_TOTALCOST(experiments,steps,outcomeSets)                            = TOTALCOST.l ;
   if(DCloadFlow = 1,
-    s_TX(timingRun,DispatchRun,r,rr,y,t,lb,oc)$( TX.l(r,rr,y,t,lb,oc) > 0 ) = TX.l(r,rr,y,t,lb,oc) ;
+    s_TX(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)$( TX.l(r,rr,y,t,lb,oc) > 0 ) = TX.l(r,rr,y,t,lb,oc) ;
     else
-    s_TX(timingRun,DispatchRun,r,rr,y,t,lb,oc)                  = TX.l(r,rr,y,t,lb,oc) ;
+    s_TX(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)                  = TX.l(r,rr,y,t,lb,oc) ;
   ) ;
-  s_THETA(timingRun,dispatchRun,r,y,t,lb,oc)                    = THETA.l(r,y,t,lb,oc) ;
+  s_THETA(experiments,steps,outcomeSets,r,y,t,lb,oc)                    = THETA.l(r,y,t,lb,oc) ;
 * Binary Variables
-  s_BRET(timingRun,dispatchRun,g,y)                             = BRET.l(g,y) ;
-  s_ISRETIRED(timingRun,dispatchRun,g)                          = ISRETIRED.l(g) ;
-  s_BTX(timingRun,dispatchRun,r,rr,ps,y)                        = BTX.l(r,rr,ps,y) ;
-  s_NORESVTRFR(timingRun,dispatchRun,ild,ild1,y,t,lb,oc)        = NORESVTRFR.l(ild,ild1,y,t,lb,oc) ;
+  s_BRET(experiments,steps,outcomeSets,g,y)                             = BRET.l(g,y) ;
+  s_ISRETIRED(experiments,steps,outcomeSets,g)                          = ISRETIRED.l(g) ;
+  s_BTX(experiments,steps,outcomeSets,r,rr,ps,y)                        = BTX.l(r,rr,ps,y) ;
+  s_NORESVTRFR(experiments,steps,outcomeSets,ild,ild1,y,t,lb,oc)        = NORESVTRFR.l(ild,ild1,y,t,lb,oc) ;
 * Positive Variables
-  s_REFURBCOST(timingRun,dispatchRun,g,y)                       = REFURBCOST.l(g,y) ;
-  s_BUILD(timingRun,dispatchRun,g,y)                            = BUILD.l(g,y) ;
-  s_RETIRE(timingRun,dispatchRun,g,y)                           = RETIRE.l(g,y) ;
-  s_CAPACITY(timingRun,dispatchRun,g,y)                         = CAPACITY.l(g,y) ;
-  s_TXCAPCHARGES(timingRun,dispatchRun,paths,y)                 = TXCAPCHARGES.l(paths,y) ;
-  s_GEN(timingRun,dispatchRun,g,y,t,lb,oc)                      = GEN.l(g,y,t,lb,oc) ;
-  s_VOLLGEN(timingRun,dispatchRun,s,y,t,lb,oc)                  = VOLLGEN.l(s,y,t,lb,oc) ;
-  s_PUMPEDGEN(timingRun,dispatchRun,g,y,t,lb,oc)                = PUMPEDGEN.l(g,y,t,lb,oc) ;
-  s_SPILL(timingRun,dispatchRun,g,y,t,oc)                       = SPILL.l(g,y,t,oc) ;
-  s_LOSS(timingRun,dispatchRun,r,rr,y,t,lb,oc)                  = LOSS.l(r,rr,y,t,lb,oc) ;
-  s_TXPROJVAR(timingRun,dispatchRun,tupg,y)                     = TXPROJVAR.l(tupg,y) ;
-  s_TXUPGRADE(timingRun,dispatchRun,r,rr,ps,pss,y)              = TXUPGRADE.l(r,rr,ps,pss,y) ;
+  s_REFURBCOST(experiments,steps,outcomeSets,g,y)                       = REFURBCOST.l(g,y) ;
+  s_BUILD(experiments,steps,outcomeSets,g,y)                            = BUILD.l(g,y) ;
+  s_RETIRE(experiments,steps,outcomeSets,g,y)                           = RETIRE.l(g,y) ;
+  s_CAPACITY(experiments,steps,outcomeSets,g,y)                         = CAPACITY.l(g,y) ;
+  s_TXCAPCHARGES(experiments,steps,outcomeSets,paths,y)                 = TXCAPCHARGES.l(paths,y) ;
+  s_GEN(experiments,steps,outcomeSets,g,y,t,lb,oc)                      = GEN.l(g,y,t,lb,oc) ;
+  s_VOLLGEN(experiments,steps,outcomeSets,s,y,t,lb,oc)                  = VOLLGEN.l(s,y,t,lb,oc) ;
+  s_PUMPEDGEN(experiments,steps,outcomeSets,g,y,t,lb,oc)                = PUMPEDGEN.l(g,y,t,lb,oc) ;
+  s_SPILL(experiments,steps,outcomeSets,g,y,t,oc)                       = SPILL.l(g,y,t,oc) ;
+  s_LOSS(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)                  = LOSS.l(r,rr,y,t,lb,oc) ;
+  s_TXPROJVAR(experiments,steps,outcomeSets,tupg,y)                     = TXPROJVAR.l(tupg,y) ;
+  s_TXUPGRADE(experiments,steps,outcomeSets,r,rr,ps,pss,y)              = TXUPGRADE.l(r,rr,ps,pss,y) ;
 * Reserve variables
-  s_RESV(timingRun,dispatchRun,g,rc,y,t,lb,oc)                  = RESV.l(g,rc,y,t,lb,oc) ;
-  s_RESVVIOL(timingRun,dispatchRun,rc,ild,y,t,lb,oc)            = RESVVIOL.l(RC,ILD,y,t,lb,oc) ;
-  s_RESVTRFR(timingRun,dispatchRun,rc,ild,ild1,y,t,lb,oc)       = RESVTRFR.l(rc,ild1,ild,y,t,lb,oc) ;
-  s_RESVREQINT(timingRun,dispatchRun,rc,ild,y,t,lb,oc)          = RESVREQINT.l(rc,ild,y,t,lb,oc) ;
+  s_RESV(experiments,steps,outcomeSets,g,rc,y,t,lb,oc)                  = RESV.l(g,rc,y,t,lb,oc) ;
+  s_RESVVIOL(experiments,steps,outcomeSets,rc,ild,y,t,lb,oc)            = RESVVIOL.l(RC,ILD,y,t,lb,oc) ;
+  s_RESVTRFR(experiments,steps,outcomeSets,rc,ild,ild1,y,t,lb,oc)       = RESVTRFR.l(rc,ild1,ild,y,t,lb,oc) ;
+  s_RESVREQINT(experiments,steps,outcomeSets,rc,ild,y,t,lb,oc)          = RESVREQINT.l(rc,ild,y,t,lb,oc) ;
 * Penalty variables
-  s_RENNRGPENALTY(timingRun,dispatchRun,y)                      = RENNRGPENALTY.l(y) ;
-  s_SEC_NZ_PENALTY(timingRun,dispatchRun,oc,y)                  = SEC_NZ_PENALTY.l(y,oc) ;
-  s_SEC_NI_PENALTY(timingRun,dispatchRun,oc,y)                  = SEC_NI_PENALTY.l(y,oc) ;
-  s_NOWIND_NZ_PENALTY(timingRun,dispatchRun,oc,y)               = NOWIND_NZ_PENALTY.l(y,oc) ;
-  s_NOWIND_NI_PENALTY(timingRun,dispatchRun,oc,y)               = NOWIND_NI_PENALTY.l(y,oc) ;
+  s_RENNRGPENALTY(experiments,steps,outcomeSets,y)                      = RENNRGPENALTY.l(y) ;
+  s_SEC_NZ_PENALTY(experiments,steps,outcomeSets,oc,y)                  = SEC_NZ_PENALTY.l(y,oc) ;
+  s_SEC_NI_PENALTY(experiments,steps,outcomeSets,oc,y)                  = SEC_NI_PENALTY.l(y,oc) ;
+  s_NOWIND_NZ_PENALTY(experiments,steps,outcomeSets,oc,y)               = NOWIND_NZ_PENALTY.l(y,oc) ;
+  s_NOWIND_NI_PENALTY(experiments,steps,outcomeSets,oc,y)               = NOWIND_NI_PENALTY.l(y,oc) ;
 * Slack variables
-  s_ANNMWSLACK(timingRun,dispatchRun,y)                         = ANNMWSLACK.l(y) ;
-  s_RENCAPSLACK(timingRun,dispatchRun,y)                        = RENCAPSLACK.l(y) ;
-  s_HYDROSLACK(timingRun,dispatchRun,y)                         = HYDROSLACK.l(y) ;
-  s_MINUTILSLACK(timingRun,dispatchRun,y)                       = MINUTILSLACK.l(y) ;
-  s_FUELSLACK(timingRun,dispatchRun,y)                          = FUELSLACK.l(y) ;
+  s_ANNMWSLACK(experiments,steps,outcomeSets,y)                         = ANNMWSLACK.l(y) ;
+  s_RENCAPSLACK(experiments,steps,outcomeSets,y)                        = RENCAPSLACK.l(y) ;
+  s_HYDROSLACK(experiments,steps,outcomeSets,y)                         = HYDROSLACK.l(y) ;
+  s_MINUTILSLACK(experiments,steps,outcomeSets,y)                       = MINUTILSLACK.l(y) ;
+  s_FUELSLACK(experiments,steps,outcomeSets,y)                          = FUELSLACK.l(y) ;
 * Equations, i.e. marginal values. (ignore the objective function)
-  s_calc_refurbcost(timingRun,dispatchRun,g,y)                  = calc_refurbcost.m(g,y) ;
-  s_calc_txcapcharges(timingRun,dispatchRun,paths,y)            = calc_txcapcharges.m(paths,y) ;
-  s_balance_capacity(timingRun,dispatchRun,g,y)                 = balance_capacity.m(g,y) ;
-  s_bal_supdem(timingRun,dispatchRun,r,y,t,lb,oc)               = bal_supdem.m(r,y,t,lb,oc) ;
-  s_security_nz(timingRun,dispatchRun,oc,y)                     = security_NZ.m(y,oc) ;
-  s_security_ni(timingRun,dispatchRun,oc,y)                     = security_NI.m(y,oc) ;
-  s_nowind_nz(timingRun,dispatchRun,oc,y)                       = noWind_NZ.m(y,oc) ;
-  s_nowind_ni(timingRun,dispatchRun,oc,y)                       = noWind_NI.m(y,oc) ;
-  s_limit_maxgen(timingRun,dispatchRun,g,y,t,lb,oc)             = limit_maxgen.m(g,y,t,lb,oc) ;
-  s_limit_mingen(timingRun,dispatchRun,g,y,t,lb,oc)             = limit_mingen.m(g,y,t,lb,oc) ;
-  s_minutil(timingRun,dispatchRun,g,k,y,oc)                     = minutil.m(g,k,y,oc) ;
-  s_limit_fueluse(timingRun,dispatchRun,f,y,oc)                 = limit_fueluse.m(f,y,oc) ;
-  s_limit_nrg(timingRun,dispatchRun,f,y,oc)                     = limit_nrg.m(f,y,oc) ;
-  s_minreq_rennrg(timingRun,dispatchRun,y,oc)                   = minReq_renNrg.m(y,oc) ;
-  s_minreq_rencap(timingRun,dispatchRun,y)                      = minReq_renCap.m(y) ;
-  s_limit_hydro(timingRun,dispatchRun,g,y,t,oc)                 = limit_hydro.m(g,y,t,oc) ;
-  s_limit_pumpgen1(timingRun,dispatchRun,g,y,t,oc)              = limit_pumpgen1.m(g,y,t,oc) ;
-  s_limit_pumpgen2(timingRun,dispatchRun,g,y,t,oc)              = limit_pumpgen2.m(g,y,t,oc) ;
-  s_limit_pumpgen3(timingRun,dispatchRun,g,y,t,lb,oc)           = limit_pumpgen3.m(g,y,t,lb,oc) ;
-  s_boundtxloss(timingRun,dispatchRun,r,rr,ps,y,t,lb,n,oc)      = boundtxloss.m(r,rr,ps,y,t,lb,n,oc) ;
-  s_tx_capacity(timingRun,dispatchRun,r,rr,y,t,lb,oc)           = tx_capacity.m(r,rr,y,t,lb,oc) ;
-  s_tx_projectdef(timingRun,dispatchRun,tupg,r,rr,ps,pss,y)     = tx_projectdef.m(tupg,r,rr,ps,pss,y) ;
-  s_tx_onestate(timingRun,dispatchRun,r,rr,y)                   = tx_onestate.m(r,rr,y) ;
-  s_tx_upgrade(timingRun,dispatchRun,r,rr,ps,y)                 = tx_upgrade.m(r,rr,ps,y) ;
-  s_tx_oneupgrade(timingRun,dispatchRun,r,rr,y)                 = tx_oneupgrade.m(r,rr,y) ;
-  s_tx_dcflow(timingRun,dispatchRun,r,rr,y,t,lb,oc)             = tx_dcflow.m(r,rr,y,t,lb,oc) ;
-  s_tx_dcflow0(timingRun,dispatchRun,r,rr,y,t,lb,oc)            = tx_dcflow0.m(r,rr,y,t,lb,oc) ;
-  s_equatetxloss(timingRun,dispatchRun,r,rr,y,t,lb,oc)          = equatetxloss.m(r,rr,y,t,lb,oc) ;
-  s_txGrpConstraint(timingRun,dispatchRun,tgc,y,t,lb,oc)        = txGrpConstraint.m(tgc,y,t,lb,oc) ;
-  s_resvsinglereq1(timingRun,dispatchRun,rc,ild,y,t,lb,oc)      = resvsinglereq1.m(rc,ild,y,t,lb,oc) ;
-  s_genmaxresv1(timingRun,dispatchRun,g,y,t,lb,oc)              = genmaxresv1.m(g,y,t,lb,oc) ;
-  s_resvtrfr1(timingRun,dispatchRun,ild,ild1,y,t,lb,oc)         = resvtrfr1.m(ild,ild1,y,t,lb,oc) ;
-  s_resvtrfr2(timingRun,dispatchRun,rc,ild,ild1,y,t,lb,oc)      = resvtrfr2.m(rc,ild,ild1,y,t,lb,oc) ;
-  s_resvtrfr3(timingRun,dispatchRun,rc,ild,ild1,y,t,lb,oc)      = resvtrfr3.m(rc,ild,ild1,y,t,lb,oc) ;
-  s_resvrequnit(timingRun,dispatchRun,g,rc,ild,y,t,lb,oc)       = resvrequnit.m(g,rc,ild,y,t,lb,oc) ;
-  s_resvreq2(timingRun,dispatchRun,rc,ild,y,t,lb,oc)            = resvreq2.m(rc,ild,y,t,lb,oc) ;
-  s_resvreqhvdc(timingRun,dispatchRun,rc,ild,y,t,lb,oc)         = resvreqhvdc.m(rc,ild,y,t,lb,oc) ;
-  s_resvtrfr4(timingRun,dispatchRun,ild1,ild,y,t,lb,oc)         = resvtrfr4.m(ild1,ild,y,t,lb,oc) ;
-  s_resvtrfrdef(timingRun,dispatchRun,ild,ild1,y,t,lb,oc)       = resvtrfrdef.m(ild,ild1,y,t,lb,oc) ;
-  s_resvoffcap(timingRun,dispatchRun,g,y,t,lb,oc)               = resvoffcap.m(g,y,t,lb,oc) ;
-  s_resvreqwind(timingRun,dispatchRun,rc,ild,y,t,lb,oc)         = resvreqwind.m(rc,ild,y,t,lb,oc) ;
+  s_calc_refurbcost(experiments,steps,outcomeSets,g,y)                  = calc_refurbcost.m(g,y) ;
+  s_calc_txcapcharges(experiments,steps,outcomeSets,paths,y)            = calc_txcapcharges.m(paths,y) ;
+  s_balance_capacity(experiments,steps,outcomeSets,g,y)                 = balance_capacity.m(g,y) ;
+  s_bal_supdem(experiments,steps,outcomeSets,r,y,t,lb,oc)               = bal_supdem.m(r,y,t,lb,oc) ;
+  s_security_nz(experiments,steps,outcomeSets,oc,y)                     = security_NZ.m(y,oc) ;
+  s_security_ni(experiments,steps,outcomeSets,oc,y)                     = security_NI.m(y,oc) ;
+  s_nowind_nz(experiments,steps,outcomeSets,oc,y)                       = noWind_NZ.m(y,oc) ;
+  s_nowind_ni(experiments,steps,outcomeSets,oc,y)                       = noWind_NI.m(y,oc) ;
+  s_limit_maxgen(experiments,steps,outcomeSets,g,y,t,lb,oc)             = limit_maxgen.m(g,y,t,lb,oc) ;
+  s_limit_mingen(experiments,steps,outcomeSets,g,y,t,lb,oc)             = limit_mingen.m(g,y,t,lb,oc) ;
+  s_minutil(experiments,steps,outcomeSets,g,k,y,oc)                     = minutil.m(g,k,y,oc) ;
+  s_limit_fueluse(experiments,steps,outcomeSets,f,y,oc)                 = limit_fueluse.m(f,y,oc) ;
+  s_limit_nrg(experiments,steps,outcomeSets,f,y,oc)                     = limit_nrg.m(f,y,oc) ;
+  s_minreq_rennrg(experiments,steps,outcomeSets,y,oc)                   = minReq_renNrg.m(y,oc) ;
+  s_minreq_rencap(experiments,steps,outcomeSets,y)                      = minReq_renCap.m(y) ;
+  s_limit_hydro(experiments,steps,outcomeSets,g,y,t,oc)                 = limit_hydro.m(g,y,t,oc) ;
+  s_limit_pumpgen1(experiments,steps,outcomeSets,g,y,t,oc)              = limit_pumpgen1.m(g,y,t,oc) ;
+  s_limit_pumpgen2(experiments,steps,outcomeSets,g,y,t,oc)              = limit_pumpgen2.m(g,y,t,oc) ;
+  s_limit_pumpgen3(experiments,steps,outcomeSets,g,y,t,lb,oc)           = limit_pumpgen3.m(g,y,t,lb,oc) ;
+  s_boundtxloss(experiments,steps,outcomeSets,r,rr,ps,y,t,lb,n,oc)      = boundtxloss.m(r,rr,ps,y,t,lb,n,oc) ;
+  s_tx_capacity(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)           = tx_capacity.m(r,rr,y,t,lb,oc) ;
+  s_tx_projectdef(experiments,steps,outcomeSets,tupg,r,rr,ps,pss,y)     = tx_projectdef.m(tupg,r,rr,ps,pss,y) ;
+  s_tx_onestate(experiments,steps,outcomeSets,r,rr,y)                   = tx_onestate.m(r,rr,y) ;
+  s_tx_upgrade(experiments,steps,outcomeSets,r,rr,ps,y)                 = tx_upgrade.m(r,rr,ps,y) ;
+  s_tx_oneupgrade(experiments,steps,outcomeSets,r,rr,y)                 = tx_oneupgrade.m(r,rr,y) ;
+  s_tx_dcflow(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)             = tx_dcflow.m(r,rr,y,t,lb,oc) ;
+  s_tx_dcflow0(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)            = tx_dcflow0.m(r,rr,y,t,lb,oc) ;
+  s_equatetxloss(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)          = equatetxloss.m(r,rr,y,t,lb,oc) ;
+  s_txGrpConstraint(experiments,steps,outcomeSets,tgc,y,t,lb,oc)        = txGrpConstraint.m(tgc,y,t,lb,oc) ;
+  s_resvsinglereq1(experiments,steps,outcomeSets,rc,ild,y,t,lb,oc)      = resvsinglereq1.m(rc,ild,y,t,lb,oc) ;
+  s_genmaxresv1(experiments,steps,outcomeSets,g,y,t,lb,oc)              = genmaxresv1.m(g,y,t,lb,oc) ;
+  s_resvtrfr1(experiments,steps,outcomeSets,ild,ild1,y,t,lb,oc)         = resvtrfr1.m(ild,ild1,y,t,lb,oc) ;
+  s_resvtrfr2(experiments,steps,outcomeSets,rc,ild,ild1,y,t,lb,oc)      = resvtrfr2.m(rc,ild,ild1,y,t,lb,oc) ;
+  s_resvtrfr3(experiments,steps,outcomeSets,rc,ild,ild1,y,t,lb,oc)      = resvtrfr3.m(rc,ild,ild1,y,t,lb,oc) ;
+  s_resvrequnit(experiments,steps,outcomeSets,g,rc,ild,y,t,lb,oc)       = resvrequnit.m(g,rc,ild,y,t,lb,oc) ;
+  s_resvreq2(experiments,steps,outcomeSets,rc,ild,y,t,lb,oc)            = resvreq2.m(rc,ild,y,t,lb,oc) ;
+  s_resvreqhvdc(experiments,steps,outcomeSets,rc,ild,y,t,lb,oc)         = resvreqhvdc.m(rc,ild,y,t,lb,oc) ;
+  s_resvtrfr4(experiments,steps,outcomeSets,ild1,ild,y,t,lb,oc)         = resvtrfr4.m(ild1,ild,y,t,lb,oc) ;
+  s_resvtrfrdef(experiments,steps,outcomeSets,ild,ild1,y,t,lb,oc)       = resvtrfrdef.m(ild,ild1,y,t,lb,oc) ;
+  s_resvoffcap(experiments,steps,outcomeSets,g,y,t,lb,oc)               = resvoffcap.m(g,y,t,lb,oc) ;
+  s_resvreqwind(experiments,steps,outcomeSets,rc,ild,y,t,lb,oc)         = resvreqwind.m(rc,ild,y,t,lb,oc) ;
 * Now write the statements that are contingent on the model type being solved.
 * NB: these statements will not be executed when included in GEMsolve if RunType = 2.
 $if %RunType%==2 $goto skip
 * Variables
-  s_BGEN(timingRun,dispatchRun,g,y)                             = BGEN.l(g,y) ;
-  s_GENBLDCONT(timingRun,dispatchRun,g,y)                       = GENBLDCONT.l(g,y) ;
-  s_CGEN(timingRun,dispatchRun,g,y)                             = CGEN.l(g,y) ;
+  s_BGEN(experiments,steps,outcomeSets,g,y)                             = BGEN.l(g,y) ;
+  s_GENBLDCONT(experiments,steps,outcomeSets,g,y)                       = GENBLDCONT.l(g,y) ;
+  s_CGEN(experiments,steps,outcomeSets,g,y)                             = CGEN.l(g,y) ;
 * Equations
-  s_bldgenonce(timingRun,dispatchRun,g)                         = bldGenOnce.m(g) ;
-  s_buildcapint(timingRun,dispatchRun,g,y)                      = buildCapInt.m(g,y) ;
-  s_buildcapcont(timingRun,dispatchRun,g,y)                     = buildCapCont.m(g,y) ;
-  s_annnewmwcap(timingRun,dispatchRun,y)                        = annNewMWcap.m(y) ;
-  s_endogpltretire(timingRun,dispatchRun,g,y)                   = endogpltretire.m(g,y) ;
-  s_endogretonce(timingRun,dispatchRun,g)                       = endogretonce.m(g) ;
+  s_bldgenonce(experiments,steps,outcomeSets,g)                         = bldGenOnce.m(g) ;
+  s_buildcapint(experiments,steps,outcomeSets,g,y)                      = buildCapInt.m(g,y) ;
+  s_buildcapcont(experiments,steps,outcomeSets,g,y)                     = buildCapCont.m(g,y) ;
+  s_annnewmwcap(experiments,steps,outcomeSets,y)                        = annNewMWcap.m(y) ;
+  s_endogpltretire(experiments,steps,outcomeSets,g,y)                   = endogpltretire.m(g,y) ;
+  s_endogretonce(experiments,steps,outcomeSets,g)                       = endogretonce.m(g) ;
 $label skip
 $offecho
 
@@ -1110,48 +1109,48 @@ $offecho
 *===============================================================================================
 * 7. Declare the 's2' parameters.
 
-* NB: The 's2' parameters are intialised at the end of GEMsolve, dumped into a GDX file, and passed along to GEMreports.
+* NB: The 's2' parameters are initialised at the end of GEMsolve, dumped into a GDX file, and passed along to GEMreports.
 
 Parameters
 * Free variables
-  s2_TOTALCOST(mt,runs)                            'Discounted total system costs over all modelled years, $m (objective function value)'
-  s2_TX(mt,runs,r,rr,y,t,lb,outcomes)              'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s2_TOTALCOST(experiments,steps)                            'Discounted total system costs over all modelled years, $m (objective function value)'
+  s2_TX(experiments,steps,r,rr,y,t,lb,outcomes)              'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
 * Binary Variables
-  s2_BRET(mt,runs,g,y)                             'Binary variable to identify endogenous retirement year for the eligble generation plant'
-  s2_ISRETIRED(mt,runs,g)                          'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
-  s2_BTX(mt,runs,r,rr,ps,y)                        'Binary variable indicating the current state of a transmission path'
+  s2_BRET(experiments,steps,g,y)                             'Binary variable to identify endogenous retirement year for the eligble generation plant'
+  s2_ISRETIRED(experiments,steps,g)                          'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
+  s2_BTX(experiments,steps,r,rr,ps,y)                        'Binary variable indicating the current state of a transmission path'
 * Positive Variables
-  s2_REFURBCOST(mt,runs,g,y)                       'Annualised generation plant refurbishment expenditure charge, $'
-  s2_BUILD(mt,runs,g,y)                            'New capacity installed by generating plant and year, MW'
-  s2_RETIRE(mt,runs,g,y)                           'Capacity endogenously retired by generating plant and year, MW'
-  s2_CAPACITY(mt,runs,g,y)                         'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s2_TXCAPCHARGES(mt,runs,r,rr,y)                  'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s2_GEN(mt,runs,g,y,t,lb,outcomes)                'Generation by generating plant and block, GWh'
-  s2_VOLLGEN(mt,runs,s,y,t,lb,outcomes)            'Generation by VOLL plant and block, GWh'
-  s2_PUMPEDGEN(mt,runs,g,y,t,lb,outcomes)          'Energy from pumped hydro (treated like demand), GWh'
-  s2_LOSS(mt,runs,r,rr,y,t,lb,outcomes)            'Transmission losses along each path, MW'
-  s2_TXPROJVAR(mt,runs,tupg,y)                     'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  s2_TXUPGRADE(mt,runs,r,rr,ps,pss,y)              'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
-  s2_RESV(mt,runs,g,rc,y,t,lb,outcomes)            'Reserve energy supplied, MWh'
-  s2_RESVVIOL(mt,runs,rc,ild,y,t,lb,outcomes)      'Reserve energy supply violations, MWh'
-  s2_RESVTRFR(mt,runs,rc,ild,ild1,y,t,lb,outcomes) 'Reserve energy transferred from one island to another, MWh'
+  s2_REFURBCOST(experiments,steps,g,y)                       'Annualised generation plant refurbishment expenditure charge, $'
+  s2_BUILD(experiments,steps,g,y)                            'New capacity installed by generating plant and year, MW'
+  s2_RETIRE(experiments,steps,g,y)                           'Capacity endogenously retired by generating plant and year, MW'
+  s2_CAPACITY(experiments,steps,g,y)                         'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s2_TXCAPCHARGES(experiments,steps,r,rr,y)                  'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s2_GEN(experiments,steps,g,y,t,lb,outcomes)                'Generation by generating plant and block, GWh'
+  s2_VOLLGEN(experiments,steps,s,y,t,lb,outcomes)            'Generation by VOLL plant and block, GWh'
+  s2_PUMPEDGEN(experiments,steps,g,y,t,lb,outcomes)          'Energy from pumped hydro (treated like demand), GWh'
+  s2_LOSS(experiments,steps,r,rr,y,t,lb,outcomes)            'Transmission losses along each path, MW'
+  s2_TXPROJVAR(experiments,steps,tupg,y)                     'Continuous 0-1 variable indicating whether an upgrade project is applied'
+  s2_TXUPGRADE(experiments,steps,r,rr,ps,pss,y)              'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
+  s2_RESV(experiments,steps,g,rc,y,t,lb,outcomes)            'Reserve energy supplied, MWh'
+  s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,outcomes)      'Reserve energy supply violations, MWh'
+  s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,outcomes) 'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
-  s2_RENNRGPENALTY(mt,runs,y)                      'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s2_SEC_NZ_PENALTY(mt,runs,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI_PENALTY(mt,runs,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
-  s2_NOWIND_NZ_PENALTY(mt,runs,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NI_PENALTY(mt,runs,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  s2_RENNRGPENALTY(experiments,steps,y)                      'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s2_SEC_NZ_PENALTY(experiments,steps,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s2_SEC_NI_PENALTY(experiments,steps,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
+  s2_NOWIND_NZ_PENALTY(experiments,steps,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s2_NOWIND_NI_PENALTY(experiments,steps,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
-  s2_ANNMWSLACK(mt,runs,y)                         'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s2_RENCAPSLACK(mt,runs,y)                        'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s2_HYDROSLACK(mt,runs,y)                         'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s2_MINUTILSLACK(mt,runs,y)                       'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s2_FUELSLACK(mt,runs,y)                          'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s2_ANNMWSLACK(experiments,steps,y)                         'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s2_RENCAPSLACK(experiments,steps,y)                        'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s2_HYDROSLACK(experiments,steps,y)                         'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s2_MINUTILSLACK(experiments,steps,y)                       'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s2_FUELSLACK(experiments,steps,y)                          'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations, i.e. marginal values. (ignore the objective function)
-  s2_bal_supdem(mt,runs,r,y,t,lb,outcomes)         'Balance supply and demand in each region, year, time period and load block'
+  s2_bal_supdem(experiments,steps,r,y,t,lb,outcomes)         'Balance supply and demand in each region, year, time period and load block'
 *++++++++++
 * More non-free reserves code.
-  s2_RESVCOMPONENTS(mt,runs,r,rr,y,t,lb,outcomes,stp)'Non-free reserve components, MW'
+  s2_RESVCOMPONENTS(experiments,steps,r,rr,y,t,lb,outcomes,stp)'Non-free reserve components, MW'
 *++++++++++
   ;
 
