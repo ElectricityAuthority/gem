@@ -112,6 +112,8 @@ $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
 ***
+i_NorthwardHVDCtransfer(y) = 500 ;
+***
 
 
 
