@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 23/03/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 25/07/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -14,11 +14,11 @@
 
 $ontext
  This program prepares the data for a single scenario. It imports the raw scenario-specific data
- from a GDX file, and undertakes some manipulations, transformations, and intergrity checks. This
- program is followed by GEMsolve, which solves the model, and restarts from GEMdata.g00.
+ from a GDX file, and undertakes some manipulations, transformations, and integrity checks.
 
- The GEMdata invocation requires GEMdata to be restarted from GEMdeclarations. The files called
- GEMpaths.inc and GEMsettings.inc are included in GEMdata.
+ The GEMdata invocation requires GEMdata to be restarted from the GEMdeclarations work file. The files
+ called GEMpaths.inc and GEMsettings.inc are included into GEMdata. The GEMdata work file is saved and
+ used to restart GEMsolve. GEMsolve is invoked immediately after GEMdata.
 
  Code sections:
   1. Load input data that comes from input GDX file (or the paths/settings include files).
@@ -626,26 +626,3 @@ execute 'temp.bat' ;
 
 
 * End of file.
-
-$ontext
-File newdata / xxx.csv / ; newdata.pc = 5 ;
-put newdata 'PlantName', '', 'Technology', '', 'Region', '', 'Status', 'Nameplate MW', 'Fixed O&M', 'Variable O&M', 'Capex - NZD/MW'  ;
-loop((g,k,r)$( mapg_k(g,k) * mapg_r(g,r) ),
-  put / g.tl, g.te(g), k.tl, k.te(k), r.tl, r.te(r) ;
-  if(exist(g), put 'Exist',
-    else if(commit(g), put 'Committed',
-      else if(new(g), put 'New',
-        else put 'Never build'
-      ) ;
-    ) ;
-  ) ;
-  put i_nameplate(g), i_fixedOM(g), i_varOM(g), capexPlant(g) ;
-) ;
-$offtext
-*File mapR / mapR.txt / ; mapR.lw = 0 ; put mapR ;
-*loop((g,r)$mapg_r(g,r), put g.tl, '.', r.tl / ) ;
-
-*File mapK / mapK.txt / ; mapK.lw = 0 ; put mapK ;
-*loop((g,k)$mapg_k(g,k), put g.tl, '.', k.tl / ) ;
-
-display maxCapFactPlant, paths ;

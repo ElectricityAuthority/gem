@@ -15,7 +15,7 @@ scenarioColor('mds3','0','255','255') = yes ;
 $setglobal firstScenario    "Final GEM2.0 input data (2Reg 9Block mds2).gdx"
 
 
-*** Model ***
+*+++ Model +++
 $setglobal firstYear 2010
 * First modelled year.
 $setglobal lastYear 2020
@@ -38,11 +38,11 @@ $setglobal Mode 0
 * Select 0 to run with standard developer license; 1 to run with runtime license.  
 
 
-*** Hydrology ***
+*+++ Hydrology +++
 Scalar hydroOutputScalar / .97 / ;
 
 
-*** CapitalExpenditure ***
+*+++ CapitalExpenditure +++
 Scalar WACCg / .08 / ;
 Scalar WACCt / .08 / ;
 Scalar taxRate / .3 / ;
@@ -52,7 +52,7 @@ Scalar txDepRate / .06 / ;
 Scalar randomCapexCostAdjuster / 0 / ;
 
 
-*** GemConstraints ***
+*+++ GemConstraints +++
 Scalar cGenYr / 2025 / ;
 Scalar AnnualMWlimit / 1000 / ;
 Scalar noRetire / 2 / ;
@@ -66,10 +66,10 @@ $setglobal NumVertices 3
 * Number of vertices for piecewise linear transmission losses function (number of vertices = number of segments  + l) ;  
 
 
-*** Load ***
+*+++ Load +++
 $setglobal AClossesNI 0.0368
 * Upwards adjustment to load to account for NI AC (or intraregional) losses - .0368 for 2-region and .0120 for 18-region
-$setglobal AClossesSI 0.0368
+$setglobal AClossesSI 0.0534
 * Upwards adjustment to load to account for SI AC (or intraregional) losses - .0534 for 2-region and .0180 for 18-region
 $setglobal EmbedAdjNZ 198
 * MW added to NZ peak load to overcome potential double-counting of embedded generation
@@ -77,7 +77,7 @@ $setglobal EmbedAdjNI 144
 * MW added to NI peak load to overcome potential double-counting of embedded generation
 
 
-*** Solver ***
+*+++ Solver +++
 $setglobal Solver Cplex
 * Specify which LP and MIP solver to use - Cplex, Gurobi, or Xpress.
 $setglobal SolveGoal QDsol
@@ -92,16 +92,16 @@ $setglobal Threads 4
 * Number of threads your MIP solver is licensed to use.
 $setglobal MinGapSecs 10800
 * CPU seconds available for solver to spend solving GEM for solve goal MinGap.
-$setglobal limitOutput 1
+$setglobal limitOutput 0
 * Set to 1 to limit the amount of output written to the listing file
 
 
-*** Plots ***
+*+++ Plots +++
 $setglobal MexOrMat 1
 * 1 to use .mex executable for Matlab figures, 0 to use Matlab and source codes. All other values are illegal.
 $setglobal PlotInFigures 0
 * 1 to generate plots of various model inputs; 0 to prevent the generation of such plots.
-$setglobal PlotOutFigures 1
+$setglobal PlotOutFigures 0
 * 1 to generate plots of various model outputs; 0 to prevent the generation of such plots.
 $setglobal PlotMIPtrace 0
 * 1 to generate MIPtrace plots; 0 to prevent the generation of MIPtrace plots.
