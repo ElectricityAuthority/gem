@@ -1,19 +1,30 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 24/03/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 26/07/2011 (imm@ea.govt.nz)
+
+*** Factor out terms in (to make clearer):  REFURBCOST(g,y) =e= i_nameplate(g) * refurbcapcharge(g,y) - ISRETIRED(g) * i_nameplate(g) * refurbcapcharge(g,y) ;
+
 
 $ontext
-  This program does....
+  This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
+  the various GEM codes - up to and including GEMsolve, the program that solves the models. Symbols required only
+  for post-solve reporting purposes are declared in GEMreports.
+  In a very few cases (a handful of sets), the symbols are intialised here as well. In other words, the membership
+  of the sets is assigned at the time of declaration. In all other cases, set membership and data values are obtained
+  from user-specified input files, or are computed from the imported data.
+  The GEMdeclarations work file is saved and used to restart subsequent GEM programs at invocation.
 
  Code sections:
   1. Declare sets and parameters - the data for which is imported from an input GDX file.
-  2. Declare sets and parameters - those that are hard-coded or come from GEMsettings and GEMstochastic.
-  3. Declare sets and parameters to be initialised/computed in GEMdata or GEMsolve.
-  4. Declare model variables and equations.
-  5. Specify the equations and declare the models.
-  6. Declare the 's' parameters and specify the statements used to collect up results after each solve.
-  7. Declare the 's2' parameters.
-  x. xxx
+  2. Declare remaining sets and parameters.
+     a) Hard-coded sets.
+     b) Outcome-specific sets and parameters.
+     c) Various GEM configuration sets and parameters. 
+     d) Declare all remaining sets and parameters.
+  3. Declare model variables and equations.
+  4. Specify the equations and declare the models.
+  5. Declare the 's' parameters and specify the statements used to collect up results after each solve.
+  6. Declare the 's2' parameters.
 $offtext
 
 * Turn the following maps on/off as desired.
@@ -57,7 +68,7 @@ Sets
 
 Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 41 mapping sets and subsets (grouped as per the navigation pane of EAME)
+* 41 mapping sets and subsets (grouped as per the navigation pane of Oasis)
 Sets
 * 24 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -109,7 +120,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 88 parameters (again, grouped as per the navigation pane of EAME).
+* Declare 88 parameters (again, grouped as per the navigation pane of Oasis).
 Parameters
 * 20 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -204,7 +215,7 @@ Parameters
   i_HVDClosses(y)                               'Maximum loss rate on HVDC link by year'
   i_HVDClossesPO(y)                             'Maximum loss rate on HVDC link with one pole out by year'
 * 3 hydrology
-  i_firstHydroYear                              'First year of hydrology output data (ignoring the 1st two elements of hY - multiple and average)'
+  i_firstHydroYear                              'First year of hydrology output data'
   i_historicalHydroOutput(v,hY,m)               'Historical hydro output sequences by reservoir and month, GWh'
   i_hydroOutputAdj(y)                           'Schedulable hydro output adjuster by year (default = 1)'
   ;
@@ -212,65 +223,72 @@ Parameters
 
 
 *===============================================================================================
-* 2. Declare sets and parameters - those that are hard-coded or come from GEMsettings and GEMstochastic.
-*    - Some are initialised (hard-coded) right here.
-*    - Some are initialised in GEMsettings/GEMstochastic.
-*    - Some are initialised in GEMdata or GEMsolve using data/values obtained from GEMsettings/GEMstochastic.
+* 2. Declare remaining sets and parameters.
+*    a) Hard-coded sets.
+*    b) Outcome-specific sets and parameters.
+*    c) Various GEM configuration sets and parameters. 
+*    d) Declare all remaining sets and parameters.
 
+* a) Hard-coded sets (non-development users have no need to change these set elements).
 Sets
   n                                             'Piecewise linear vertices'
-  ct                                            'Capital expenditure types'           / genplt   'New generation plant'
-                                                                                        refplt   'Refurbish existing generation plant' /
-  d                                             'Discount rate classes'               / WACCg    "Generation investor's post-tax real weighted average cost of capital"
-                                                                                        WACCt    "Transmission investor's post-tax real weighted average cost of capital"
-                                                                                        dLow     'Lower discount rate for CBA sensitivity analysis' 
-                                                                                        dMed     'Central discount rate for CBA sensitivity analysis'
-                                                                                        dHigh    'Upper discount rate for CBA sensitivity analysis'    /
-  dt                                            'Types of discounting'                / mid      'Middle of the period within each year'
-                                                                                        eoy      'End of year'   /
-  goal                                          'Goals for MIP solution procedure'    / QDsol    'Find a quick and dirty solution using a user-specified optcr'
-                                                                                        VGsol    'Find a very good solution reasonably quickly'
-                                                                                        MinGap   'Minimize the gap between best possible and best found'  /
-  solveGoal(goal)                               'The user-selected solve goal'
-  
-  steps                                         'Steps in an experiment'              / timing, reopt, dispatch /
-  hydroSeqTypes                                 'Types of hydro sequences to use'     / Same, Sequential /
-  experiments                                   'Complete experiments with timing, reopt and dispatch steps'
-  outcomes                                      'Stochastic outcomes or uncertainty states'
-  outcomeSets                                   'Sets of outcomes to be used in a run'
+  ct                                            'Capital expenditure types'           / genplt     'New generation plant'
+                                                                                        refplt     'Refurbish existing generation plant' /
+  d                                             'Discount rate classes'               / WACCg      "Generation investor's post-tax real weighted average cost of capital"
+                                                                                        WACCt      "Transmission investor's post-tax real weighted average cost of capital"
+                                                                                        dLow       'Lower discount rate for CBA sensitivity analysis' 
+                                                                                        dMed       'Central discount rate for CBA sensitivity analysis'
+                                                                                        dHigh      'Upper discount rate for CBA sensitivity analysis'    /
+  dt                                            'Types of discounting'                / mid        'Middle of the period within each year'
+                                                                                        eoy        'End of year'   /
+  goal                                          'Goals for MIP solution procedure'    / QDsol      'Find a quick and dirty solution using a user-specified optcr'
+                                                                                        VGsol      'Find a very good solution reasonably quickly'
+                                                                                        MinGap     'Minimize the gap between best possible and best found'  /
+  steps                                         'Steps in an experiment'              / timing     'Solve the timing problem, i.e. timing of new generation/or transmission investment'
+                                                                                        reopt      'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
+                                                                                        dispatch   'Solve for the dispatch only with investment timing fixed'  /
+  hydroSeqTypes                                 'Types of hydro sequences to use'     / Same       'Use the same sequence of hydro years to be used in every modelled year'
+                                                                                        Sequential 'Use a sequentially developed mapping of hydro years to modelled years' / ;
 
-  setOutcomes(outcomeSets, outcomes)            'The outcomes that make up an outcome set'
-  timingRuns(experiments,outcomeSets)           'Which outcome sets are used for timing in each experiment?'
-  reoptRuns(experiments,outcomeSets)            'Which outcome sets are used for reoptimisation in each experiment?'
-  dispatchRuns(experiments,outcomeSets)         'Which outcome sets are used for dispatch in each experiment?'
-  allRuns(experiments,steps,outcomeSets)        'Outcome sets for all runs'
-
-  oc(outcomes)                                   'Selected elements of outcomes'
-
-  hydroYrForDispatch(hY)                        'Hydro years used to loop over when solving DISpatch'
-  chooseHydroYears(hY)                          'Used for calculation of hydro sequences'
-  mapOC_hY(outcomes,hY)                         'Map historical hydro output years to outcomes'
-  mapOC_hydroSeqTypes(outcomes,hydroSeqTypes)   'Map the way types of hydrology sequences are developed (same or sequential) to outcomes'
-  ;
+* b) Outcome-specific sets and parameters - see (mostly) GEMstochastic.
+Sets
+  experiments                                   'A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps'
+  outcomes                                      'The various individual stochastic outcomes, or futures, or states of uncertainty'
+  oc(outcomes)                                  '(Dynamically) selected elements of outcomes'
+  outcomeSets                                   'Create sets of outcomes to be used in a solve'
+  mapOutcomes(outcomeSets,outcomes)             'Map the individual outcomes to an outcome set (i.e. 1 or more outcomes make up an outcome set)'
+  timingSolves(experiments,outcomeSets)         'Which outcome sets are used for the timing step of each experiment?'
+  reoptSolves(experiments,outcomeSets)          'Which outcome sets are used for the reoptimisation step of each experiment?'
+  dispatchSolves(experiments,outcomeSets)       'Which outcome sets are used for the dispatch step of each experiment?'
+  allSolves(experiments,steps,outcomeSets)      'Outcome sets by experiment and step'
+  mapOC_hY(outcomes,hY)                         'Map historical hydro output years to outcomes (compute the average if more than one hydro year is specified)'
+  mapOC_hydroSeqTypes(outcomes,hydroSeqTypes)   'Map the way types of hydrology sequences are developed (same or sequential) to outcomes' ;
 
 Parameters
-* Used/initialised in GEMdata.
+  outcomePeakLoadFactor(outcomes)               'Outcome-specific scaling factor for peak load data'
+  outcomeCO2TaxFactor(outcomes)                 'Outcome-specific scaling factor for CO2 tax data'
+  outcomeFuelCostFactor(outcomes)               'Outcome-specific scaling factor for fuel cost data'
+  outcomeNRGFactor(outcomes)                    'Outcome-specific scaling factor for energy demand data'
+  penaltyLostPeak                               'Penalty for failing to meet peak load constraints'
+  weightOutcomesBySet(outcomeSets,outcomes)     'Assign weights to the outcomes comprising each set of outcomes'
+  outcomeWeight(outcomes)                       'Individual outcome weights'
+  modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
+  allModelledHydroOutput(experiments,steps,outcomeSets,g,y,t,outcomes) 'Collect the hydro output used in each modelled year by scheduleable hydro plant for all experiments-steps-outcomeSets tuples'
+  solveReport(experiments,steps,outcomeSets,*)  'Collect various details about each solve of the models (both GEM and DISP)'
+
+* c) Various GEM configuration sets and parameters - see (mostly) GEMsettings.
+Sets
+  solveGoal(goal)                               'The user-selected solve goal'  ;
+
+Parameters
   firstYear                                     'First modelled year - as a scalar, not a set'
   lastYear                                      'Last modelled year - as a scalar, not a set'
-  WACCg                                         "Generation investor's post-tax real weighted average cost of capital"
-  WACCt                                         "Transmission investor's post-tax real weighted average cost of capital"
-  depType                                       'Flag to indicate depreciation method - 1 for declining value, 0 for straight line'
-  taxRate                                       'Corporate tax rate'
-  txPlantLife                                   'Life of transmission equipment, years'
-  txDepRate                                     'Depreciation rate for transmission equipment'
-  randomCapexCostAdjuster                       'Specify the bounds for a small +/- random adjustment to generation plant capital costs'
   noRetire                                      'Number of years following and including the first modelled year for which endogenous generation plant retirement decisions are prohibited'
   gridSecurity                                  'Flag to indicate desired grid security (legitimate values are -1, 0, 1, or 2)'
-*                                                  -1 = run the model with the five security constraints suppressed.
-*                                                   0 = run the model with n (i.e. n-0) security.
-*                                                   1 = run the model with n-1 security.
-*                                                   2 = run the model with n-2 security.
-* Used/initialised in GEMdeclarations (i.e. in model) or GEMsolve.
+*                                                -1 = run the model with all security constraints suppressed.
+*                                                 0 = run the model with n (i.e. n-0) security.
+*                                                 1 = run the model with n-1 security.
+*                                                 2 = run the model with n-2 security.
   AnnualMWlimit                                 'Upper bound on total MW of new plant able to be built nationwide in any single year'
   penaltyViolateRenNrg                          'Penalty used to make renewable energy constraint feasible, $m/GWh'
   renNrgShrOn                                   'Switch to control usage of renewable energy share constraint 0=off/1=on'
@@ -278,26 +296,11 @@ Parameters
   useReserves                                   'Global flag (0/1) to indicate use of at least one reserve class (0 = no reserves are modelled)'
   cGenYr                                        'First year in which integer generation build decisions can become continuous, i.e. CGEN or BGEN = 0 in any year'
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
-  hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
-  penaltyLostPeak                               'Penalty for not meeting peak load constraint'
+  randomCapexCostAdjuster                       'Specify the bounds for a small +/- random adjustment to generation plant capital costs'
+  slacks                                        'A flag indicating slack variables exist in at least one solution'
+  penalties                                     'A flag indicating penalty variables exist in at least one solution'  ;
 
-  outcomePeakLoadFactor(outcomes)               'Blah blah blah'
-  outcomeCO2TaxFactor(outcomes)                 'Blah blah blah'
-  outcomeFuelCostFactor(outcomes)               'Blah blah blah'
-  outcomeNRGFactor(outcomes)                    'Blah blah blah'
-  outcomeWeight(outcomes)                       'blah blah blah'
-
-  modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
-  slacks                                        'A flag indicating slacks or penalty variables exist in at least one solution'
-  solveReport(experiments,steps,outcomeSets,*)  'Collect various details about each solve of the models (both GEM and DISP)'
-  hydroYrIndex(hY)                              'Index to enable assignment of hydro years over the modelled years'
-  ;
-
-
-
-*===============================================================================================
-* 3. Declare sets and parameters to be initialised/computed in GEMdata or GEMsolve.
-
+* d) Declare all remaining sets and parameters - to be initialised/computed in GEMdata or GEMsolve.
 Sets
 * Time/date-related sets and parameters.
   firstYr(y)                                    'First modelled year - as a set, not a scalar'
@@ -356,7 +359,8 @@ Sets
   validTGC(tgc)                                 'Valid transmission group constraints'
   nSegment(n)                                   'Line segments for piecewise linear transmission losses function (number of segments = number of vertices - l)'
 * Reserve energy data.
-  ;
+* Hydrology.
+  chooseHydroYears(hY)                          'Used for calculation of hydro sequences'  ;
 
 Parameters
   counter                                       'A recyclable counter - set equal to zero each time before using'
@@ -368,6 +372,12 @@ Parameters
 * Various mappings, subsets and counts.
   numReg                                        'Number of regions (or, if you like, nodes or buses)'
 * Financial parameters.
+  WACCg                                         "Generation investor's post-tax real weighted average cost of capital"
+  WACCt                                         "Transmission investor's post-tax real weighted average cost of capital"
+  depType                                       'Flag to indicate depreciation method - 1 for declining value, 0 for straight line'
+  taxRate                                       'Corporate tax rate'
+  txPlantLife                                   'Life of transmission equipment, years'
+  txDepRate                                     'Depreciation rate for transmission equipment'
   CBAdiscountRates(d)                           'CBA discount rates - for reporting results only'
   PVfacG(y,t)                                   "Generation investor's present value factor by period"
   PVfacT(y,t)                                   "Transmission investor's present value factor by period"
@@ -433,12 +443,13 @@ Parameters
   bigM(ild,ild1)                                'A large positive number'
 * Hydrology output data
   historicalHydroOutput(v,hY,m)                 'Historical hydro output sequences by reservoir and month, GWh'
+  hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
   ;
 
 
 
 *===============================================================================================
-* 4. Declare model variables and equations.
+* 3. Declare model variables and equations.
 
 
 *+++++++++++++++++++++++++
@@ -568,7 +579,7 @@ Equations
 
 
 *===============================================================================================
-* 5. Specify the equations and declare the models.
+* 4. Specify the equations and declare the models.
 
 * NB: Uppercase = variables; lowercase = parameters.
 
@@ -883,7 +894,7 @@ Model GEM Generation expansion model / DISP, bldGenOnce, buildCapInt, buildCapCo
 
 
 *===============================================================================================
-* 6. Declare the 's' parameters and specify the statements used to collect up results after each solve.
+* 5. Declare the 's' parameters and specify the statements used to collect up results after each solve.
 *    NB: The 's' prefix denotes 'solution' to model.
 *        Multiply $m/GWh by 1000 to get $/MWh.
 *        Divide $m/GWh by 100 to get cents per kWh.
@@ -1000,8 +1011,6 @@ $onecho > CollectResults.txt
   s_calc_nfreserves(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)       = calc_nfreserves.m(r,rr,y,t,lb,oc) ;
   s_resv_capacity(experiments,steps,outcomeSets,r,rr,y,t,lb,oc,stp)     = resv_capacity.m(r,rr,y,t,lb,oc,stp) ;
 *++++++++++
-* Misc params
-*  s_modelledHydroOutput(experiments,steps,outcomeSets,g,y,t,oc)        = modelledHydroOutput(g,y,t,oc) ;
 * Free variables.
   s_TOTALCOST(experiments,steps,outcomeSets)                            = TOTALCOST.l ;
   if(DCloadFlow = 1,
@@ -1107,7 +1116,7 @@ $offecho
 
 
 *===============================================================================================
-* 7. Declare the 's2' parameters.
+* 6. Declare the 's2' parameters.
 
 * NB: The 's2' parameters are initialised at the end of GEMsolve, dumped into a GDX file, and passed along to GEMreports.
 

@@ -1,14 +1,13 @@
 * GEMsolve.gms
 
+* Last modified by Dr Phil Bishop, 26/07/2011 (imm@ea.govt.nz)
 
-* Last modified by Dr Phil Bishop, 24/03/2011 (imm@ea.govt.nz)
-
-set thisY(y) ;
 *** To do:
-*** Remove the word 'run' from wherever it is used to describe something other than 'runs', e.g. %runName%
+*** Make sure the writing of GEMdataGDX is all that it should be
 *** Sort out the MIPtrace stuff
 *** Sort out GEMsolve.log. Where does it go and how does it get there?
 *** does each model type have the correct modelstat error condition driving the abort stmt?
+*** The abort if slacks present has gone. Bring it back? Warning if penalties?
 
 $ontext
  This program continues sequentially from GEMdata. The GEMdata work file must be called
@@ -20,13 +19,11 @@ $ontext
   2. Prepare the outcome-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
   3. Write the GEMdataGDX file.
   4. Set bounds, initial levels and, in some cases, fix variables to a specified level.
-  5. Solve the model and collect results.
+  5. Loop through all the solves
+  6. Prepare results to pass along to GEMreports in the form of a GDX file. 
+  7. Dump results out to GDX files and rename/relocate certain output files.
 
 
-  x. Re-declare and/or initialise sets and parameters.
-  x. Set bounds, initial levels and fixes, then solve the model and collect results.
-  x. Prepare results to pass along to report codes in the form of a GDX file. 
-  x. Dump results out to GDX files and rename/relocate certain output files.
   x. Move MIPtrace files to output directory and generate miptrace.bat.
   x. Create an awk script, which when executed, will produce a file containing the number of integer solutions per MIP model.
 $offtext
@@ -65,7 +62,7 @@ option reslim = 500, iterlim = 10000000 ;
 option LP = %Solver%, MIP = %Solver%, RMIP = %Solver% ;
 $include 'GEM%Solver%.gms'
 
-* Capture the specified solve goal and intialise various settings related to the solve goal.
+* Capture the specified solve goal (for GEM, not DISP) and intialise various model solve settings.
 Set solveGoal(goal) 'User-selected solve goal' / %solveGoal% / ;
 gem.reslim = 500 ;     disp.reslim = 300 ;
 gem.optfile = 1 ;      disp.optfile = 0 ;
@@ -89,6 +86,14 @@ loop(solveGoal(goal),
 
 $include GEMstochastic.gms
 
+* Pro-rate weightOutcomesBySet values so that weights sum to exactly one for each outcomeSets:
+counter = 0 ;
+loop(outcomeSets,
+  counter = sum(outcomes, weightOutcomesBySet(outcomeSets,outcomes)) ;
+  weightOutcomesBySet(outcomeSets,outcomes)$counter = weightOutcomesBySet(outcomeSets,outcomes) / counter ;
+  counter = 0 ;
+) ;
+
 * Compute the short-run marginal cost (and its components) for each generating plant, $/MWh.
 totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
 
@@ -99,7 +104,7 @@ CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)
 SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
 
 * If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
-SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = .001 * ord(g) / card(g) ;
+SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = 1e-3 * ord(g) / card(g) ;
 
 * Capture the island-wide AC loss adjustment factors.
 AClossFactors('ni') = %AClossesNI% ;
@@ -123,56 +128,9 @@ historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 *===============================================================================================
 * 3. Write the GEMdataGDX file.
 
-$ontext
-
-  This is how it was previously when GEMdata created GEMdataGDX and then GEMsolve got its data 
-  from both GEMdataGDX and GDXinputfile.
-
-* NB: The following symbols from input data file may have been changed in GEMdata. So procure from
-*     GEMdataGDX rather than from GDXinputFile, or make commensurate change.
+* NB: The following symbols from input data file may have been changed in GEMdata.
 *     Sets: y, exist, commit, new, neverBuild
 *     Parameters: i_nrgtxCapacity, i_txCapacityPO
-
-* Get set y from %GEMdataGDX% rather than %GDXinputFile% (years to solve for may be less than years data was prepared for).
-$gdxin '%ProgPath%%GEMdataGDX%'
-$loaddc y
-
-$gdxin "%DataPath%%GDXinputFile%"
-* Load sets from input GDX file.
-$loaddc k f g s o r e ild p ps tupg tgc t lb rc hY v m
-$loaddc maps_r mapm_t movers wind renew minUtilTechs demandGen gas diesel
-* Load parameters from input GDX file.
-$load i_minUtilByTech i_maxNrgByFuel i_fuelQuantities
-$load i_UnitLargestProp i_offlineReserve i_nameplate i_baseload i_minUtilisation i_refurbDecisionYear
-$load i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_fixedOM i_HVDCshr i_HVDClevy i_plantReservesCost
-$load i_distdGenRenew i_distdGenFossil i_VOLLcap i_VOLLcost i_renewNrgShare i_renewCapShare
-$load i_firstHydroYear i_hydroOutputAdj i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
-$load i_txGrpConstraintsRHS i_txGrpConstraintsLHS i_maxReservesTrnsfr i_reserveReqMW i_txCapacity i_txCapacityPO
-$load i_fuelPrices i_fuelDeliveryCost i_co2tax i_CCSFactor i_emissionFactors i_CCSCost i_varOM
-$load i_NrgDemand i_peakLoadNZ i_peakLoadNI
-
-* Make sure intraregional transmission capacities are zero.
-i_txCapacity(r,r,ps) = 0 ; i_txCapacityPO(r,r,ps) = 0 ;
-
-
-$gdxin '%ProgPath%%GEMdataGDX%'
-* Load sets created in GEMdata.
-$loaddc n firstYr allButFirstYr firstPeriod mapg_k mapg_f mapg_o mapg_r mapg_e mapg_ild mapild_r mapv_g thermalFuel
-$loaddc exist commit new noExist nigen sigen schedHydroPlant pumpedHydroPlant moverExceptions validYrBuild integerPlantBuild linearPlantBuild possibleToBuild
-$loaddc possibleToRefurbish possibleToEndogRetire endogenousRetireDecisnYrs endogenousRetireYrs validYrOperate
-$loaddc slackBus regLower interIsland nwd swd paths transitions validTransitions allowedStates notAllowedStates upgradedStates
-$loaddc txEarlyComYrSet txFixedComYrSet validTGC nSegment
-* Load parameters created in GEMdata.
-$loaddc yearNum hydroYearNum lastHydroYear hoursPerBlock PVfacG PVfacT SRMC initialCapacity capCharge refurbCapCharge txCapCharge exogMWretired continueAftaEndogRetire
-$loaddc peakConPlant NWpeakConPlant reservesCapability maxCapFactPlant minCapFactPlant ldcMW peakLoadNZ peakLoadNI bigNIgen nxtbigNIgen
-$loaddc locFac_Recip susceptanceYr BBincidence bigLoss slope intercept reserveViolationPenalty windCoverPropn bigM
-$loaddc singleReservesReqF historicalHydroOutput
-*+++++++++++++++++++++++++
-* More code to do the non-free reserves stuff. 
-$loaddc freeReserves pNFresvCap pNFresvCost
-*+++++++++++++++++++++++++
-$offtext
-
 
 Execute_Unload "%GEMdataGDX%",
 *+++++++++++++++++++++++++
@@ -275,36 +233,34 @@ RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 
 
 *===============================================================================================
-* 5. Loop through all the runs
+* 5. Loop through all the solves
 
-$set AddUpSlacks "sum((y,oc), SEC_NZ_PENALTY.l(y,oc) + SEC_NI_PENALTY.l(y,oc) + NOWIND_NZ_PENALTY.l(y,oc) + NOWIND_NI_PENALTY.l(y,oc) + ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
-
+$set AddUpSlacks    "sum(y, ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
+$set AddUpPenalties "sum((y,oc), SEC_NZ_PENALTY.l(y,oc) + SEC_NI_PENALTY.l(y,oc) + NOWIND_NZ_PENALTY.l(y,oc) + NOWIND_NI_PENALTY.l(y,oc) )"
 
 * First, loop through all the experiments
 loop(experiments,
-* Reset any variables that might have been fixed for an earlier reoptimisation or dispatch run
+
+* Reset any variables that might have been fixed for an earlier reoptimisation or dispatch solve (reset fixes by initialising .lo and .up fields)
 
 * Restrict the build variable (i.e. MW) to zero or i_nameplate under certain input assumptions:
-  BUILD.lo(g,y) = 0 ;
-  BUILD.up(g,y) = i_nameplate(g) ;                                   ! Upper bound equals i_nameplate
-  BUILD.fx(g,y)$( not validYrBuild(g,y) ) = 0 ;                      ! Don't allow capacity to be built in years outside the valid range of build years.
-  BUILD.fx(g,y)$( commit(g) * validYrBuild(g,y) ) = i_nameplate(g) ; ! For committed plant, fix the MW able to be built regardless of any other settings.
+  BUILD.lo(g,y) = 0 ;    BUILD.up(g,y) = i_nameplate(g) ;             ! Lower bound equals zero, upper bound equals i_nameplate.
+  BUILD.fx(g,y)$( not validYrBuild(g,y) ) = 0 ;                       ! Don't allow capacity to be built in years outside the valid range of build years.
+  BUILD.fx(g,y)$( commit(g) * validYrBuild(g,y) ) = i_nameplate(g) ;  ! For committed plant, fix the MW able to be built regardless of any other settings.
 
 * Fix retired MW by year and generating plant to zero if not able to be endogenously retired.
-  RETIRE.lo(g,y) = 0 ; RETIRE.up(g,y) = inf ;
+  RETIRE.lo(g,y) = 0 ;   RETIRE.up(g,y) = inf ;
   RETIRE.fx(g,y)$( not endogenousRetireYrs(g,y) ) = 0 ;
 
 * Fix the endogenous retirement binaries at zero for all cases where it's not required.
-  BRET.lo(g,y) = 0 ;
-  BRET.up(g,y) = 1 ;     BRET.fx(g,y)$( not endogenousRetireDecisnYrs(g,y) ) = 0 ;
-  ISRETIRED.lo(g) = 0 ;
-  ISRETIRED.up(g) = 1 ;  ISRETIRED.fx(g)$( not possibleToEndogRetire(g) ) = 0 ;
+  BRET.lo(g,y) = 0 ;     BRET.up(g,y) = 1 ;
+  BRET.fx(g,y)$( not endogenousRetireDecisnYrs(g,y) ) = 0 ;
+  ISRETIRED.lo(g) = 0 ;  ISRETIRED.up(g) = 1 ;
+  ISRETIRED.fx(g)$( not possibleToEndogRetire(g) ) = 0 ;
 
 * Impose upper bound of 1 on continuous 0-1 transmission-related variables.
-  TXUPGRADE.lo(r,rr,ps,pss,y) = 0 ;
-  TXUPGRADE.up(validTransitions(paths,ps,pss),y) = 1 ;
-  TXPROJVAR.lo(tupg,y) = 0 ;
-  TXPROJVAR.up(tupg,y) = 1 ;
+  TXUPGRADE.lo(r,rr,ps,pss,y) = 0 ;  TXUPGRADE.up(validTransitions(paths,ps,pss),y) = 1 ;
+  TXPROJVAR.lo(tupg,y) = 0 ;         TXPROJVAR.up(tupg,y) = 1 ;
 
 * Force transmission upgrades in the user-specified year (do this in either endogogenous or exogenous investment mode).
   loop((transitions(tupg,r,rr,ps,pss),y)$txFixedComYrSet(tupg,r,rr,ps,pss,y),
@@ -317,16 +273,16 @@ loop(experiments,
   ) ;
 
 * Fix transmission binaries to zero if they're not needed.
-  BTX.lo(paths,ps,y) = 0 ;
-  BTX.up(paths,ps,y) = 1 ;
+  BTX.lo(paths,ps,y) = 0 ;  BTX.up(paths,ps,y) = 1 ;
   BTX.fx(notAllowedStates,y) = 0 ;
 
 
-* Now, loop through each of the steps: timing, reopt and dispatch
+* Second, loop through each of the steps: timing, reoptimisation, and dispatch.
   loop(steps,
 
-    if(sameas(steps, 'reopt'),
-*     If it's a reoptimisation run, fix the build (generation and transmission) to be the same as for the timing solve, but free up the movers.
+*   If it's a reoptimisation solve, fix the build (generation and transmission) to be the same as for
+*   the timing solve, but free up the movers.
+    if(sameas(steps,'reopt'),
       BUILD.fx(g,y) = BUILD.l(g,y) ;
 
       TXPROJVAR.fx(tupg,y) = TXPROJVAR.l(tupg,y) ;
@@ -338,36 +294,37 @@ loop(experiments,
         BUILD.up(g,y)$validYrBuild(g,y) = i_nameplate(g) ;
       ) ;
 
-*     Fix the retirements to be the same as for the timing solve.
+*     Similarly, fix the retirements to be the same as for the timing solve.
       BRET.fx(g,y) = BRET.l(g,y) ; ISRETIRED.fx(g) = ISRETIRED.l(g) ; RETIRE.fx(g,y) = RETIRE.l(g,y) ;
 
-    elseif(sameas(steps, 'dispatch')),
-*     If it's a dispatch solve then fix the investment timing decisions (of generation, refurbishment, and transmission) and the retirements from the timing solve(s).
-      BUILD.fx(g,y) = BUILD.l(g,y) ;
+*     If it's a dispatch solve, fix the timing decisions (of generation and transmission investment, and
+*     generation retirement and refurbishment) from the timing/reoptimisation solve.
+      else if(sameas(steps,'dispatch'),
+        BUILD.fx(g,y) = BUILD.l(g,y) ;
 
-      BRET.fx(g,y) = BRET.l(g,y) ;
-      ISRETIRED.fx(g) = ISRETIRED.l(g) ;
-      RETIRE.fx(g,y) = RETIRE.l(g,y) ;
+        BRET.fx(g,y) = BRET.l(g,y) ;
+        ISRETIRED.fx(g) = ISRETIRED.l(g) ;
+        RETIRE.fx(g,y) = RETIRE.l(g,y) ;
 
-      TXPROJVAR.fx(tupg,y) = TXPROJVAR.l(tupg,y) ;
-      TXUPGRADE.fx(validTransitions(paths,ps,pss),y) = TXUPGRADE.l(paths,ps,pss,y) ;
-      BTX.fx(paths,ps,y) = BTX.l(paths,ps,y) ;
+        TXPROJVAR.fx(tupg,y) = TXPROJVAR.l(tupg,y) ;
+        TXUPGRADE.fx(validTransitions(paths,ps,pss),y) = TXUPGRADE.l(paths,ps,pss,y) ;
+        BTX.fx(paths,ps,y) = BTX.l(paths,ps,y) ;
+      ) ;
 
 *   End of step-type if
     ) ;
 
-*   Loop over each scenario set for this step of the experiment
-    loop(allRuns(experiments,steps,outcomeSets),
+*   Third, loop over each outcomeSet for this step of the experiment.
+    loop(allSolves(experiments,steps,outcomeSets),
 
-*     Initialise the desired outcomes for this run
+*     Initialise the desired outcomes for this solve
       oc(outcomes) = no ;
-      oc(outcomes)$setOutcomes(outcomeSets,outcomes) = yes ;
-      display 'Outcomes for this run:', oc ;
+      oc(outcomes)$mapOutcomes(outcomeSets,outcomes) = yes ;
 
-*     Select the appropriate outcome weight in order to do the current timing solve.
+*     Select the appropriate outcome weight.
       outcomeWeight(oc) = 0 ;
-      outcomeWeight(oc) = set_outcomeWeight(outcomeSets,oc) ;
-      display 'Outcome weight:', outcomeWeight ;
+      outcomeWeight(oc) = weightOutcomesBySet(outcomeSets,oc) ;
+      display 'Outcome and weight for this solve:', oc, outcomeWeight ;
 
 *     Compute the hydro output values to use for the selected outcomes (NB: only works for hydroSeqTypes={same,sequential}).
       modelledHydroOutput(g,y,t,outcomes) = 0 ;
@@ -375,7 +332,7 @@ loop(experiments,
         if(mapOC_hydroSeqTypes(outcomes,'same'),
           modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar * i_hydroOutputAdj(y) *
             sum((mapv_g(v,g),mapm_t(m,t),hY1)$(mapOC_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapOC_hY(outcomes,hY), 1) ;
-        else
+          else
           loop(y,
             chooseHydroYears(hY) = no ;
             chooseHydroYears(hY)$(sum(hY1$(mapOC_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
@@ -387,22 +344,24 @@ loop(experiments,
       ) ;
       display 'Hydro output:', modelledHydroOutput ;
 
-*     Apply the selected solve goal for the investment timing solve.
+*     Collect modelledHydroOutput for posterity.
+      allModelledHydroOutput(experiments,steps,outcomeSets,g,y,t,oc) = modelledHydroOutput(g,y,t,oc) ;
+
+*     Solve either GEM or DISP, depending on what step we're at.
       if(sameas(steps,'dispatch'),
         Solve DISP using %DISPtype% minimizing TOTALCOST ;
-      else
-        loop(solveGoal(goal),
-*         Do the investment timing solve.
-          Solve GEM using %GEMtype% minimizing TOTALCOST ;
-        ) ;
+        else
+        Solve GEM using %GEMtype% minimizing TOTALCOST ;
       ) ;
 
 *     Figure out if entire model invocation is to be aborted - but report that fact before aborting.
       slacks = %AddUpSlacks% ;
+      penalties = %AddUpPenalties% ;
+
       counter = 0 ;
       if(sameas(steps,'dispatch'),
         counter$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) = 1 ;
-      else
+        else
         counter$( ( GEM.modelstat = 10 ) or ( GEM.modelstat <> 1 and GEM.modelstat <> 8 ) ) = 1 ;
       ) ;
 
@@ -410,7 +369,7 @@ loop(experiments,
       if(counter = 1,
         putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve finished with some sort of problem and the job is now going to abort.' /
                         'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
-      else
+        else
         putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
       ) ;
       putclose con // '    The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve for "%runName% -- %scenarioName% has just finished' /
@@ -418,7 +377,7 @@ loop(experiments,
 
       if(sameas(steps,'dispatch'),
         abort$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) "Problem encountered when solving DISP..." ;
-      else
+        else
         abort$( GEM.modelstat = 10 ) "GEM is infeasible - check out GEMsolve.log to see what you've done wrong in configuring a model that is infeasible" ;
         abort$( GEM.modelstat <> 1 and GEM.modelstat <> 8 ) "Problem encountered solving GEM..." ;
       ) ;
@@ -430,84 +389,86 @@ $     if not %PlotMIPtrace%==1 $goto NoTrace3
 $     label NoTrace3
 
 *     Collect information for solve summary report
-      solveReport(allRuns,'ObjFnValue') = TOTALCOST.l ;    solveReport(allRuns,'OCcosts') = sum(oc(outcomes), OUTCOME_COSTS.l(oc) ) ;
-      solveReport(allRuns,'OptFile')    = gem.optfile ;    solveReport(allRuns,'OptCr')   = gem.optcr ;
-      solveReport(allRuns,'ModStat')    = gem.modelstat ;  solveReport(allRuns,'SolStat') = gem.solvestat ;
-      solveReport(allRuns,'Vars')       = gem.numvar ;     solveReport(allRuns,'DVars')   = gem.numdvar ;
-      solveReport(allRuns,'Eqns')       = gem.numequ ;     solveReport(allRuns,'Iter')    = gem.iterusd ;
-      solveReport(allRuns,'Time')       = gem.resusd ;     solveReport(allRuns,'GapAbs')  = abs( gem.objest - gem.objval ) ;
-      solveReport(allRuns,'Gap%')$gem.objval = 100 * abs( gem.objest - gem.objval ) / gem.objval ;
-      if(slacks > 0, solveReport(allRuns,'Slacks') = 1 else solveReport(allRuns,'Slacks') = -99 ) ;
-      display solveReport, slacks ;
+      solveReport(allSolves,'ObjFnValue') = TOTALCOST.l ;    solveReport(allSolves,'OCcosts') = sum(oc(outcomes), OUTCOME_COSTS.l(oc) ) ;
+      solveReport(allSolves,'OptFile')    = gem.optfile ;    solveReport(allSolves,'OptCr')   = gem.optcr ;
+      solveReport(allSolves,'ModStat')    = gem.modelstat ;  solveReport(allSolves,'SolStat') = gem.solvestat ;
+      solveReport(allSolves,'Vars')       = gem.numvar ;     solveReport(allSolves,'DVars')   = gem.numdvar ;
+      solveReport(allSolves,'Eqns')       = gem.numequ ;     solveReport(allSolves,'Iter')    = gem.iterusd ;
+      solveReport(allSolves,'Time')       = gem.resusd ;     solveReport(allSolves,'GapAbs')  = abs( gem.objest - gem.objval ) ;
+      solveReport(allSolves,'Gap%')$gem.objval = 100 * abs( gem.objest - gem.objval ) / gem.objval ;
+      if(slacks > 0,    solveReport(allSolves,'Slacks') = 1    else solveReport(allSolves,'Slacks') = -99 ) ;
+      if(penalties > 0, solveReport(allSolves,'Penalties') = 1 else solveReport(allSolves,'Penalties') = -99 ) ;
+      display 'solve report:', slacks, penalties, solveReport ;
 
-*     Collect up solution values - by experiment, step and scenarioSet.
+*     Collect up solution values - by experiment, step and outcomeSet.
 $     include CollectResults.txt
 
-*   End of scenario sets loop
+*   End of OutcomeSet loop.
     ) ;
 
-* End of steps loop
+* End of steps loop.
   ) ;
 
-* End of experiments loop
+* End of experiments loop.
 ) ;
 
 
 
 *===============================================================================================
-* 5. Prepare results to pass along to report codes in the form of a GDX file. 
+* 6. Prepare results to pass along to GEMreports in the form of a GDX file. 
 
 ** Beware - what is now s2 was previously s3.
-** What is happenning here is that the for each run type, the s_ params are being averaged over all hY and collected
+** What is happenning here is that the for each step, the s_ params are being averaged over all hY and collected
 ** into the s2 params. Hence, we lose the hY domain on s2, otherwise all else (including explanatory text) is identical
 ** to the s_ param. Be aware that averaging over hY makes no sense for TMG and REO if they ever get done for more than one
 ** hY (which to date they have not been). But this may change when we code up Geoff's stochastic stuff. 
 
-set sumRuns(outcomeSets) ;
-parameter numRuns ;
+set sumSolves(outcomeSets) ;
+parameter numSolves ;
 
 loop(experiments,
   loop(steps,
-    sumRuns(outcomeSets) = no;
-    sumRuns(outcomeSets)$allRuns(experiments,steps,outcomeSets) = yes;
-    numRuns = sum(sumRuns, 1);
+    sumSolves(outcomeSets) = no;
+    sumSolves(outcomeSets)$allSolves(experiments,steps,outcomeSets) = yes;
+    numSolves = sum(sumSolves, 1);
 
-    s2_TOTALCOST(experiments,steps)                          = sum(sumRuns, s_TOTALCOST(experiments,steps,sumRuns)) / numRuns ;
-    s2_TX(experiments,steps,paths,y,t,lb,oc)                 = sum(sumRuns, s_TX(experiments,steps,sumRuns,paths,y,t,lb,oc) ) / numRuns ;
-    s2_BRET(experiments,steps,g,y)                           = sum(sumRuns, s_BRET(experiments,steps,sumRuns,g,y) ) / numRuns ;
-    s2_ISRETIRED(experiments,steps,g)                        = sum(sumRuns, s_ISRETIRED(experiments,steps,sumRuns,g) ) / numRuns ;
-    s2_BTX(experiments,steps,paths,ps,y)                     = sum(sumRuns, s_BTX(experiments,steps,sumRuns,paths,ps,y) ) / numRuns ;
-    s2_REFURBCOST(experiments,steps,g,y)                     = sum(sumRuns, s_REFURBCOST(experiments,steps,sumRuns,g,y) ) / numRuns ;
-    s2_BUILD(experiments,steps,g,y)                          = sum(sumRuns, s_BUILD(experiments,steps,sumRuns,g,y) ) / numRuns ;
-    s2_RETIRE(experiments,steps,g,y)                         = sum(sumRuns, s_RETIRE(experiments,steps,sumRuns,g,y) ) / numRuns ;
-    s2_CAPACITY(experiments,steps,g,y)                       = sum(sumRuns, s_CAPACITY(experiments,steps,sumRuns,g,y) ) / numRuns ;
-    s2_TXCAPCHARGES(experiments,steps,paths,y)               = sum(sumRuns, s_TXCAPCHARGES(experiments,steps,sumRuns,paths,y) ) / numRuns ;
-    s2_GEN(experiments,steps,g,y,t,lb,oc)                    = sum(sumRuns, s_GEN(experiments,steps,sumRuns,g,y,t,lb,oc) ) / numRuns ;
-    s2_VOLLGEN(experiments,steps,s,y,t,lb,oc)                = sum(sumRuns, s_VOLLGEN(experiments,steps,sumRuns,s,y,t,lb,oc) ) / numRuns ;
-    s2_PUMPEDGEN(experiments,steps,g,y,t,lb,oc)              = sum(sumRuns, s_PUMPEDGEN(experiments,steps,sumRuns,g,y,t,lb,oc) ) / numRuns ;
-    s2_LOSS(experiments,steps,paths,y,t,lb,oc)               = sum(sumRuns, s_LOSS(experiments,steps,sumRuns,paths,y,t,lb,oc) ) / numRuns ;
-    s2_TXPROJVAR(experiments,steps,tupg,y)                   = sum(sumRuns, s_TXPROJVAR(experiments,steps,sumRuns,tupg,y) ) / numRuns ;
-    s2_TXUPGRADE(experiments,steps,paths,ps,pss,y)           = sum(sumRuns, s_TXUPGRADE(experiments,steps,sumRuns,paths,ps,pss,y) ) / numRuns ;
-    s2_RESV(experiments,steps,g,rc,y,t,lb,oc)                = sum(sumRuns, s_RESV(experiments,steps,sumRuns,g,rc,y,t,lb,oc) ) / numRuns ;
-    s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,oc)          = sum(sumRuns, s_RESVVIOL(experiments,steps,sumRuns,rc,ild,y,t,lb,oc) ) / numRuns ;
-    s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,oc)     = sum(sumRuns, s_RESVTRFR(experiments,steps,sumRuns,rc,ild,ild1,y,t,lb,oc) ) / numRuns ;
-    s2_RENNRGPENALTY(experiments,steps,y)                    = sum(sumRuns, s_RENNRGPENALTY(experiments,steps,sumRuns,y) ) / numRuns ;
-    s2_ANNMWSLACK(experiments,steps,y)                       = sum(sumRuns, s_ANNMWSLACK(experiments,steps,sumRuns,y) ) / numRuns ;
-    s2_SEC_NZ_PENALTY(experiments,steps,oc,y)                = sum(sumRuns, s_SEC_NZ_PENALTY(experiments,steps,sumRuns,oc,y) ) / numRuns ;
-    s2_SEC_NI_PENALTY(experiments,steps,oc,y)                = sum(sumRuns, s_SEC_NI_PENALTY(experiments,steps,sumRuns,oc,y) ) / numRuns ;
-    s2_NOWIND_NZ_PENALTY(experiments,steps,oc,y)             = sum(sumRuns, s_NOWIND_NZ_PENALTY(experiments,steps,sumRuns,oc,y) ) / numRuns ;
-    s2_NOWIND_NI_PENALTY(experiments,steps,oc,y)             = sum(sumRuns, s_NOWIND_NI_PENALTY(experiments,steps,sumRuns,oc,y) ) / numRuns ;
-    s2_RENCAPSLACK(experiments,steps,y)                      = sum(sumRuns, s_RENCAPSLACK(experiments,steps,sumRuns,y) ) / numRuns ;
-    s2_HYDROSLACK(experiments,steps,y)                       = sum(sumRuns, s_HYDROSLACK(experiments,steps,sumRuns,y) ) / numRuns ;
-    s2_MINUTILSLACK(experiments,steps,y)                     = sum(sumRuns, s_MINUTILSLACK(experiments,steps,sumRuns,y) ) / numRuns ;
-    s2_FUELSLACK(experiments,steps,y)                        = sum(sumRuns, s_FUELSLACK(experiments,steps,sumRuns,y) ) / numRuns ;
-    s2_bal_supdem(experiments,steps,r,y,t,lb,oc)             = sum(sumRuns, s_bal_supdem(experiments,steps,sumRuns,r,y,t,lb,oc) ) / numRuns ;
+    s2_TOTALCOST(experiments,steps)                          = sum(sumSolves, s_TOTALCOST(experiments,steps,sumSolves)) / numSolves ;
+    s2_TX(experiments,steps,paths,y,t,lb,oc)                 = sum(sumSolves, s_TX(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
+    s2_BRET(experiments,steps,g,y)                           = sum(sumSolves, s_BRET(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_ISRETIRED(experiments,steps,g)                        = sum(sumSolves, s_ISRETIRED(experiments,steps,sumSolves,g) ) / numSolves ;
+    s2_BTX(experiments,steps,paths,ps,y)                     = sum(sumSolves, s_BTX(experiments,steps,sumSolves,paths,ps,y) ) / numSolves ;
+    s2_REFURBCOST(experiments,steps,g,y)                     = sum(sumSolves, s_REFURBCOST(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_BUILD(experiments,steps,g,y)                          = sum(sumSolves, s_BUILD(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_RETIRE(experiments,steps,g,y)                         = sum(sumSolves, s_RETIRE(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_CAPACITY(experiments,steps,g,y)                       = sum(sumSolves, s_CAPACITY(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_TXCAPCHARGES(experiments,steps,paths,y)               = sum(sumSolves, s_TXCAPCHARGES(experiments,steps,sumSolves,paths,y) ) / numSolves ;
+    s2_GEN(experiments,steps,g,y,t,lb,oc)                    = sum(sumSolves, s_GEN(experiments,steps,sumSolves,g,y,t,lb,oc) ) / numSolves ;
+    s2_VOLLGEN(experiments,steps,s,y,t,lb,oc)                = sum(sumSolves, s_VOLLGEN(experiments,steps,sumSolves,s,y,t,lb,oc) ) / numSolves ;
+    s2_PUMPEDGEN(experiments,steps,g,y,t,lb,oc)              = sum(sumSolves, s_PUMPEDGEN(experiments,steps,sumSolves,g,y,t,lb,oc) ) / numSolves ;
+    s2_LOSS(experiments,steps,paths,y,t,lb,oc)               = sum(sumSolves, s_LOSS(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
+    s2_TXPROJVAR(experiments,steps,tupg,y)                   = sum(sumSolves, s_TXPROJVAR(experiments,steps,sumSolves,tupg,y) ) / numSolves ;
+    s2_TXUPGRADE(experiments,steps,paths,ps,pss,y)           = sum(sumSolves, s_TXUPGRADE(experiments,steps,sumSolves,paths,ps,pss,y) ) / numSolves ;
+    s2_RESV(experiments,steps,g,rc,y,t,lb,oc)                = sum(sumSolves, s_RESV(experiments,steps,sumSolves,g,rc,y,t,lb,oc) ) / numSolves ;
+    s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,oc)          = sum(sumSolves, s_RESVVIOL(experiments,steps,sumSolves,rc,ild,y,t,lb,oc) ) / numSolves ;
+    s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,oc)     = sum(sumSolves, s_RESVTRFR(experiments,steps,sumSolves,rc,ild,ild1,y,t,lb,oc) ) / numSolves ;
+    s2_RENNRGPENALTY(experiments,steps,y)                    = sum(sumSolves, s_RENNRGPENALTY(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_ANNMWSLACK(experiments,steps,y)                       = sum(sumSolves, s_ANNMWSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_SEC_NZ_PENALTY(experiments,steps,oc,y)                = sum(sumSolves, s_SEC_NZ_PENALTY(experiments,steps,sumSolves,oc,y) ) / numSolves ;
+    s2_SEC_NI_PENALTY(experiments,steps,oc,y)                = sum(sumSolves, s_SEC_NI_PENALTY(experiments,steps,sumSolves,oc,y) ) / numSolves ;
+    s2_NOWIND_NZ_PENALTY(experiments,steps,oc,y)             = sum(sumSolves, s_NOWIND_NZ_PENALTY(experiments,steps,sumSolves,oc,y) ) / numSolves ;
+    s2_NOWIND_NI_PENALTY(experiments,steps,oc,y)             = sum(sumSolves, s_NOWIND_NI_PENALTY(experiments,steps,sumSolves,oc,y) ) / numSolves ;
+    s2_RENCAPSLACK(experiments,steps,y)                      = sum(sumSolves, s_RENCAPSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_HYDROSLACK(experiments,steps,y)                       = sum(sumSolves, s_HYDROSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_MINUTILSLACK(experiments,steps,y)                     = sum(sumSolves, s_MINUTILSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_FUELSLACK(experiments,steps,y)                        = sum(sumSolves, s_FUELSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_bal_supdem(experiments,steps,r,y,t,lb,oc)             = sum(sumSolves, s_bal_supdem(experiments,steps,sumSolves,r,y,t,lb,oc) ) / numSolves ;
 
 *   More non-free reserves code.
-    s2_RESVCOMPONENTS(experiments,steps,paths,y,t,lb,outcomes,stp) = sum(sumRuns, s_RESVCOMPONENTS(experiments,steps,sumRuns,paths,y,t,lb,outcomes,stp) ) / numRuns ;
+    s2_RESVCOMPONENTS(experiments,steps,paths,y,t,lb,outcomes,stp) = sum(sumSolves, s_RESVCOMPONENTS(experiments,steps,sumSolves,paths,y,t,lb,outcomes,stp) ) / numSolves ;
 
 * End of steps loop
   ) ;
+
 * End of experiments loop
 ) ;
 
@@ -575,6 +536,9 @@ putclose bat
 execute 'temp.bat' ;
 
 
+
+
+Execute_Unload "Hydro output.gdx", allModelledHydroOutput ;
 
 $stop
 $ontext
