@@ -2,9 +2,6 @@
 
 * Last modified by Dr Phil Bishop, 26/07/2011 (imm@ea.govt.nz)
 
-*** Factor out terms in (to make clearer):  REFURBCOST(g,y) =e= i_nameplate(g) * refurbcapcharge(g,y) - ISRETIRED(g) * i_nameplate(g) * refurbcapcharge(g,y) ;
-
-
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
   the various GEM codes - up to and including GEMsolve, the program that solves the models. Symbols required only
@@ -24,7 +21,7 @@ $ontext
   3. Declare model variables and equations.
   4. Specify the equations and declare the models.
   5. Declare the 's' parameters and specify the statements used to collect up results after each solve.
-  6. Declare the 's2' parameters.
+  6. Declare the 's2' parameters for use in GEMreports.
 $offtext
 
 * Turn the following maps on/off as desired.
@@ -451,7 +448,6 @@ Parameters
 *===============================================================================================
 * 3. Declare model variables and equations.
 
-
 *+++++++++++++++++++++++++
 * Code to do the non-free reserves stuff. 
 *   - Need to decide whether to retain/formalise this stuff. For example, can it be accomodated
@@ -477,7 +473,6 @@ Equations
   resv_capacity(r,rr,y,t,lb,outcomes,stp)       'Calculate and impose the relevant capacity on each step of free reserves'
   ;
 *+++++++++++++++++++++++++
-
 
 Free Variables
   TOTALCOST                                     'Discounted total system costs over all modelled years, $m (objective function value)'
@@ -514,10 +509,10 @@ Positive Variables
   RESVREQINT(rc,ild,y,t,lb,outcomes)            'Internally determined energy reserve requirement, MWh'
 * Penalty variables
   RENNRGPENALTY(y)                              'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  SEC_NZ_PENALTY(y,outcomes)                    'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  SEC_NI_PENALTY(y,outcomes)                    'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
-  NOWIND_NZ_PENALTY(y,outcomes)                 'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  NOWIND_NI_PENALTY(y,outcomes)                 'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  PEAK_NZ_PENALTY(y,outcomes)                   'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  PEAK_NI_PENALTY(y,outcomes)                   'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
+  NOWINDPEAK_NZ_PENALTY(y,outcomes)             'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  NOWINDPEAK_NI_PENALTY(y,outcomes)             'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
   ANNMWSLACK(y)                                 'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
   RENCAPSLACK(y)                                'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
@@ -538,10 +533,10 @@ Equations
   endogretonce(g)                               'Can only endogenously retire a plant once'
   balance_capacity(g,y)                         'Year to year capacity balance relationship for all plant, MW'
   bal_supdem(r,y,t,lb,outcomes)                 'Balance supply and demand in each region, year, time period and load block'
-  security_nz(y,outcomes)                       'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
-  security_ni(y,outcomes)                       'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
-  nowind_nz(y,outcomes)                         'Ensure enough capacity to meet peak demand in NZ when all wind is off'
-  nowind_ni(y,outcomes)                         'Ensure enough capacity to meet peak demand in NI when all wind is off'
+  peak_nz(y,outcomes)                           'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
+  peak_ni(y,outcomes)                           'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
+  noWindPeak_nz(y,outcomes)                     'Ensure enough capacity to meet peak demand in NZ when all wind is off'
+  noWindPeak_ni(y,outcomes)                     'Ensure enough capacity to meet peak demand in NI when all wind is off'
   limit_maxgen(g,y,t,lb,outcomes)               'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   limit_mingen(g,y,t,lb,outcomes)               'Ensure generation in each block exceeds capacity implied by min capacity factors'
   minutil(g,k,y,outcomes)                       'Ensure generation by certain technology type meets a minimum utilisation'
@@ -588,10 +583,10 @@ objectivefn..
   TOTALCOST =e=
 * Add in slacks at arbitrarily high cost.
   9999 * sum(y, ANNMWSLACK(y) ) +
-  9996 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
-  9995 * sum(y, HYDROSLACK(y) ) +
-  9994 * sum(y, MINUTILSLACK(y) ) +
-  9993 * sum(y, FUELSLACK(y) ) +
+  9998 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
+  9997 * sum(y, HYDROSLACK(y) ) +
+  9996 * sum(y, MINUTILSLACK(y) ) +
+  9995 * sum(y, FUELSLACK(y) ) +
 * Add in penalties at user-defined high, but not necessarily arbitrarily high, cost.
   penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
 * Fixed, variable and HVDC costs - discounted and adjusted for tax
@@ -617,8 +612,8 @@ calc_outcomeCosts(oc)..
 * Reserve violation costs, $m
   1e-6 * sum((rc,ild,y,t,lb), RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
 * Lost peak load penalties - why aren't they discounted and adjusted for tax?
-  penaltyLostPeak * sum(y$(gridSecurity > -1), SEC_NZ_PENALTY(y,oc) + SEC_NI_PENALTY(y,oc) ) +
-  penaltyLostPeak * sum(y, NOWIND_NZ_PENALTY(y,oc) + NOWIND_NI_PENALTY(y,oc) ) +
+  penaltyLostPeak * sum(y$(gridSecurity > -1), PEAK_NZ_PENALTY(y,oc) + PEAK_NI_PENALTY(y,oc) ) +
+  penaltyLostPeak * sum(y$(gridSecurity > -1), NOWINDPEAK_NZ_PENALTY(y,oc) + NOWINDPEAK_NI_PENALTY(y,oc) ) +
 * Various costs, discounted and adjusted for tax
   1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(y,t) * (
 * Lost load
@@ -644,7 +639,7 @@ resv_capacity(paths,y,t,lb,oc,stp)$( nwd(paths) or swd(paths) )..
 
 * Compute the annualised generation plant refurbishment expenditure charge in each year.
 calc_refurbcost(PossibleToRefurbish(g),y)$refurbcapcharge(g,y)..
-  REFURBCOST(g,y) =e= i_nameplate(g) * refurbcapcharge(g,y) - ISRETIRED(g) * i_nameplate(g) * refurbcapcharge(g,y) ;
+  REFURBCOST(g,y) =e= (1 - ISRETIRED(g)) * i_nameplate(g) * refurbcapcharge(g,y) ;
 
 * Compute the cumulative annualised transmission upgrade capital expenditure charges.
 calc_txcapcharges(paths,y)..
@@ -692,30 +687,30 @@ bal_supdem(r,y,t,lb,oc)..
   sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y,t) ), PUMPEDGEN(g,y,t,lb,oc)) ;
 
 * Ensure reserve requirements can be met at peak in both islands with largest NI unit out.
-security_NZ(y,oc)$(gridSecurity > -1)..
-  SEC_NZ_PENALTY(y,oc) +
+peak_NZ(y,oc)$(gridSecurity > -1)..
+  PEAK_NZ_PENALTY(y,oc) +
   sum(g, CAPACITY(g,y) * peakConPlant(g,y) ) -
   bigNIgen(y) - nxtbigNIgen(y) - i_bigSIgen(y) - i_fkNI(y) - i_fkSI(y) -
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
   =g= peakLoadNZ(y,oc) ;
 
 * Ensure reserve requirements can be met at peak in North island with largest NI unit out.
-security_NI(y,oc)$(gridSecurity > -1)..
-  SEC_NI_PENALTY(y,oc) +
+peak_NI(y,oc)$(gridSecurity > -1)..
+  PEAK_NI_PENALTY(y,oc) +
   sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) + i_NorthwardHVDCtransfer(y) - bigNIgen(y) - i_fkNI(y)
   =g= peakLoadNI(y,oc) ;
 
 * Meet NZ peak with no wind and no reserve cover.
-noWind_NZ(y,oc)$(gridSecurity > -1)..
-  NOWIND_NZ_PENALTY(y,oc) +
+noWindPeak_NZ(y,oc)$(gridSecurity > -1)..
+  NOWINDPEAK_NZ_PENALTY(y,oc) +
   sum(mapg_k(g,k)$( not wind(k) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) - i_fkSI(y) -
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * i_HVDClosses(y)
   =g= peakLoadNZ(y,oc) ;
 
 * Meet NI peak with no wind and no reserve cover.
-noWind_NI(y,oc)$(gridSecurity > -1)..
-  NOWIND_NI_PENALTY(y,oc) +
+noWindPeak_NI(y,oc)$(gridSecurity > -1)..
+  NOWINDPEAK_NI_PENALTY(y,oc) +
   sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) -
   i_fkNI(y) +
   sum((paths(r,rr),allowedStates(paths,ps))$nwd(paths), i_txCapacity(paths,ps) * BTX(paths,ps,y) ) * (1 - i_HVDClosses(y))
@@ -875,7 +870,7 @@ resvreqwind(rc,ild,y,t,lb,oc)$( useReserves * ( (i_reserveReqMW(y,ild,rc) = -2) 
 
 Model DISP Dispatch model with build forced and timing fixed  /
   objectivefn, calc_outcomeCosts, calc_refurbcost, calc_txcapcharges,   balance_capacity, bal_supdem
-  security_nz, security_ni, nowind_nz, nowind_ni
+  peak_nz, peak_ni, noWindPeak_nz, noWindPeak_ni
   limit_maxgen, limit_mingen, minutil, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
   limit_pumpgen1, limit_pumpgen2, limit_pumpgen3
   boundTxloss, tx_capacity, tx_projectdef, tx_onestate, tx_upgrade, tx_oneupgrade
@@ -911,7 +906,8 @@ Parameters
 *+++++++++++++++++++++++++
 * Free Variables
   s_TOTALCOST(experiments,steps,outcomeSets)                                'Discounted total system costs over all modelled years, $m (objective function value)'
-  s_TX(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)                  'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice)'
+  s_OUTCOME_COSTS(experiments,steps,outcomeSets,outcomes)                   'Discounted costs that might vary by outcome, $m (a component of objective function value)'
+  s_TX(experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)                  'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
   s_THETA(experiments,steps,outcomeSets,r,y,t,lb,outcomes)                  'Bus voltage angle'
 * Binary Variables
   s_BGEN(experiments,steps,outcomeSets,g,y)                                 'Binary variable to identify build year for new generation plant'
@@ -941,10 +937,10 @@ Parameters
   s_RESVREQINT(experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)        'Internally determined energy reserve requirement, MWh'
 * Penalty variables
   s_RENNRGPENALTY(experiments,steps,outcomeSets,y)                          'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s_SEC_NZ_PENALTY(experiments,steps,outcomeSets,outcomes,y)                'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s_SEC_NI_PENALTY(experiments,steps,outcomeSets,outcomes,y)                'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
-  s_NOWIND_NZ_PENALTY(experiments,steps,outcomeSets,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  s_NOWIND_NI_PENALTY(experiments,steps,outcomeSets,outcomes,y)             'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  s_PEAK_NZ_PENALTY(experiments,steps,outcomeSets,y,outcomes)               'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s_PEAK_NI_PENALTY(experiments,steps,outcomeSets,y,outcomes)               'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
+  s_NOWINDPEAK_NZ_PENALTY(experiments,steps,outcomeSets,y,outcomes)         'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s_NOWINDPEAK_NI_PENALTY(experiments,steps,outcomeSets,y,outcomes)         'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
   s_ANNMWSLACK(experiments,steps,outcomeSets,y)                             'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
   s_RENCAPSLACK(experiments,steps,outcomeSets,y)                            'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
@@ -952,6 +948,7 @@ Parameters
   s_MINUTILSLACK(experiments,steps,outcomeSets,y)                           'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
   s_FUELSLACK(experiments,steps,outcomeSets,y)                              'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations (ignore the objective function)
+  s_calc_outcomeCosts(experiments,steps,outcomeSets,outcomes)               'Calculate discounted costs that might vary by outcome'
   s_calc_refurbcost(experiments,steps,outcomeSets,g,y)                      'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
   s_calc_txcapcharges(experiments,steps,outcomeSets,r,rr,y)                 'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
   s_bldgenonce(experiments,steps,outcomeSets,g)                             'If new generating plant is to be built, ensure it is built only once'
@@ -962,10 +959,10 @@ Parameters
   s_endogretonce(experiments,steps,outcomeSets,g)                           'Can only endogenously retire a plant once'
   s_balance_capacity(experiments,steps,outcomeSets,g,y)                     'Year to year capacity balance relationship for all plant, MW'
   s_bal_supdem(experiments,steps,outcomeSets,r,y,t,lb,outcomes)             'Balance supply and demand in each region, year, time period and load block'
-  s_security_nz(experiments,steps,outcomeSets,outcomes,y)                   'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
-  s_security_ni(experiments,steps,outcomeSets,outcomes,y)                   'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
-  s_nowind_nz(experiments,steps,outcomeSets,outcomes,y)                     'Ensure enough capacity to meet peak demand in NZ when all wind is off'
-  s_nowind_ni(experiments,steps,outcomeSets,outcomes,y)                     'Ensure enough capacity to meet peak demand in NI when all wind is off'
+  s_peak_nz(experiments,steps,outcomeSets,y,outcomes)                       'Ensure enough capacity to meet peak demand in NZ if largest generator is out, ignoring tx limits'
+  s_peak_ni(experiments,steps,outcomeSets,y,outcomes)                       'Ensure enough capacity to meet peak demand in NI if largest generator is out, considering tx limits'
+  s_noWindPeak_nz(experiments,steps,outcomeSets,y,outcomes)                 'Ensure enough capacity to meet peak demand in NZ when all wind is off'
+  s_noWindPeak_ni(experiments,steps,outcomeSets,y,outcomes)                 'Ensure enough capacity to meet peak demand in NI when all wind is off'
   s_limit_maxgen(experiments,steps,outcomeSets,g,y,t,lb,outcomes)           'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   s_limit_mingen(experiments,steps,outcomeSets,g,y,t,lb,outcomes)           'Ensure generation in each block exceeds capacity implied by min capacity factors'
   s_minutil(experiments,steps,outcomeSets,g,k,y,outcomes)                   'Ensure generation by certain technology type meets a minimum utilisation'
@@ -1003,16 +1000,17 @@ Parameters
 
 * Now push the statements that collect up results into a file called CollectResults.txt. This file gets $include'd into GEMsolve.gms
 $onecho > CollectResults.txt
-*++++++++++
+*+++++++++++++++++++++++++
 * More non-free reserves code.
 * Positive Variables
   s_RESVCOMPONENTS(experiments,steps,outcomeSets,r,rr,y,t,lb,oc,stp)    = RESVCOMPONENTS.l(r,rr,y,t,lb,oc,stp) ;
 * Equations
   s_calc_nfreserves(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)       = calc_nfreserves.m(r,rr,y,t,lb,oc) ;
   s_resv_capacity(experiments,steps,outcomeSets,r,rr,y,t,lb,oc,stp)     = resv_capacity.m(r,rr,y,t,lb,oc,stp) ;
-*++++++++++
-* Free variables.
+*+++++++++++++++++++++++++
+* Free Variables
   s_TOTALCOST(experiments,steps,outcomeSets)                            = TOTALCOST.l ;
+  s_OUTCOME_COSTS(experiments,steps,outcomeSets,oc)                     = OUTCOME_COSTS.l(oc) ;
   if(DCloadFlow = 1,
     s_TX(experiments,steps,outcomeSets,r,rr,y,t,lb,oc)$( TX.l(r,rr,y,t,lb,oc) > 0 ) = TX.l(r,rr,y,t,lb,oc) ;
     else
@@ -1044,10 +1042,10 @@ $onecho > CollectResults.txt
   s_RESVREQINT(experiments,steps,outcomeSets,rc,ild,y,t,lb,oc)          = RESVREQINT.l(rc,ild,y,t,lb,oc) ;
 * Penalty variables
   s_RENNRGPENALTY(experiments,steps,outcomeSets,y)                      = RENNRGPENALTY.l(y) ;
-  s_SEC_NZ_PENALTY(experiments,steps,outcomeSets,oc,y)                  = SEC_NZ_PENALTY.l(y,oc) ;
-  s_SEC_NI_PENALTY(experiments,steps,outcomeSets,oc,y)                  = SEC_NI_PENALTY.l(y,oc) ;
-  s_NOWIND_NZ_PENALTY(experiments,steps,outcomeSets,oc,y)               = NOWIND_NZ_PENALTY.l(y,oc) ;
-  s_NOWIND_NI_PENALTY(experiments,steps,outcomeSets,oc,y)               = NOWIND_NI_PENALTY.l(y,oc) ;
+  s_PEAK_NZ_PENALTY(experiments,steps,outcomeSets,y,oc)                 = PEAK_NZ_PENALTY.l(y,oc) ;
+  s_PEAK_NI_PENALTY(experiments,steps,outcomeSets,y,oc)                 = PEAK_NI_PENALTY.l(y,oc) ;
+  s_NOWINDPEAK_NZ_PENALTY(experiments,steps,outcomeSets,y,oc)           = NOWINDPEAK_NZ_PENALTY.l(y,oc) ;
+  s_NOWINDPEAK_NI_PENALTY(experiments,steps,outcomeSets,y,oc)           = NOWINDPEAK_NI_PENALTY.l(y,oc) ;
 * Slack variables
   s_ANNMWSLACK(experiments,steps,outcomeSets,y)                         = ANNMWSLACK.l(y) ;
   s_RENCAPSLACK(experiments,steps,outcomeSets,y)                        = RENCAPSLACK.l(y) ;
@@ -1055,14 +1053,15 @@ $onecho > CollectResults.txt
   s_MINUTILSLACK(experiments,steps,outcomeSets,y)                       = MINUTILSLACK.l(y) ;
   s_FUELSLACK(experiments,steps,outcomeSets,y)                          = FUELSLACK.l(y) ;
 * Equations, i.e. marginal values. (ignore the objective function)
+  s_calc_outcomeCosts(experiments,steps,outcomeSets,oc)                 = calc_outcomeCosts.m(oc) ;
   s_calc_refurbcost(experiments,steps,outcomeSets,g,y)                  = calc_refurbcost.m(g,y) ;
   s_calc_txcapcharges(experiments,steps,outcomeSets,paths,y)            = calc_txcapcharges.m(paths,y) ;
   s_balance_capacity(experiments,steps,outcomeSets,g,y)                 = balance_capacity.m(g,y) ;
   s_bal_supdem(experiments,steps,outcomeSets,r,y,t,lb,oc)               = bal_supdem.m(r,y,t,lb,oc) ;
-  s_security_nz(experiments,steps,outcomeSets,oc,y)                     = security_NZ.m(y,oc) ;
-  s_security_ni(experiments,steps,outcomeSets,oc,y)                     = security_NI.m(y,oc) ;
-  s_nowind_nz(experiments,steps,outcomeSets,oc,y)                       = noWind_NZ.m(y,oc) ;
-  s_nowind_ni(experiments,steps,outcomeSets,oc,y)                       = noWind_NI.m(y,oc) ;
+  s_peak_nz(experiments,steps,outcomeSets,y,oc)                         = peak_NZ.m(y,oc) ;
+  s_peak_ni(experiments,steps,outcomeSets,y,oc)                         = peak_NI.m(y,oc) ;
+  s_noWindPeak_nz(experiments,steps,outcomeSets,y,oc)                   = noWindPeak_NZ.m(y,oc) ;
+  s_noWindPeak_ni(experiments,steps,outcomeSets,y,oc)                   = noWindPeak_NI.m(y,oc) ;
   s_limit_maxgen(experiments,steps,outcomeSets,g,y,t,lb,oc)             = limit_maxgen.m(g,y,t,lb,oc) ;
   s_limit_mingen(experiments,steps,outcomeSets,g,y,t,lb,oc)             = limit_mingen.m(g,y,t,lb,oc) ;
   s_minutil(experiments,steps,outcomeSets,g,k,y,oc)                     = minutil.m(g,k,y,oc) ;
@@ -1116,53 +1115,55 @@ $offecho
 
 
 *===============================================================================================
-* 6. Declare the 's2' parameters.
+* 6. Declare the 's2' parameters for use in GEMreports.
 
-* NB: The 's2' parameters are initialised at the end of GEMsolve, dumped into a GDX file, and passed along to GEMreports.
+* NB: The 's2' parameters are initialised towards the end of GEMsolve, dumped into a GDX file, and passed along to GEMreports.
+*     The 'outcomeSets' index is removed on the s2 parameters, i.e. results are averaged over all outcomes in the set
+***   Is this last stamt true? Is it not average over all outcomeSets in an experiment?.
 
 Parameters
 * Free variables
-  s2_TOTALCOST(experiments,steps)                            'Discounted total system costs over all modelled years, $m (objective function value)'
-  s2_TX(experiments,steps,r,rr,y,t,lb,outcomes)              'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s2_TOTALCOST(experiments,steps)                               'Discounted total system costs over all modelled years, $m (objective function value)'
+  s2_OUTCOME_COSTS(experiments,steps,outcomes)                  'Discounted costs that might vary by outcome, $m (a component of objective function value)'
+  s2_TX(experiments,steps,r,rr,y,t,lb,outcomes)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
 * Binary Variables
-  s2_BRET(experiments,steps,g,y)                             'Binary variable to identify endogenous retirement year for the eligble generation plant'
-  s2_ISRETIRED(experiments,steps,g)                          'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
-  s2_BTX(experiments,steps,r,rr,ps,y)                        'Binary variable indicating the current state of a transmission path'
+  s2_BRET(experiments,steps,g,y)                                'Binary variable to identify endogenous retirement year for the eligble generation plant'
+  s2_ISRETIRED(experiments,steps,g)                             'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
+  s2_BTX(experiments,steps,r,rr,ps,y)                           'Binary variable indicating the current state of a transmission path'
 * Positive Variables
-  s2_REFURBCOST(experiments,steps,g,y)                       'Annualised generation plant refurbishment expenditure charge, $'
-  s2_BUILD(experiments,steps,g,y)                            'New capacity installed by generating plant and year, MW'
-  s2_RETIRE(experiments,steps,g,y)                           'Capacity endogenously retired by generating plant and year, MW'
-  s2_CAPACITY(experiments,steps,g,y)                         'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s2_TXCAPCHARGES(experiments,steps,r,rr,y)                  'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s2_GEN(experiments,steps,g,y,t,lb,outcomes)                'Generation by generating plant and block, GWh'
-  s2_VOLLGEN(experiments,steps,s,y,t,lb,outcomes)            'Generation by VOLL plant and block, GWh'
-  s2_PUMPEDGEN(experiments,steps,g,y,t,lb,outcomes)          'Energy from pumped hydro (treated like demand), GWh'
-  s2_LOSS(experiments,steps,r,rr,y,t,lb,outcomes)            'Transmission losses along each path, MW'
-  s2_TXPROJVAR(experiments,steps,tupg,y)                     'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  s2_TXUPGRADE(experiments,steps,r,rr,ps,pss,y)              'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
-  s2_RESV(experiments,steps,g,rc,y,t,lb,outcomes)            'Reserve energy supplied, MWh'
-  s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,outcomes)      'Reserve energy supply violations, MWh'
-  s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,outcomes) 'Reserve energy transferred from one island to another, MWh'
+  s2_REFURBCOST(experiments,steps,g,y)                          'Annualised generation plant refurbishment expenditure charge, $'
+  s2_BUILD(experiments,steps,g,y)                               'New capacity installed by generating plant and year, MW'
+  s2_RETIRE(experiments,steps,g,y)                              'Capacity endogenously retired by generating plant and year, MW'
+  s2_CAPACITY(experiments,steps,g,y)                            'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s2_TXCAPCHARGES(experiments,steps,r,rr,y)                     'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s2_GEN(experiments,steps,g,y,t,lb,outcomes)                   'Generation by generating plant and block, GWh'
+  s2_VOLLGEN(experiments,steps,s,y,t,lb,outcomes)               'Generation by VOLL plant and block, GWh'
+  s2_PUMPEDGEN(experiments,steps,g,y,t,lb,outcomes)             'Energy from pumped hydro (treated like demand), GWh'
+  s2_LOSS(experiments,steps,r,rr,y,t,lb,outcomes)               'Transmission losses along each path, MW'
+  s2_TXPROJVAR(experiments,steps,tupg,y)                        'Continuous 0-1 variable indicating whether an upgrade project is applied'
+  s2_TXUPGRADE(experiments,steps,r,rr,ps,pss,y)                 'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
+  s2_RESV(experiments,steps,g,rc,y,t,lb,outcomes)               'Reserve energy supplied, MWh'
+  s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,outcomes)         'Reserve energy supply violations, MWh'
+  s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,outcomes)    'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
-  s2_RENNRGPENALTY(experiments,steps,y)                      'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s2_SEC_NZ_PENALTY(experiments,steps,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI_PENALTY(experiments,steps,outcomes,y)            'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
-  s2_NOWIND_NZ_PENALTY(experiments,steps,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NI_PENALTY(experiments,steps,outcomes,y)         'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  s2_RENNRGPENALTY(experiments,steps,y)                         'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s2_PEAK_NZ_PENALTY(experiments,steps,y,outcomes)              'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s2_PEAK_NI_PENALTY(experiments,steps,y,outcomes)              'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
+  s2_NOWINDPEAK_NZ_PENALTY(experiments,steps,y,outcomes)        'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s2_NOWINDPEAK_NI_PENALTY(experiments,steps,y,outcomes)        'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
-  s2_ANNMWSLACK(experiments,steps,y)                         'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s2_RENCAPSLACK(experiments,steps,y)                        'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s2_HYDROSLACK(experiments,steps,y)                         'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s2_MINUTILSLACK(experiments,steps,y)                       'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s2_FUELSLACK(experiments,steps,y)                          'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s2_ANNMWSLACK(experiments,steps,y)                            'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s2_RENCAPSLACK(experiments,steps,y)                           'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s2_HYDROSLACK(experiments,steps,y)                            'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s2_MINUTILSLACK(experiments,steps,y)                          'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s2_FUELSLACK(experiments,steps,y)                             'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations, i.e. marginal values. (ignore the objective function)
-  s2_bal_supdem(experiments,steps,r,y,t,lb,outcomes)         'Balance supply and demand in each region, year, time period and load block'
+  s2_bal_supdem(experiments,steps,r,y,t,lb,outcomes)            'Balance supply and demand in each region, year, time period and load block'
 *++++++++++
 * More non-free reserves code.
-  s2_RESVCOMPONENTS(experiments,steps,r,rr,y,t,lb,outcomes,stp)'Non-free reserve components, MW'
+  s2_RESVCOMPONENTS(experiments,steps,r,rr,y,t,lb,outcomes,stp) 'Non-free reserve components, MW'
 *++++++++++
   ;
-
 
 
 

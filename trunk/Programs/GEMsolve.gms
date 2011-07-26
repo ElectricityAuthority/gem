@@ -236,7 +236,7 @@ RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 * 5. Loop through all the solves
 
 $set AddUpSlacks    "sum(y, ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
-$set AddUpPenalties "sum((y,oc), SEC_NZ_PENALTY.l(y,oc) + SEC_NI_PENALTY.l(y,oc) + NOWIND_NZ_PENALTY.l(y,oc) + NOWIND_NI_PENALTY.l(y,oc) )"
+$set AddUpPenalties "sum((y,oc), PEAK_NZ_PENALTY.l(y,oc) + PEAK_NI_PENALTY.l(y,oc) + NOWINDPEAK_NZ_PENALTY.l(y,oc) + NOWINDPEAK_NI_PENALTY.l(y,oc) )"
 
 * First, loop through all the experiments
 loop(experiments,
@@ -416,23 +416,21 @@ $     include CollectResults.txt
 
 *===============================================================================================
 * 6. Prepare results to pass along to GEMreports in the form of a GDX file. 
-
-** Beware - what is now s2 was previously s3.
-** What is happenning here is that the for each step, the s_ params are being averaged over all hY and collected
-** into the s2 params. Hence, we lose the hY domain on s2, otherwise all else (including explanatory text) is identical
-** to the s_ param. Be aware that averaging over hY makes no sense for TMG and REO if they ever get done for more than one
-** hY (which to date they have not been). But this may change when we code up Geoff's stochastic stuff. 
+*    The 's_' solution values are averaged over all outcomeSets in an experiment. Hence, we lose the 'outcomeSets' domain.
 
 set sumSolves(outcomeSets) ;
 parameter numSolves ;
 
 loop(experiments,
+
   loop(steps,
+
     sumSolves(outcomeSets) = no;
     sumSolves(outcomeSets)$allSolves(experiments,steps,outcomeSets) = yes;
     numSolves = sum(sumSolves, 1);
 
     s2_TOTALCOST(experiments,steps)                          = sum(sumSolves, s_TOTALCOST(experiments,steps,sumSolves)) / numSolves ;
+    s2_OUTCOME_COSTS(experiments,steps,oc)                   = sum(sumSolves, s_OUTCOME_COSTS(experiments,steps,sumSolves,oc)) / numSolves ;
     s2_TX(experiments,steps,paths,y,t,lb,oc)                 = sum(sumSolves, s_TX(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
     s2_BRET(experiments,steps,g,y)                           = sum(sumSolves, s_BRET(experiments,steps,sumSolves,g,y) ) / numSolves ;
     s2_ISRETIRED(experiments,steps,g)                        = sum(sumSolves, s_ISRETIRED(experiments,steps,sumSolves,g) ) / numSolves ;
@@ -452,19 +450,20 @@ loop(experiments,
     s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,oc)          = sum(sumSolves, s_RESVVIOL(experiments,steps,sumSolves,rc,ild,y,t,lb,oc) ) / numSolves ;
     s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,oc)     = sum(sumSolves, s_RESVTRFR(experiments,steps,sumSolves,rc,ild,ild1,y,t,lb,oc) ) / numSolves ;
     s2_RENNRGPENALTY(experiments,steps,y)                    = sum(sumSolves, s_RENNRGPENALTY(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_PEAK_NZ_PENALTY(experiments,steps,y,oc)               = sum(sumSolves, s_PEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_PEAK_NI_PENALTY(experiments,steps,y,oc)               = sum(sumSolves, s_PEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_NOWINDPEAK_NZ_PENALTY(experiments,steps,y,oc)         = sum(sumSolves, s_NOWINDPEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_NOWINDPEAK_NI_PENALTY(experiments,steps,y,oc)         = sum(sumSolves, s_NOWINDPEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
     s2_ANNMWSLACK(experiments,steps,y)                       = sum(sumSolves, s_ANNMWSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_SEC_NZ_PENALTY(experiments,steps,oc,y)                = sum(sumSolves, s_SEC_NZ_PENALTY(experiments,steps,sumSolves,oc,y) ) / numSolves ;
-    s2_SEC_NI_PENALTY(experiments,steps,oc,y)                = sum(sumSolves, s_SEC_NI_PENALTY(experiments,steps,sumSolves,oc,y) ) / numSolves ;
-    s2_NOWIND_NZ_PENALTY(experiments,steps,oc,y)             = sum(sumSolves, s_NOWIND_NZ_PENALTY(experiments,steps,sumSolves,oc,y) ) / numSolves ;
-    s2_NOWIND_NI_PENALTY(experiments,steps,oc,y)             = sum(sumSolves, s_NOWIND_NI_PENALTY(experiments,steps,sumSolves,oc,y) ) / numSolves ;
     s2_RENCAPSLACK(experiments,steps,y)                      = sum(sumSolves, s_RENCAPSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_HYDROSLACK(experiments,steps,y)                       = sum(sumSolves, s_HYDROSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_MINUTILSLACK(experiments,steps,y)                     = sum(sumSolves, s_MINUTILSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_FUELSLACK(experiments,steps,y)                        = sum(sumSolves, s_FUELSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_bal_supdem(experiments,steps,r,y,t,lb,oc)             = sum(sumSolves, s_bal_supdem(experiments,steps,sumSolves,r,y,t,lb,oc) ) / numSolves ;
-
-*   More non-free reserves code.
+*++++++++++
+* More non-free reserves code.
     s2_RESVCOMPONENTS(experiments,steps,paths,y,t,lb,outcomes,stp) = sum(sumSolves, s_RESVCOMPONENTS(experiments,steps,sumSolves,paths,y,t,lb,outcomes,stp) ) / numSolves ;
+*++++++++++
 
 * End of steps loop
   ) ;
@@ -493,12 +492,12 @@ Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
   s2_RESVCOMPONENTS
 *++++++++++
 * The 's2' penalties and slacks
-  s2_RENNRGPENALTY s2_SEC_NZ_PENALTY s2_SEC_NI_PENALTY s2_NOWIND_NZ_PENALTY s2_NOWIND_NI_PENALTY s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
+  s2_RENNRGPENALTY s2_PEAK_NZ_PENALTY s2_PEAK_NI_PENALTY s2_NOWINDPEAK_NZ_PENALTY s2_NOWINDPEAK_NI_PENALTY s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
   ;
 
 * Dump all 's' slacks and penalties into a GDX file.
 Execute_Unload "Slacks and penalties - %runName% - %scenarioName%.gdx",
-  s_RENNRGPENALTY s_SEC_NZ_PENALTY s_SEC_NI_PENALTY s_NOWIND_NZ_PENALTY s_NOWIND_NI_PENALTY s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
+  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NZ_PENALTY s_NOWINDPEAK_NI_PENALTY s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
   ;
 
 * Dump all variable levels and constraint marginals into a GDX file. 
@@ -516,10 +515,10 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
 * Reserve variables
   s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
 * Penalty and slack variables
-  s_RENNRGPENALTY s_SEC_NZ_PENALTY s_SEC_NI_PENALTY s_NOWIND_NZ_PENALTY s_NOWIND_NI_PENALTY s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
+  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NZ_PENALTY s_NOWINDPEAK_NI_PENALTY s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
 * Equations (ignore the objective function)
   s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire s_endogretonce s_balance_capacity s_bal_supdem
-  s_security_nz s_security_ni s_nowind_nz s_nowind_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg
+  s_peak_nz s_peak_ni s_noWindPEak_nz s_noWindPeak_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg
   s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3 s_boundtxloss s_tx_capacity s_tx_projectdef s_tx_onestate
   s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1
   s_resvtrfr1 s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind
