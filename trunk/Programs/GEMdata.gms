@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 25/07/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 28/07/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -619,6 +619,7 @@ putclose bat
   'copy "%DataPath%%GDXinputFile%"      "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
   'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %scenarioName%.inc"' /
+  'copy "%ProgPath%GEMstochastic.inc"   "%OutPath%\%runName%\Archive\GEMstochastic.inc"' /
   ;
 execute 'temp.bat' ;
 

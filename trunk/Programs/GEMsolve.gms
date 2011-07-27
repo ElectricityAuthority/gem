@@ -420,9 +420,6 @@ $     include CollectResults.txt
 * 6. Prepare results to pass along to GEMreports in the form of a GDX file. 
 *    The 's_' solution values are averaged over all outcomeSets in an experiment. Hence, we lose the 'outcomeSets' domain.
 
-set sumSolves(outcomeSets) ;
-parameter numSolves ;
-
 loop(experiments,
 
   loop(steps,
@@ -480,100 +477,89 @@ Display s2_TOTALCOST, solveReport ;
 *===============================================================================================
 * 7. Dump results out to GDX files and rename/relocate certain output files.
 
-* Dump output prepared for report writing into a GDX file.
+* a) Dump output prepared for report writing into a GDX file (essentially, the 's2' parameters).
 Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
-* Miscellaneous sets
-  oc solveGoal
-* Miscellaneous parameters
-  solveReport
+* Miscellaneous sets and parameters
+  solveGoal experiments steps oc solveReport
 * The 's2' output parameters
-  s2_TOTALCOST s2_TX s2_BRET s2_ISRETIRED s2_BTX s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY s2_TXCAPCHARGES s2_GEN s2_VOLLGEN
-  s2_PUMPEDGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL s2_RESVTRFR s2_bal_supdem
+  s2_TOTALCOST s2_OUTCOME_COSTS s2_TX s2_BRET s2_ISRETIRED s2_BTX s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY s2_TXCAPCHARGES
+  s2_GEN s2_VOLLGEN s2_PUMPEDGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL s2_RESVTRFR s2_bal_supdem
 *++++++++++
 * More non-free reserves code.
   s2_RESVCOMPONENTS
 *++++++++++
-* The 's2' penalties and slacks
-  s2_RENNRGPENALTY s2_PEAK_NZ_PENALTY s2_PEAK_NI_PENALTY s2_NOWINDPEAK_NZ_PENALTY s2_NOWINDPEAK_NI_PENALTY s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
+* The 's2' penalties.
+  s2_RENNRGPENALTY s2_PEAK_NZ_PENALTY s2_PEAK_NI_PENALTY s2_NOWINDPEAK_NZ_PENALTY s2_NOWINDPEAK_NI_PENALTY
+* The 's2' slacks.
+  s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
   ;
 
-* Dump all 's' slacks and penalties into a GDX file.
+
+* b) Dump all 's' slacks and penalties into a GDX file.
 Execute_Unload "Slacks and penalties - %runName% - %scenarioName%.gdx",
-  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NZ_PENALTY s_NOWINDPEAK_NI_PENALTY s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
+  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NZ_PENALTY s_NOWINDPEAK_NI_PENALTY
+  s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
   ;
 
-* Dump all variable levels and constraint marginals into a GDX file. 
+
+* c) Dump all variable levels and constraint marginals into a GDX file (ignore the objective function marginal).
 Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
 *+++++++++++++++++++++++++
 * More non-free reserves code.
   s_RESVCOMPONENTS s_calc_nfreserves s_resv_capacity
 *+++++++++++++++++++++++++
-* Free Variables
-  s_TOTALCOST s_TX s_THETA
-* Binary Variables
+* Free variables.
+  s_TOTALCOST s_OUTCOME_COSTS s_TX s_THETA
+* Binary variables.
   s_BGEN s_BRET s_ISRETIRED s_BTX s_NORESVTRFR
-* Positive Variables
-  s_REFURBCOST s_GENBLDCONT s_CGEN s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_PUMPEDGEN s_SPILL s_LOSS s_TXPROJVAR s_TXUPGRADE
-* Reserve variables
+* Positive variables (sans the reserves-related variables).
+  s_REFURBCOST s_GENBLDCONT s_CGEN s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_PUMPEDGEN s_SPILL s_LOSS
+  s_TXPROJVAR s_TXUPGRADE
+* Reserve variables.
   s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
-* Penalty and slack variables
-  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NZ_PENALTY s_NOWINDPEAK_NI_PENALTY s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
-* Equations (ignore the objective function)
-  s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire s_endogretonce s_balance_capacity s_bal_supdem
-  s_peak_nz s_peak_ni s_noWindPEak_nz s_noWindPeak_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg
-  s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3 s_boundtxloss s_tx_capacity s_tx_projectdef s_tx_onestate
-  s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1
-  s_resvtrfr1 s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind
+* Penalty variables.
+  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NZ_PENALTY s_NOWINDPEAK_NI_PENALTY
+* Slack variables.
+  s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
+* Equation marginals. 
+  s_calc_outcomeCosts s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire
+  s_endogretonce s_balance_capacity s_bal_supdem s_peak_nz s_peak_ni s_noWindPEak_nz s_noWindPeak_ni s_limit_maxgen s_limit_mingen
+  s_minutil s_limit_fueluse s_limit_nrg s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3
+  s_boundtxloss s_tx_capacity s_tx_projectdef s_tx_onestate s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss
+  s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1 s_resvtrfr1 s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc
+  s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind
+  ;
+
+
+* d) Dump selected input data (as imported, intermediate steps or what's used in the model) into a GDX file.
+Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
+* Financial and capex related sets and parameters
+  CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
+  capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost capexPlant capCharge refurbCapexPlant refurbCapCharge
+* Generation plant related sets and parameters
+  g exist noExist commit new nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
+  exogMWretired possibleToEndogRetire possibleToRetire possibleToRefurbish continueAftaEndogRetire peakConPlant NWpeakConPlant
+  movers i_nameplate initialCapacity maxCapFactPlant minCapFactPlant
+* Hydro related sets and parameters
+  allModelledHydroOutput mapHydroYearsToModelledYears
   ;
 
 bat.ap = 0 ;
 putclose bat
-  'copy "%ProgPath%%GEMdataGDX%"                                "%OutPath%\%runName%\GDX\"' /
-  'copy "PreparedOutput - %runName% - %scenarioName%.gdx"       "%OutPath%\%runName%\GDX\"' /
-  'copy "Slacks and penalties - %runName% - %scenarioName%.gdx" "%OutPath%\%runName%\GDX\"' /
-  'copy "Levels and marginals - %runName% - %scenarioName%.gdx" "%OutPath%\%runName%\GDX\"' /
-  'copy "GEMsolve.log"                                          "%OutPath%\%runName%\%runName% - %scenarioName% - GEMsolve.log"' /
+  'copy "%ProgPath%%GEMdataGDX%"                                        "%OutPath%\%runName%\GDX\"' /
+  'copy "PreparedOutput - %runName% - %scenarioName%.gdx"               "%OutPath%\%runName%\GDX\"' /
+  'copy "Slacks and penalties - %runName% - %scenarioName%.gdx"         "%OutPath%\%runName%\GDX\"' /
+  'copy "Levels and marginals - %runName% - %scenarioName%.gdx"         "%OutPath%\%runName%\GDX\"' /
+  'copy "Selected prepared input data - %runName% - %scenarioName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
+  'copy "GEMsolve.log"                                                  "%OutPath%\%runName%\%runName% - %scenarioName% - GEMsolve.log"' /
   ;
 execute 'temp.bat' ;
 
 
 
-
-Execute_Unload "Hydro output.gdx", allModelledHydroOutput, mapHydroYearsToModelledYears ;
-
 $stop
-$ontext
-Do we need the slacks as s2?
-What about BGEN, cGEN and GENBLDCONT that all used to get added up to be s_buildgen?
-
-    s_buildgen(mt,hYr,g,y)         = BGEN.l(g,y) + CGEN.l(g,y) + GENBLDCONT.l(g,y) ;
-    s3_modelledHydroOutput(mds,mt,g,y,t,outcomes)       = sum(s_solveindex(mds,mt,hYr), s2_modelledHydroOutput(mds,mt,hYr,g,y,t,outcomes)  ) ;
-
-    s3_rennrgpenalty(mds,mt,y)                = sum(s_solveindex(mds,mt,hYr), s2_rennrgpenalty(mds,mt,hyr,y) ) ;
-    s3_sec_nzslack(mds,mt,y)                  = sum(s_solveindex(mds,mt,hYr), s2_sec_nzslack(mds,mt,hyr,y) ) ;
-    s3_sec_nislack(mds,mt,y)                  = sum(s_solveindex(mds,mt,hYr), s2_sec_nislack(mds,mt,hyr,y) ) ;
-    s3_nowind_nzslack(mds,mt,y)               = sum(s_solveindex(mds,mt,hYr), s2_nowind_nzslack(mds,mt,hyr,y) ) ;
-    s3_nowind_nislack(mds,mt,y)               = sum(s_solveindex(mds,mt,hYr), s2_nowind_nislack(mds,mt,hyr,y) ) ;
-    s3_annmwslack(mds,mt,y)                   = sum(s_solveindex(mds,mt,hYr), s2_annmwslack(mds,mt,hyr,y) ) ;
-    s3_rencapslack(mds,mt,y)                  = sum(s_solveindex(mds,mt,hYr), s2_rencapslack(mds,mt,hyr,y) ) ;
-    s3_hydroslack(mds,mt,y)                   = sum(s_solveindex(mds,mt,hYr), s2_hydroslack(mds,mt,hyr,y) ) ;
-    s3_minutilslack(mds,mt,y)                 = sum(s_solveindex(mds,mt,hYr), s2_minutilslack(mds,mt,hyr,y) ) ;
-    s3_fuelslack(mds,mt,y)                    = sum(s_solveindex(mds,mt,hYr), s2_fuelslack(mds,mt,hyr,y) ) ;
-  else
-Order of var/eqn declarations
-Binary Variables
-  BGEN(g,y)                         'Binary variable to identify build year for new generation plant'
-Positive Variables
-  REFURBCOST(g,y)                   'Annualised generation plant refurbishment expenditure charge, $'
-  GENBLDCONT(g,y)                   'Continuous variable to identify build year for new scalable generation plant - for plant in linearPlantBuild set'
-  CGEN(g,y)                         'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)'
-  BUILD(g,y)                        'New capacity installed by generating plant and year, MW'
-$offtext
-
-
-
 *===============================================================================================
-*  5. Move MIPtrace files to output directory and generate miptrace.bat.
+*  x. Move MIPtrace files to output directory and generate miptrace.bat.
 
 $if not %PlotMIPtrace%==1 $goto NoTrace
 * Copy current MIPtrace files from the programs to the Traceplots directory, and erase MIPtrace files from programs directory. 
@@ -591,7 +577,7 @@ $label NoTrace
 
 
 *===============================================================================================
-*  6. Create an awk script which, when executed, will produce a file containing the number of integer solutions per MIP model.
+*  x. Create an awk script which, when executed, will produce a file containing the number of integer solutions per MIP model.
 
 $if %GEMtype%=="rmip" $goto NoMIP
 $onecho > f.awk
@@ -620,6 +606,4 @@ $label NoMIP
 
 
 
-
 * End of file.
-$offtext
