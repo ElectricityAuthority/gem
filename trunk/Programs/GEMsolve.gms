@@ -1,6 +1,6 @@
 * GEMsolve.gms
 
-* Last modified by Dr Phil Bishop, 26/07/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 27/07/2011 (imm@ea.govt.nz)
 
 *** To do:
 *** Make sure the writing of GEMdataGDX is all that it should be
@@ -331,14 +331,16 @@ loop(experiments,
       loop(oc(outcomes),
         if(mapOC_hydroSeqTypes(outcomes,'same'),
           modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar * i_hydroOutputAdj(y) *
-            sum((mapv_g(v,g),mapm_t(m,t),hY1)$(mapOC_hY(outcomes,hY1)), historicalHydroOutput(v,hY1,m)) / sum(mapOC_hY(outcomes,hY), 1) ;
+            sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapOC_hY(outcomes,hY)), historicalHydroOutput(v,hY,m)) / sum(mapOC_hY(outcomes,hY1), 1) ;
+          mapHydroYearsToModelledYears(experiments,steps,outcomeSets,oc,y,hY)$( ord(hY) = sum(mapOC_hY(outcomes,hY1), 1) ) = yes ;
           else
           loop(y,
             chooseHydroYears(hY) = no ;
             chooseHydroYears(hY)$(sum(hY1$(mapOC_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
             chooseHydroYears(hY)$(sum(hY1$(mapOC_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
-            modelledHydroOutput(g,y,t,oc) = ord(outcomes) * i_hydroOutputAdj(y) *
-              sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+            modelledHydroOutput(g,y,t,oc) =
+              i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+            mapHydroYearsToModelledYears(experiments,steps,outcomeSets,oc,y,chooseHydroYears) = yes ;
           ) ;
         ) ;
       ) ;
@@ -537,7 +539,7 @@ execute 'temp.bat' ;
 
 
 
-Execute_Unload "Hydro output.gdx", allModelledHydroOutput ;
+Execute_Unload "Hydro output.gdx", allModelledHydroOutput, mapHydroYearsToModelledYears ;
 
 $stop
 $ontext
