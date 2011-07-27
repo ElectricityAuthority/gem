@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 27/07/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 28/07/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -260,7 +260,8 @@ Sets
   allSolves(experiments,steps,outcomeSets)      'Outcome sets by experiment and step'
   mapOC_hY(outcomes,hY)                         'Map historical hydro output years to outcomes (compute the average if more than one hydro year is specified)'
   mapOC_hydroSeqTypes(outcomes,hydroSeqTypes)   'Map the way types of hydrology sequences are developed (same or sequential) to outcomes'
-  mapHydroYearsToModelledYears(experiments,steps,outcomeSets,outcomes,y,hY) 'Collect the mapping of hydro years to modelled modelled years for all experiments-steps-outcomeSets tuples' ;
+  mapHydroYearsToModelledYears(experiments,steps,outcomeSets,outcomes,y,hY) 'Collect the mapping of hydro years to modelled modelled years for all experiments-steps-outcomeSets tuples'
+  sumSolves(outcomeSets)                        'Figure out which solves to sum over when computing post-solve results averaged over outcomeSets' ;
 
 Parameters
   outcomePeakLoadFactor(outcomes)               'Outcome-specific scaling factor for peak load data'
@@ -272,7 +273,8 @@ Parameters
   outcomeWeight(outcomes)                       'Individual outcome weights'
   modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
   allModelledHydroOutput(experiments,steps,outcomeSets,g,y,t,outcomes) 'Collect the hydro output used in each modelled year by scheduleable hydro plant for all experiments-steps-outcomeSets tuples'
-  solveReport(experiments,steps,outcomeSets,*)  'Collect various details about each solve of the models (both GEM and DISP)' ;
+  solveReport(experiments,steps,outcomeSets,*)  'Collect various details about each solve of the models (both GEM and DISP)'
+  numSolves                                     'Figure out the number of solves to sum over when computing post-solve results averaged over outcomeSets' ;
 
 * c) Various GEM configuration sets and parameters - see (mostly) GEMsettings.
 Sets
@@ -1119,8 +1121,9 @@ $offecho
 * 6. Declare the 's2' parameters for use in GEMreports.
 
 * NB: The 's2' parameters are initialised towards the end of GEMsolve, dumped into a GDX file, and passed along to GEMreports.
-*     The 'outcomeSets' index is removed on the s2 parameters, i.e. results are averaged over all outcomes in the set
-***   Is this last stamt true? Is it not average over all outcomeSets in an experiment?.
+*     The 'outcomeSets' index is removed on the s2 parameters, i.e. results are averaged over all outcomeSets in an experiment.
+
+**    This averaging in the s2 parameters implies that we carry along outcome (c.f. outcomeSet) results to GEMreports.
 
 Parameters
 * Free variables

@@ -23,6 +23,7 @@ putclose bat
   'mkdir "%OutPath%%runName%\Archive"' /
   'mkdir "%OutPath%%runName%\GDX"' /
   'mkdir "%OutPath%%runName%\Processed files"' /
+  'mkdir "%OutPath%%runName%\Input data checks"' /
   'copy "%ProgPath%GEMdeclarations.gms" "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%GEMdeclarations.g00" "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%CollectResults.txt"  "%OutPath%\%runName%\Archive\"' /
