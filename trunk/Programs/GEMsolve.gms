@@ -1,6 +1,6 @@
 * GEMsolve.gms
 
-* Last modified by Dr Phil Bishop, 27/07/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 01/08/2011 (imm@ea.govt.nz)
 
 *** To do:
 *** Make sure the writing of GEMdataGDX is all that it should be
@@ -531,17 +531,41 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
   ;
 
 
-* d) Dump selected input data (as imported, intermediate steps or what's used in the model) into a GDX file.
+* d) Dump selected input data into a GDX file (as imported, or from intermediate GEMdata steps, or what's actually used to solve the model).
+*    NB: Some of what goes in here may also go into GEMdataGDX.
 Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
-* Financial and capex related sets and parameters
-  CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
-  capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost capexPlant capCharge refurbCapexPlant refurbCapCharge
+* Basic sets, subsets, and mapping sets.
+  y t f k g o lb r e ild ps outcomes rc n tgc
+  mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r paths nwd swd interIsland firstPeriod firstYr lastYr allButFirstYr pumpedHydroPlant wind gas diesel
+  thermalFuel i_fuelQuantities renew schedHydroPlant nsegment demandGen 
+  allSolves weightOutcomesBySet
+* Financial, capex and cost related sets and parameters
+  taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
+  capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost capexPlant refurbCapexPlant
+  capCharge refurbCapCharge txCapCharge
+  bigNIgen nxtBigNIgen i_bigSIgen i_fkNI i_fkSI
+  i_fixedOM i_HVDCshr i_HVDClevy srmc locFac_recip i_plantReservesCost
 * Generation plant related sets and parameters
-  g exist noExist commit new nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
+  exist noExist commit new nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
   exogMWretired possibleToEndogRetire possibleToRetire possibleToRefurbish continueAftaEndogRetire peakConPlant NWpeakConPlant
-  movers i_nameplate initialCapacity maxCapFactPlant minCapFactPlant
+  endogenousRetireDecisnYrs endogenousRetireYrs movers i_nameplate i_heatRate initialCapacity maxCapFactPlant minCapFactPlant AnnualMWlimit
+  i_minUtilisation i_minUtilByTech i_maxNrgByFuel renNrgShrOn i_renewNrgShare i_renewCapShare i_VOLLcap i_VOLLcost i_fof
+  i_distdGenRenew i_distdGenFossil i_pumpedHydroEffic i_PumpedHydroMonth i_UnitLargestProp
+* Load and peak
+  hoursPerBlock AClossFactors outcomeNRGfactor i_NrgDemand NrgDemand ldcMW i_peakLoadNZ i_peakLoadNI outcomePeakLoadFactor peakLoadNZ peakLoadNI
+* Transmission and grid
+  DCloadFlow gridSecurity transitions validTransitions allowedStates upgradedStates i_txCapacity i_HVDClosses i_northwardHVDCtransfer
+  slope intercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS
+* Reserves
+  useReserves singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve
 * Hydro related sets and parameters
-  allModelledHydroOutput mapHydroYearsToModelledYears
+  hydroOutputScalar i_hydroOutputAdj allModelledHydroOutput mapHydroYearsToModelledYears
+* Penalties
+  penaltyViolateRenNrg reserveViolationPenalty penaltyLostPeak
+*+++++++++++++++++++++++++
+* More non-free reserves code.
+  stp pNFresvCap pNFresvCost
+*+++++++++++++++++++++++++
   ;
 
 bat.ap = 0 ;

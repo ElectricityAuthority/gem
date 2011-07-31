@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 28/07/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 01/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:
