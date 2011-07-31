@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 28/07/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 01/08/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -586,7 +586,7 @@ objectivefn..
   TOTALCOST =e=
 * Add in slacks at arbitrarily high cost.
   9999 * sum(y, ANNMWSLACK(y) ) +
-  9998 * sum(y$i_renewcapshare(y), RENCAPSLACK(y) ) +
+  9998 * sum(y$i_renewCapShare(y), RENCAPSLACK(y) ) +
   9997 * sum(y, HYDROSLACK(y) ) +
   9996 * sum(y, MINUTILSLACK(y) ) +
   9995 * sum(y, FUELSLACK(y) ) +
@@ -602,9 +602,9 @@ objectivefn..
            )
          ) ) +
 * Generation capital expenditure - discounted
-  1e-6 * sum((y,firstPeriod(t),possibleToBuild(g)), PVfacG(y,t) * capcharge(g,y) * CAPACITY(g,y) ) +
+  1e-6 * sum((y,firstPeriod(t),possibleToBuild(g)), PVfacG(y,t) * capCharge(g,y) * CAPACITY(g,y) ) +
 * Generation refurbishment expenditure - discounted
-  1e-6 * sum((y,firstPeriod(t),PossibleToRefurbish(g))$refurbcapcharge(g,y), PVfacG(y,t) * REFURBCOST(g,y) ) +
+  1e-6 * sum((y,firstPeriod(t),PossibleToRefurbish(g))$refurbCapCharge(g,y), PVfacG(y,t) * REFURBCOST(g,y) ) +
 * Transmission capital expenditure - discounted
   sum((paths,y,firstPeriod(t)),   PVfacT(y,t) * TXCAPCHARGES(paths,y) ) +
 * Costs by outcome - computed in following equation
@@ -628,7 +628,7 @@ calc_outcomeCosts(oc)..
 *++++++++++++++++++
 * More non-free reserves code.
 * Cost of providing reserves ($m)
-    sum((paths,stp)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp) * pnfresvcost(paths,stp) )
+    sum((paths,stp)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,oc,stp) * pNFresvcost(paths,stp) )
   ) )  ;
 
 * Calculate non-free reserve components. 
@@ -637,16 +637,16 @@ calc_nfreserves(paths(r,rr),y,t,lb,oc)$( nwd(r,rr) or swd(r,rr) )..
 
 * Calculate and impose the relevant capacity on each step of free reserves.
 resv_capacity(paths,y,t,lb,oc,stp)$( nwd(paths) or swd(paths) )..
-  RESVCOMPONENTS(paths,y,t,lb,oc,stp) =l= pnfresvcap(paths,stp) ;
+  RESVCOMPONENTS(paths,y,t,lb,oc,stp) =l= pNFresvcap(paths,stp) ;
 *++++++++++++++++++
 
 * Compute the annualised generation plant refurbishment expenditure charge in each year.
-calc_refurbcost(PossibleToRefurbish(g),y)$refurbcapcharge(g,y)..
-  REFURBCOST(g,y) =e= (1 - ISRETIRED(g)) * i_nameplate(g) * refurbcapcharge(g,y) ;
+calc_refurbcost(PossibleToRefurbish(g),y)$refurbCapCharge(g,y)..
+  REFURBCOST(g,y) =e= (1 - ISRETIRED(g)) * i_nameplate(g) * refurbCapCharge(g,y) ;
 
 * Compute the cumulative annualised transmission upgrade capital expenditure charges.
 calc_txcapcharges(paths,y)..
-  TXCAPCHARGES(paths,y) =e= TXCAPCHARGES(paths,y-1) + sum(validTransitions(paths,pss,ps), txcapcharge(paths,ps,y) * TXUPGRADE(paths,pss,ps,y) ) ;
+  TXCAPCHARGES(paths,y) =e= TXCAPCHARGES(paths,y-1) + sum(validTransitions(paths,pss,ps), txCapCharge(paths,ps,y) * TXUPGRADE(paths,pss,ps,y) ) ;
 
 * Ensure new plant is built no more than once, if at all (NB: =l= c.f. =e= coz build is not mandatory).
 bldGenOnce(possibleToBuild(g))..
@@ -728,7 +728,7 @@ limit_mingen(validYrOperate(g,y,t),lb,oc)$minCapFactPlant(g,y,t)..
   GEN(g,y,t,lb,oc) =g= 1e-3 * CAPACITY(g,y) * minCapFactPlant(g,y,t) * hoursPerBlock(t,lb) ;
 
 * Minimum ultilisation of plant by technology.
-minutil(g,k,y,oc)$( i_minutilisation(g) * i_minUtilByTech(y,k) * mapg_k(g,k) )..
+minutil(g,k,y,oc)$( i_minUtilisation(g) * i_minUtilByTech(y,k) * mapg_k(g,k) )..
   sum((t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,oc)) + MINUTILSLACK(y) =g= i_minUtilByTech(y,k) * 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ;
 
 * Thermal fuel limits.
@@ -794,8 +794,8 @@ tx_oneupgrade(paths,y)..
   sum(upgradedStates(paths,ps), sum(validTransitions(paths,pss,ps), TXUPGRADE(paths,pss,ps,y) )) =l= 1 ;
 
 * DC load flow equation for all paths.
-tx_dcflow(r,rr,y,t,lb,oc)$( DCloadFlow * susceptanceyr(r,rr,y) * regLower(r,rr) )..
-  TX(r,rr,y,t,lb,oc) =e= susceptanceyr(r,rr,y) * ( THETA(r,y,t,lb,oc) - THETA(rr,y,t,lb,oc) ) ;
+tx_dcflow(r,rr,y,t,lb,oc)$( DCloadFlow * susceptanceYr(r,rr,y) * regLower(r,rr) )..
+  TX(r,rr,y,t,lb,oc) =e= susceptanceYr(r,rr,y) * ( THETA(r,y,t,lb,oc) - THETA(rr,y,t,lb,oc) ) ;
 
 * Ensure that for flow on links without reactance the flow from r to rr = - flow from rr to r
 tx_dcflow0(r,rr,y,t,lb,oc)$( DCloadFlow * paths(r,rr) * regLower(r,rr) )..
