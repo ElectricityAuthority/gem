@@ -5,26 +5,34 @@ $setglobal DataPath         "%system.fp%..\Data\"
 $setglobal MatCodePath      "%system.fp%..\Matlab code\"
 $setglobal OutPath          "%system.fp%..\Output\"
 
-$setglobal runName          "Test"
+$setglobal runName          "Old HVDC"
 
-Set sc 'Scenarios'     / mds2 'MDS2', mds3 'MDS3' /;
+Set sc 'Scenarios'     / mds1 '2010 Sustainable path'
+                         mds2 '2010 SI wind'
+                         mds3 '2010 Medium renewables'
+                         mds4 '2010 Coal'
+                         mds5 '2010 High gas discovery' /
+
 Set scenarioColor(sc,*,*,*) 'RGB color mix for scenarios - to pass to plotting applications' ;
-scenarioColor('mds2','0','0','255') = yes ;
-scenarioColor('mds3','0','255','255') = yes ;
+scenarioColor('mds1','0','0','255')   = yes ;
+scenarioColor('mds2','255','0','0')   = yes ;
+scenarioColor('mds3','0','255','0')   = yes ;
+scenarioColor('mds4','0','0','0')     = yes ;
+scenarioColor('mds5','255','0','255') = yes ;
 
-$setglobal firstScenario    "Final GEM2.0 input data (2Reg 9Block mds2).gdx"
+$setglobal firstScenario    "Final GEM2.0 input data (2Reg 9Block mds1).gdx"
 
 
 *+++ Model +++
 $setglobal firstYear 2010
 * First modelled year.
-$setglobal lastYear 2020
+$setglobal lastYear 2040
 * Last modelled year.
-$setglobal RunType 0
+$setglobal RunType 1
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
-$setglobal GEMtype MIP
+$setglobal GEMtype RMIP
 * Specify whether GEM is to be a MIP or an RMIP - take care to get the spelling exact (default = MIP).
-$setglobal DISPtype MIP
+$setglobal DISPtype RMIP
 * Specify whether DISP is to be a MIP or an RMIP - take care to get the spelling exact (default = RMIP).
 $setglobal SuppressReopt 1
 * Select 1 when in GEM/DISP or GEM-only mode (i.e. RunType = 0 or 1) to skip re-optimisation of the GEM MIP; Otherwise select 0 to invoke re-optimisation.
@@ -59,17 +67,19 @@ Scalar noRetire / 2 / ;
 Scalar gridSecurity / 1 / ;
 Scalar renNrgShrOn / 1 / ;
 Scalar penaltyViolateRenNrg / 0.4 / ;
-Scalar noVOLLblks / 0 / ;
+Scalar noVOLLblks / 3 / ;
 Scalar DCloadFlow / 0 / ;
 Scalar useReserves / 0 / ;
-$setglobal NumVertices 3
+$setglobal NumVertices 4
 * Number of vertices for piecewise linear transmission losses function (number of vertices = number of segments  + l) ;  
 
 
 *+++ Load +++
-$setglobal AClossesNI 0.0368
+*$setglobal AClossesNI 0.0368
+$setglobal AClossesNI 0.0
 * Upwards adjustment to load to account for NI AC (or intraregional) losses - .0368 for 2-region and .0120 for 18-region
-$setglobal AClossesSI 0.0534
+*$setglobal AClossesSI 0.0534
+$setglobal AClossesSI 0.0
 * Upwards adjustment to load to account for SI AC (or intraregional) losses - .0534 for 2-region and .0180 for 18-region
 $setglobal EmbedAdjNZ 198
 * MW added to NZ peak load to overcome potential double-counting of embedded generation
