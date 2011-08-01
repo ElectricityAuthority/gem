@@ -428,40 +428,40 @@ loop(experiments,
     sumSolves(outcomeSets)$allSolves(experiments,steps,outcomeSets) = yes;
     numSolves = sum(sumSolves, 1);
 
-    s2_TOTALCOST(experiments,steps)                          = sum(sumSolves, s_TOTALCOST(experiments,steps,sumSolves)) / numSolves ;
-    s2_OUTCOME_COSTS(experiments,steps,oc)                   = sum(sumSolves, s_OUTCOME_COSTS(experiments,steps,sumSolves,oc)) / numSolves ;
-    s2_TX(experiments,steps,paths,y,t,lb,oc)                 = sum(sumSolves, s_TX(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
-    s2_BRET(experiments,steps,g,y)                           = sum(sumSolves, s_BRET(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_ISRETIRED(experiments,steps,g)                        = sum(sumSolves, s_ISRETIRED(experiments,steps,sumSolves,g) ) / numSolves ;
-    s2_BTX(experiments,steps,paths,ps,y)                     = sum(sumSolves, s_BTX(experiments,steps,sumSolves,paths,ps,y) ) / numSolves ;
-    s2_REFURBCOST(experiments,steps,g,y)                     = sum(sumSolves, s_REFURBCOST(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_BUILD(experiments,steps,g,y)                          = sum(sumSolves, s_BUILD(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_RETIRE(experiments,steps,g,y)                         = sum(sumSolves, s_RETIRE(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_CAPACITY(experiments,steps,g,y)                       = sum(sumSolves, s_CAPACITY(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_TXCAPCHARGES(experiments,steps,paths,y)               = sum(sumSolves, s_TXCAPCHARGES(experiments,steps,sumSolves,paths,y) ) / numSolves ;
-    s2_GEN(experiments,steps,g,y,t,lb,oc)                    = sum(sumSolves, s_GEN(experiments,steps,sumSolves,g,y,t,lb,oc) ) / numSolves ;
-    s2_VOLLGEN(experiments,steps,s,y,t,lb,oc)                = sum(sumSolves, s_VOLLGEN(experiments,steps,sumSolves,s,y,t,lb,oc) ) / numSolves ;
-    s2_PUMPEDGEN(experiments,steps,g,y,t,lb,oc)              = sum(sumSolves, s_PUMPEDGEN(experiments,steps,sumSolves,g,y,t,lb,oc) ) / numSolves ;
-    s2_LOSS(experiments,steps,paths,y,t,lb,oc)               = sum(sumSolves, s_LOSS(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
-    s2_TXPROJVAR(experiments,steps,tupg,y)                   = sum(sumSolves, s_TXPROJVAR(experiments,steps,sumSolves,tupg,y) ) / numSolves ;
-    s2_TXUPGRADE(experiments,steps,paths,ps,pss,y)           = sum(sumSolves, s_TXUPGRADE(experiments,steps,sumSolves,paths,ps,pss,y) ) / numSolves ;
-    s2_RESV(experiments,steps,g,rc,y,t,lb,oc)                = sum(sumSolves, s_RESV(experiments,steps,sumSolves,g,rc,y,t,lb,oc) ) / numSolves ;
-    s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,oc)          = sum(sumSolves, s_RESVVIOL(experiments,steps,sumSolves,rc,ild,y,t,lb,oc) ) / numSolves ;
-    s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,oc)     = sum(sumSolves, s_RESVTRFR(experiments,steps,sumSolves,rc,ild,ild1,y,t,lb,oc) ) / numSolves ;
-    s2_RENNRGPENALTY(experiments,steps,y)                    = sum(sumSolves, s_RENNRGPENALTY(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_PEAK_NZ_PENALTY(experiments,steps,y,oc)               = sum(sumSolves, s_PEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_PEAK_NI_PENALTY(experiments,steps,y,oc)               = sum(sumSolves, s_PEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_NOWINDPEAK_NZ_PENALTY(experiments,steps,y,oc)         = sum(sumSolves, s_NOWINDPEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_NOWINDPEAK_NI_PENALTY(experiments,steps,y,oc)         = sum(sumSolves, s_NOWINDPEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_ANNMWSLACK(experiments,steps,y)                       = sum(sumSolves, s_ANNMWSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_RENCAPSLACK(experiments,steps,y)                      = sum(sumSolves, s_RENCAPSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_HYDROSLACK(experiments,steps,y)                       = sum(sumSolves, s_HYDROSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_MINUTILSLACK(experiments,steps,y)                     = sum(sumSolves, s_MINUTILSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_FUELSLACK(experiments,steps,y)                        = sum(sumSolves, s_FUELSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_bal_supdem(experiments,steps,r,y,t,lb,oc)             = sum(sumSolves, s_bal_supdem(experiments,steps,sumSolves,r,y,t,lb,oc) ) / numSolves ;
+    s2_TOTALCOST(experiments,steps)$numSolves                          = sum(sumSolves, s_TOTALCOST(experiments,steps,sumSolves)) / numSolves ;
+    s2_OUTCOME_COSTS(experiments,steps,oc)$numSolves                   = sum(sumSolves, s_OUTCOME_COSTS(experiments,steps,sumSolves,oc)) / numSolves ;
+    s2_TX(experiments,steps,paths,y,t,lb,oc)$numSolves                 = sum(sumSolves, s_TX(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
+    s2_BRET(experiments,steps,g,y)$numSolves                           = sum(sumSolves, s_BRET(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_ISRETIRED(experiments,steps,g)$numSolves                        = sum(sumSolves, s_ISRETIRED(experiments,steps,sumSolves,g) ) / numSolves ;
+    s2_BTX(experiments,steps,paths,ps,y)$numSolves                     = sum(sumSolves, s_BTX(experiments,steps,sumSolves,paths,ps,y) ) / numSolves ;
+    s2_REFURBCOST(experiments,steps,g,y)$numSolves                     = sum(sumSolves, s_REFURBCOST(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_BUILD(experiments,steps,g,y)$numSolves                          = sum(sumSolves, s_BUILD(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_RETIRE(experiments,steps,g,y)$numSolves                         = sum(sumSolves, s_RETIRE(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_CAPACITY(experiments,steps,g,y)$numSolves                       = sum(sumSolves, s_CAPACITY(experiments,steps,sumSolves,g,y) ) / numSolves ;
+    s2_TXCAPCHARGES(experiments,steps,paths,y)$numSolves               = sum(sumSolves, s_TXCAPCHARGES(experiments,steps,sumSolves,paths,y) ) / numSolves ;
+    s2_GEN(experiments,steps,g,y,t,lb,oc)$numSolves                    = sum(sumSolves, s_GEN(experiments,steps,sumSolves,g,y,t,lb,oc) ) / numSolves ;
+    s2_VOLLGEN(experiments,steps,s,y,t,lb,oc)$numSolves                = sum(sumSolves, s_VOLLGEN(experiments,steps,sumSolves,s,y,t,lb,oc) ) / numSolves ;
+    s2_PUMPEDGEN(experiments,steps,g,y,t,lb,oc)$numSolves              = sum(sumSolves, s_PUMPEDGEN(experiments,steps,sumSolves,g,y,t,lb,oc) ) / numSolves ;
+    s2_LOSS(experiments,steps,paths,y,t,lb,oc)$numSolves               = sum(sumSolves, s_LOSS(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
+    s2_TXPROJVAR(experiments,steps,tupg,y)$numSolves                   = sum(sumSolves, s_TXPROJVAR(experiments,steps,sumSolves,tupg,y) ) / numSolves ;
+    s2_TXUPGRADE(experiments,steps,paths,ps,pss,y)$numSolves           = sum(sumSolves, s_TXUPGRADE(experiments,steps,sumSolves,paths,ps,pss,y) ) / numSolves ;
+    s2_RESV(experiments,steps,g,rc,y,t,lb,oc)$numSolves                = sum(sumSolves, s_RESV(experiments,steps,sumSolves,g,rc,y,t,lb,oc) ) / numSolves ;
+    s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,oc)$numSolves          = sum(sumSolves, s_RESVVIOL(experiments,steps,sumSolves,rc,ild,y,t,lb,oc) ) / numSolves ;
+    s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,oc)$numSolves     = sum(sumSolves, s_RESVTRFR(experiments,steps,sumSolves,rc,ild,ild1,y,t,lb,oc) ) / numSolves ;
+    s2_RENNRGPENALTY(experiments,steps,y)$numSolves                    = sum(sumSolves, s_RENNRGPENALTY(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_PEAK_NZ_PENALTY(experiments,steps,y,oc)$numSolves               = sum(sumSolves, s_PEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_PEAK_NI_PENALTY(experiments,steps,y,oc)$numSolves               = sum(sumSolves, s_PEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_NOWINDPEAK_NZ_PENALTY(experiments,steps,y,oc)$numSolves         = sum(sumSolves, s_NOWINDPEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_NOWINDPEAK_NI_PENALTY(experiments,steps,y,oc)$numSolves         = sum(sumSolves, s_NOWINDPEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_ANNMWSLACK(experiments,steps,y)$numSolves                       = sum(sumSolves, s_ANNMWSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_RENCAPSLACK(experiments,steps,y)$numSolves                      = sum(sumSolves, s_RENCAPSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_HYDROSLACK(experiments,steps,y)$numSolves                       = sum(sumSolves, s_HYDROSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_MINUTILSLACK(experiments,steps,y)$numSolves                     = sum(sumSolves, s_MINUTILSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_FUELSLACK(experiments,steps,y)$numSolves                        = sum(sumSolves, s_FUELSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
+    s2_bal_supdem(experiments,steps,r,y,t,lb,oc)$numSolves             = sum(sumSolves, s_bal_supdem(experiments,steps,sumSolves,r,y,t,lb,oc) ) / numSolves ;
 *++++++++++
 * More non-free reserves code.
-    s2_RESVCOMPONENTS(experiments,steps,paths,y,t,lb,outcomes,stp) = sum(sumSolves, s_RESVCOMPONENTS(experiments,steps,sumSolves,paths,y,t,lb,outcomes,stp) ) / numSolves ;
+    s2_RESVCOMPONENTS(experiments,steps,paths,y,t,lb,outcomes,stp)$numSolves = sum(sumSolves, s_RESVCOMPONENTS(experiments,steps,sumSolves,paths,y,t,lb,outcomes,stp) ) / numSolves ;
 *++++++++++
 
 * End of steps loop
