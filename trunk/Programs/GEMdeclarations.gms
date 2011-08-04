@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 01/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/08/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -35,7 +35,7 @@ $offsymxref offsymlist
 *===============================================================================================
 * 1. Declare sets and parameters - the data for which is imported from an input GDX file.
 
-* 24 fundamental sets
+* 23 fundamental sets
 Sets
   k            'Generation technologies'
   f            'Fuels'
@@ -43,7 +43,6 @@ Sets
   g            'Generation plant'
   s            'Shortage or VOLL plants'
   o            'Owners of generating plant'
-  fc           'Currencies'
   i            'Substations'
   r            'Regions'
   e            'Zones'
@@ -65,7 +64,7 @@ Sets
 
 Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 41 mapping sets and subsets (grouped as per the navigation pane of Oasis)
+* 40 mapping sets and subsets (grouped as per the navigation pane of Oasis)
 Sets
 * 24 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -92,14 +91,13 @@ Sets
   lignite(f)                                    'Lignite fuel'
   gas(f)                                        'Gas fuel'
   diesel(f)                                     'Diesel fuel'
-* 7 generation
+* 6 generation
   mapGenPlant(g,k,i,o)                          'Generation plant mappings'
   exist(g)                                      'Generation plant that are presently operating'
   commit(g)                                     'Generation plant that are assumed to be committed'
   new(g)                                        'Potential generation plant that are neither existing nor committed'
   neverBuild(g)                                 'Generation plant that are determined a priori by user never to be built'
   maps_r(s,r)                                   'Map regions to VOLL plants'
-  mapg_fc(g,fc)                                 'Map currency types to generating plant - used to convert capex values to NZD'
 * 6 location
   mapLocations(i,r,e,ild)                       'Location mappings'
   Haywards(i)                                   'Haywards substation'
@@ -117,17 +115,15 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 88 parameters (again, grouped as per the navigation pane of Oasis).
+* Declare 85 parameters (again, grouped as per the navigation pane of Oasis).
 Parameters
-* 20 technology and fuel
+* 18 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
   i_refurbishmentLife(k)                        'Generation plant life following refurbishment, years'
   i_retireOffsetYrs(k)                          'Number of years a technology continues to operate for after the decision to endogenously retire has been made'
   i_linearBuildMW(k)                            'Threshold MW level used to activate linearisation of binary decision variables for plants able to be linearly built'
   i_linearBuildYr(k)                            'Threshold early build year used to activate linearisation of binary decision variables for plants able to be linearly built'
   i_depRate(k)                                  'Depreciation rate for generation plant, technology specific'
-  i_capCostAdjByTech(k)                         'Capital cost adjuster by technology (default = 1)'
-  i_CapexExposure(k)                            'Proportion of generation plant capital expenditure that is exposed to exchange rates, i.e. the imported share of total plant capex'
   i_peakContribution(k)                         'Contribution to peak by technology'
   i_NWpeakContribution(k)                       'The no wind contribution to peak by technology'
   i_capFacTech(k)                               'An assumed (rather than modelled) technology-specific capacity factor - used when computing LRMCs based on input data (i.e. prior to solving the model)'
@@ -140,7 +136,7 @@ Parameters
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantities(f,y)                         'Quantitative limit on availability of various fuels by year, PJ'
   i_co2tax(y)                                   'CO2 tax by year, $/tonne CO2-equivalent'
-* 32 generation
+* 31 generation
   i_nameplate(g)                                'Nameplate capacity of generating plant, MW'
   i_UnitLargestProp(g)                          'Largest proportion of generating plant output carried by a single unit at the plant'
   i_baseload(g)                                 'Force plant to be baseloaded, 0/1 (1 = baseloaded)'
@@ -159,16 +155,15 @@ Parameters
   i_fixedOM(g)                                  'Fixed O&M costs by plant, $/kW/year'
   i_varOM(g)                                    'Variable O&M costs by plant, $/MWh'
   i_FuelDeliveryCost(g)                         'Fuel delivery cost, $/GJ'
-  i_capitalCost(g)                              'Generation plant capital cost, foreign currency per kW'
+  i_capitalCost(g)                              'Generation plant capital cost, $/kW'
   i_connectionCost(g)                           'Capital cost for connecting generation plant to grid, $m (NZD)'
-  i_refurbCapitalCost(g)                        'Generation plant refurbishment capital cost, foreign currency per kW'
+  i_refurbCapitalCost(g)                        'Generation plant refurbishment capital cost, $/kW'
   i_plantReservesCap(g,rc)                      'Plant-specific capability per reserve class (0-1 but define only when > 0)'
   i_plantReservesCost(g,rc)                     'Plant-specific cost per reserve class, $/MWh'
   i_PltCapFact(g,m)                             'Plant-specific capacity factor (default = 1)'
   i_VOLLcap(s)                                  'Nameplate capacity of VOLL plant (1 VOLL plant/region), MW'
   i_VOLLcost(s)                                 'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
   i_HVDCshr(o)                                  'Share of HVDC charge to be incurred by plant owner'
-  i_exRates(fc)                                 'Exchange rates (foreign currency per NZ dollar)'
   i_renewNrgShare(y)                            'Proportion of total energy to be generated from renewable sources by year (0-1 but define only when > 0)'
   i_renewCapShare(y)                            'Proportion of installed capacity that must be renewable by year (0-1 but define only when > 0)'
   i_distdGenRenew(y)                            'Distributed generation (renewable) installed by year, GWh'
@@ -400,7 +395,6 @@ Parameters
   CO2CaptureStorageCost(g,y)                    'Carbon capture and storage cost by plant and year, $/MWh'
 * Generation data.
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'
-  capitalCost(g)                                'Generation plant capital cost, foreign currency per kW'
   capexPlant(g)                                 'Capital cost for new generation plant, $/MW'
   capCharge(g,y)                                'Annualised or levelised capital charge for new generation plant, $/MW/yr'
   refurbCapexPlant(g)                           'Capital cost for refurbishing existing generation plant, $/MW'

@@ -1,6 +1,6 @@
 * GEMdata.gms
 
-* Last modified by Dr Phil Bishop, 01/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -64,14 +64,14 @@ $offsymxref offsymlist
 Set y  / %firstYear% * %lastYear% / ;
 
 $gdxin "%DataPath%%GDXinputFile%"
-* 23 fundamental sets (i.e. all 24 less set y)
-$loaddc k f fg g s o fc i r e ild p ps tupg tgc t lb rc hY v m geo col
-* 41 mapping sets and subsets
+* 22 fundamental sets (i.e. all 23 less set y)
+$loaddc k f fg g s o i r e ild p ps tupg tgc t lb rc hY v m geo col
+* 40 mapping sets and subsets
 * 24 technology and fuel
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
 $loaddc wind renew thermalTech CCStech minUtilTechs demandGen randomiseCapex linearBuildTech coal lignite gas diesel
-* 7 generation
-$loaddc mapGenPlant exist commit new neverBuild maps_r mapg_fc
+* 6 generation
+$loaddc mapGenPlant exist commit new neverBuild maps_r
 * 6 location
 $loaddc mapLocations Haywards Benmore regionCentroid zoneCentroid islandCentroid
 * 2 transmission
@@ -82,16 +82,16 @@ $loaddc mapm_t
 * 1 hydrology
 $loaddc mapReservoirs
 
-* 88 parameters 
-* 20 technology and fuel
-$loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate i_capCostAdjByTech i_CapexExposure
+* 85 parameters 
+* 18 technology and fuel
+$loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
 $load   i_minUtilByTech  i_CCSfactor i_CCScost i_fuelPrices i_fuelQuantities i_co2tax
-* 32 generation
+* 31 generation
 $loaddc i_nameplate i_UnitLargestProp i_baseload i_minUtilisation i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear
 $loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_FuelDeliveryCost
 $loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_plantReservesCap i_plantReservesCost i_PltCapFact
-$loaddc i_VOLLcap i_VOLLcost i_HVDCshr i_exRates
+$loaddc i_VOLLcap i_VOLLcost i_HVDCshr
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
 * 2 location
 $loaddc i_substnCoordinates i_zonalLocFacs
@@ -336,41 +336,25 @@ loop(refurbish(k),
 * - Capital costs are first calculated as if capex is lumpy. After any adjustments, they are then converted
 *   to a levelised or annualised basis (i.e. see capCharge).
 
-* First, transfer i_capitalCost to capitalCost (do this coz don't want to be overwriting any of the i_xxx data).
-capitalCost(g) = i_capitalCost(g) ;
+* First, transfer i_capitalCost to capexPlant and convert to $/MW.
+capexPlant(g) = 1e3 * i_capitalCost(g) ;
 
-* Next, randomly adjust capitalCost to create mathematically different costs - this helps the solver but makes no
+* Next, randomly adjust capexPlant to create mathematically different costs - this helps the solver but makes no
 * appreciable economic difference provided randomCapexCostAdjuster is small.
 loop(randomiseCapex(k),
-  capitalCost(noExist(g))$mapg_k(g,k) =
-  uniform( (capitalCost(g) - randomCapexCostAdjuster * capitalCost(g)),(capitalCost(g) + randomCapexCostAdjuster * capitalCost(g)) ) ;
-) ;
-
-* Now, convert capital cost of plant ('capitalCost' and 'i_refurbCapitalCost') from foreign currency to NZ$/MW and, in
-* the case of foreign or imported costs, scale up the capex cost to include the local capex component.
-loop(fc,
-  if(sameas(fc,'nzd'),
-    capexPlant(g)$mapg_fc(g,fc)       = 1e3 * 1 / i_exRates(fc) * capitalCost(g) ;
-    refurbCapexPlant(g)$mapg_fc(g,fc) = 1e3 * 1 / i_exRates(fc) * i_refurbCapitalCost(g) ;
-    else
-    capexPlant(g)$mapg_fc(g,fc)       = 1e3 * 1 / i_exRates(fc) * capitalCost(g)         * ( 1 + (1 - sum(mapg_k(g,k), i_CapexExposure(k))) ) ;
-    refurbCapexPlant(g)$mapg_fc(g,fc) = 1e3 * 1 / i_exRates(fc) * i_refurbCapitalCost(g) * ( 1 + (1 - sum(mapg_k(g,k), i_CapexExposure(k))) ) ;
-  ) ;
+  capexPlant(noExist(g))$mapg_k(g,k) =
+  uniform( (capexPlant(g) - randomCapexCostAdjuster * capexPlant(g)),(capexPlant(g) + randomCapexCostAdjuster * capexPlant(g)) ) ;
 ) ;
 
 * Zero out any refubishment capex costs if the plant is not actually a candidate for refurbishment.
 refurbCapexPlant(g)$( not possibleToRefurbish(g) ) = 0 ;
 
-* Now adjust (lumpy) capex cost by the technology specific adjuster.
-loop(k, capexPlant(g)$(       mapg_k(g,k) * noExist(g) ) = capexPlant(g)       * i_CapCostAdjByTech(k) ) ;
-loop(k, refurbCapexPlant(g)$( mapg_k(g,k) * exist(g) )   = refurbCapexPlant(g) * i_CapCostAdjByTech(k) ) ;
-
 * Now add on the 'variablised' connection costs to the adjusted plant capital costs - continue to yield NZ$/MW.
 capexPlant(g)$i_nameplate(g) = capexPlant(g) + ( 1e6 * i_connectionCost(g) / i_nameplate(g) ) ;
 
 * Finally, convert lumpy capital costs to levelised capital charge (units are now NZ$/MW/yr).
-capCharge(g,y)       = capexPlant(g)       * sum(mapg_k(g,k), capRecFac(y,k,'genplt')) ;
-refurbCapCharge(g,y) = refurbCapexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'refplt')) ;
+capCharge(g,y)       = capexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'genplt')) ;
+refurbCapCharge(g,y) = 1e3 * refurbCapexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'refplt')) ;
 refurbCapCharge(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 refurbCapCharge(g,y)$( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) = 0 ;
 
@@ -543,7 +527,7 @@ Display
 * Time/date-related sets and parameters.
   firstYr, lastYr, allButFirstYr, firstPeriod
 * Various mappings, subsets and counts.
-  mapg_k, mapg_f, mapg_o, mapg_i, mapg_r, mapg_e, mapg_ild, mapg_fc, mapi_r, mapi_e, mapild_r, mapv_g, thermalFuel
+  mapg_k, mapg_f, mapg_o, mapg_i, mapg_r, mapg_e, mapg_ild, mapi_r, mapi_e, mapild_r, mapv_g, thermalFuel
 * Financial parameters.
 * Fuel prices and quantity limits.
 * Generation data.
@@ -564,7 +548,7 @@ Display
   capRecFac, depTCrecFac, txCapRecFac, txDeptCRecFac
 * Fuel prices and quantity limits.
 * Generation data.
-  initialCapacity, capitalCost, capexPlant, capCharge, refurbCapexPlant, refurbCapCharge, exogMWretired, continueAftaEndogRetire
+  initialCapacity, capexPlant, capCharge, refurbCapexPlant, refurbCapCharge, exogMWretired, continueAftaEndogRetire
   WtdAvgFOFmultiplier, reservesCapability, peakConPlant, NWpeakConPlant, maxCapFactPlant, minCapFactPlant
 * Load data.
   bigNIgen, nxtbigNIgen,
