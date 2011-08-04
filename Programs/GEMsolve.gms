@@ -1,6 +1,6 @@
 * GEMsolve.gms
 
-* Last modified by Dr Phil Bishop, 01/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/08/2011 (imm@ea.govt.nz)
 
 *** To do:
 *** Make sure the writing of GEMdataGDX is all that it should be
@@ -143,7 +143,7 @@ Execute_Unload "%GEMdataGDX%",
 * Time/date-related sets
   firstYr lastYr allButFirstYr firstPeriod
 * Various mappings, subsets and counts.
-  mapg_k mapg_f mapg_o mapg_i mapg_r mapg_e mapg_ild mapg_fc mapi_r mapi_e mapild_r mapv_g thermalFuel
+  mapg_k mapg_f mapg_o mapg_i mapg_r mapg_e mapg_ild mapi_r mapi_e mapild_r mapv_g thermalFuel
 * Financial
 * Fuel prices and quantity limits.
 * Generation data.
@@ -166,7 +166,7 @@ Execute_Unload "%GEMdataGDX%",
 * Fuel prices and quantity limits.
   SRMC totalFuelCost CO2taxByPlant CO2CaptureStorageCost
 * Generation data.
-  initialCapacity capitalCost capexPlant capCharge refurbCapexPlant refurbCapCharge exogMWretired continueAftaEndogRetire
+  initialCapacity capexPlant capCharge refurbCapexPlant refurbCapCharge exogMWretired continueAftaEndogRetire
   WtdAvgFOFmultiplier reservesCapability peakConPlant NWpeakConPlant maxCapFactPlant minCapFactPlant
 * Load data.
   AClossFactors NrgDemand ldcMW peakLoadNZ peakLoadNI bigNIgen nxtbigNIgen

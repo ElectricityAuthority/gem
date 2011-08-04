@@ -5,7 +5,7 @@ $setglobal DataPath         "%system.fp%..\Data\"
 $setglobal MatCodePath      "%system.fp%..\Matlab code\"
 $setglobal OutPath          "%system.fp%..\Output\"
 
-$setglobal runName          "Old HVDC"
+$setglobal runName          "Test"
 
 Set sc 'Scenarios'     / mds1 '2010 Sustainable path'
                          mds2 '2010 SI wind'
