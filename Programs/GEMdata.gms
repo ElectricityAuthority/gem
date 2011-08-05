@@ -1,5 +1,6 @@
 * GEMdata.gms
 
+
 * Last modified by Dr Phil Bishop, 05/08/2011 (imm@ea.govt.nz)
 
 
@@ -336,8 +337,9 @@ loop(refurbish(k),
 * - Capital costs are first calculated as if capex is lumpy. After any adjustments, they are then converted
 *   to a levelised or annualised basis (i.e. see capCharge).
 
-* First, transfer i_capitalCost to capexPlant and convert to $/MW.
-capexPlant(g) = 1e3 * i_capitalCost(g) ;
+* First, transfer i_capitalCost to capexPlant and i_refurbCapitalCost to refurbCapexPlant, and convert both to $/MW.
+capexPlant(g)       = 1e3 * i_capitalCost(g) ;
+refurbCapexPlant(g) = 1e3 * i_refurbCapitalCost(g) ;
 
 * Next, randomly adjust capexPlant to create mathematically different costs - this helps the solver but makes no
 * appreciable economic difference provided randomCapexCostAdjuster is small.
@@ -354,7 +356,7 @@ capexPlant(g)$i_nameplate(g) = capexPlant(g) + ( 1e6 * i_connectionCost(g) / i_n
 
 * Finally, convert lumpy capital costs to levelised capital charge (units are now NZ$/MW/yr).
 capCharge(g,y)       = capexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'genplt')) ;
-refurbCapCharge(g,y) = 1e3 * refurbCapexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'refplt')) ;
+refurbCapCharge(g,y) = refurbCapexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'refplt')) ;
 refurbCapCharge(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 refurbCapCharge(g,y)$( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) = 0 ;
 
