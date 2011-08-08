@@ -1,14 +1,14 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 05/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 08/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:
 *** add i_NorthwardHVDCtransfer(y) = 500 to GDX file.
 *** CBAdiscountRates are hard-coded - need to take values from UI.
 *** exist(g) is hard coded <= 46
-*** See comment on line #434
+*** See comment on line #429
 *** Add the old GEMbaseOut stuff at end and put result in Data checks folder
 *** Make sure nothng remains that should go to GEMsolve, i.e. all stuff susceptible to stochastic settings
 
@@ -67,12 +67,12 @@ Set y  / %firstYear% * %lastYear% / ;
 $gdxin "%DataPath%%GDXinputFile%"
 * 22 fundamental sets (i.e. all 23 less set y)
 $loaddc k f fg g s o i r e ild p ps tupg tgc t lb rc hY v m geo col
-* 40 mapping sets and subsets
+* 37 mapping sets and subsets
 * 24 technology and fuel
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
 $loaddc wind renew thermalTech CCStech minUtilTechs demandGen randomiseCapex linearBuildTech coal lignite gas diesel
-* 6 generation
-$loaddc mapGenPlant exist commit new neverBuild maps_r
+* 3 generation
+$loaddc mapGenPlant exist maps_r
 * 6 location
 $loaddc mapLocations Haywards Benmore regionCentroid zoneCentroid islandCentroid
 * 2 transmission
@@ -223,65 +223,68 @@ if(depType = 0,
 
 
 * d) Generation data.
-* Calculate reserve capability per generating plant.
-reservesCapability(g,rc)$i_plantReservesCap(g,rc) = i_nameplate(g) * i_plantReservesCap(g,rc) ;
-
 * Derive various generating plant subsets.
-* Existing plant [i.e. exist(g) and i_nameplate(g) > 0, then exist(g) = yes].
+* i) Existing plant - remove any plant where i_nameplate(g) = 0 from exist(g).
 exist(g)$( ord(g) <= 46 ) = yes ;
 exist(g)$( i_nameplate(g) = 0 ) = no ;
-* Not an existing plant.
+
+* ii) A plant is not an existing plant if it hasn't been defined to be existing - remove any plant where i_nameplate(g) = 0 from noExist(g).
 noExist(g)$( not exist(g) ) = yes ;
 noExist(g)$( i_nameplate(g) = 0 ) = no ;
 
-* neverBuild - a plant is never built if it doesn't exist and i_fixComYr or i_EarlyComYr > lastYear.
-* Also, if i_nameplate <= 0.
-neverBuild(noExist(g))$( i_fixComYr(g) > lastYear or i_EarlyComYr(g) > lastYear ) = yes ;
+* iii) Define plant that are never able to be built. A plant is never to be built if it already exists, if (i_fixComYr or i_EarlyComYr) > lastYear,
+* or if i_nameplate <= 0.
+neverBuild(noExist(g))$( (i_fixComYr(g) > lastYear) or (i_EarlyComYr(g) > lastYear) ) = yes ;
 neverBuild(g)$( i_nameplate(g) <= 0 ) = yes ;
-* Committed - build year is fixed by user at something greater than or equal to firstyear, and plant is not in the neverBuild set.
-commit(noExist(g))$( ( i_fixComYr(g) >= firstYear ) * ( not neverBuild(g) ) ) = yes ;
-* New - a plant is 'new' if it's neither existing nor committed nor in the neverBuild set.
+
+* iv) Define committed plant. To be a committed plant, the plant must not exist, it must not be in the neverBuild set, and
+* it must have a fixed commissioning year that is greater than or equal to the first modelled year.
+commit(noExist(g))$( (i_fixComYr(g) >= firstYear) * (not neverBuild(g)) ) = yes ;
+
+* v) Define new plant. A plant is (potentially) new if it is not existing, not committed, and not a member of the neverBuild set.
 new(noExist(g))$( not ( commit(g) or neverBuild(g) ) ) = yes ;
-* North and South Island plant
-nigen(g)$mapg_ild(g,'ni') = yes ;  nigen(neverBuild(g)) = no ;
-sigen(g)$mapg_ild(g,'si') = yes ;  sigen(neverBuild(g)) = no ;
 
-* Identify exceptions to the technology-determined list of plant movers, i.e. if user fixes build year to a legitimate value, then
-* don't allow the plant to be a mover.
-loop(movers(k), moverExceptions(noExist(g))$( mapg_k(g,k) * ( i_fixComYr(g) >= firstYear ) * ( i_fixComYr(g) <= lastYear ) ) = yes ) ;
-
-* Define the valid years in which a generating plant may operate.
-* Existing.
-validYrOperate(exist(g),y,t) = yes ;
-* For committed plant, define valid operating years based on the year the capacity is assumed to become operational.
-validYrOperate(commit(g),y,t)$( yearNum(y) >= i_fixComYr(g) ) = yes ;
-* For new plant, define valid operating years based on the earliest commissioning year.
-validYrOperate(new(g),y,t)$( yearNum(y) >= i_EarlyComYr(g) ) = yes ;
-* Remove plant facing an endogenous refurbishment/retirement decision for the years after the refurbished kit has reached the end of its life.
-validYrOperate(g,y,t)$( i_refurbDecisionYear(g) * ( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) ) = no ;
-* Remove decommissioned plant and palnt unable to ever be built from validYrOperate.
-validYrOperate(g,y,t)$( i_ExogenousRetireYr(g) * ( yearNum(y) >= i_ExogenousRetireYr(g) ) ) = no ;
-validYrOperate(neverBuild(g),y,t) = no ;
-
-* Define the valid years in which a new plant may be built.
+* vi) Define the years in which it is valid for a generating plant to be built. The plant must either be committed or (potentially)
+* new, and the plant can't be a member of the neverBuild set
 validYrBuild(commit(g),y)$( yearNum(y) = i_fixComYr(g) ) = yes ;
 validYrBuild(new(g),y)$( yearNum(y) >= i_EarlyComYr(g) ) = yes ;
 validYrBuild(neverBuild(g),y) = no ;
 
-* Identify the plant that may be built, i.e. it doesn't already exist or it is not otherwise prevented from being built.
+* vii) Identify the plant that may be built, i.e. it doesn't already exist or it is not otherwise prevented from being built.
 possibleToBuild(g)$sum(y$validYrBuild(g,y), 1) = yes ;
 
-* Identify generation plant that can be linearly or incrementally built, and those that must be integer builds.
+* viii) Identify generation plant that can be linearly or incrementally built.
 loop((g,k)$( noExist(g) * linearBuildTech(k) * mapg_k(g,k) * ( not i_fixComYr(g) ) ),
   linearPlantBuild(g)$( i_nameplate(g) >= i_linearBuildMW(k) ) = yes ;
   linearPlantBuild(g)$( i_EarlyComYr(g) >= i_linearBuildYr(k) ) = yes ;
 ) ;
-* If not able to be linearly built, then must be integer build.
+
+* ix) Identify generation plant that must be integer build (must be integer if not linear).
 integerPlantBuild(noExist(g))$( not linearPlantBuild(g) ) = yes ;
 integerPlantBuild(neverBuild(g)) = no ;
 
-* Define capacity of existing plant in first modelled year. Note that if capacity is committed in the first modelled
-* year, it is treated as 'new' plant capacity as far as GEM is concerned.
+* x) Identify exceptions to the technology-determined list of plant movers, i.e. if user fixes build year to a legitimate value, then
+* don't allow the plant to be a mover.
+loop(movers(k), moverExceptions(noExist(g))$( mapg_k(g,k) * ( i_fixComYr(g) >= firstYear ) * ( i_fixComYr(g) <= lastYear ) ) = yes ) ;
+
+* xi) Define the years in which it is valid for a generating plant to operate. The plant must exist; if plant is committed, it is valid to
+* operate it in any year beginning with the year in which it is commissioned; if plant is new, it is valid to operate it in any year beginning
+* with the earliest year in which it may be commissioned; it is not valid to operate any plant that has come to the end of its refurbished life
+* (i.e. can't repeatedly refurbish); it is not valid to operate any plant that has been exogenously retired, or decommissioned; and it is not
+* valid to operate any plant that is never able to be built.
+validYrOperate(exist(g),y,t) = yes ;
+validYrOperate(commit(g),y,t)$( yearNum(y) >= i_fixComYr(g) ) = yes ;
+validYrOperate(new(g),y,t)$( yearNum(y) >= i_EarlyComYr(g) ) = yes ;
+validYrOperate(g,y,t)$( i_refurbDecisionYear(g) * ( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) ) = no ;
+validYrOperate(g,y,t)$( i_ExogenousRetireYr(g) * ( yearNum(y) >= i_ExogenousRetireYr(g) ) ) = no ;
+validYrOperate(neverBuild(g),y,t) = no ;
+
+* xii) North and South Island plant
+nigen(g)$mapg_ild(g,'ni') = yes ;  nigen(neverBuild(g)) = no ;
+sigen(g)$mapg_ild(g,'si') = yes ;  sigen(neverBuild(g)) = no ;
+
+* Define capacity of existing plant in first modelled year. Be aware that if capacity is committed in the first modelled year, the plant
+* will be in the commit(g) and noExist(g) sets.
 initialCapacity(exist(g)) = i_nameplate(g) ;
 
 * Define exogenously retired MW by plant and year.
@@ -359,6 +362,9 @@ capCharge(g,y)       = capexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'genplt'))
 refurbCapCharge(g,y) = refurbCapexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'refplt')) ;
 refurbCapCharge(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 refurbCapCharge(g,y)$( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) = 0 ;
+
+* Calculate reserve capability per generating plant.
+reservesCapability(g,rc)$i_plantReservesCap(g,rc) = i_nameplate(g) * i_plantReservesCap(g,rc) ;
 
 
 * e) System security data.
@@ -613,3 +619,40 @@ execute 'temp.bat' ;
 
 
 * End of file.
+
+
+
+
+* Plant status.
+File plantStatus / "%OutPath%%runName%\Input data checks\Plant status.txt" / ; plantStatus.lw = 0 ; plantStatus.pw = 999 ;
+$set PlantStatusHdr "MW  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr" ;
+counter = 0 ;
+put plantStatus, 'Status of all plant - based on user-supplied data and the machinations of GEMdata.gms.' //
+  'Notes:' /
+  'MW - nameplate MW.' /
+  'Exist - plant already exists.' /
+  'noExst - plant does not exist but may be a candidate for building.' /
+  'Commit - plant is committed to be built in the single year given in the column entitled FixYr.' /
+  'New - plant is potentially able to be built but no earlier than the year given in the ErlyYr column.' /
+  'NvaBld - plant is defined by user to be never able to be built.' /
+  'ErlyYr - the earliest year in which a new plant can be built.' /
+  'FixYr - the year in which committed plant will be built or, if 3333, the plant can never be built.' /
+  'inVbld - the plant is in the set called validYrBuild.' /
+  'inVopr - the plant is in the set called validYrOperate.' /
+*  "Retire - for this MDS, the plant is retired or decommissioned in the year given in the 'RetYr' column." /
+*  'RetYr - the year in which plants to be retired are retired for this MDS.' /
+*  'Mover - if the timing run is reoptimised, then for this MDS the plant is able to have its build date moved.' ;
+put / 'Plant nbr/name' @22 "%PlantStatusHdr%" ;
+loop(g,
+  counter = counter + 1 ;
+  put / counter:<4:0, g.tl:<15, i_nameplate(g):4:0 @27 ;
+    if(exist(g),        put 'Y' else put '-' ) put @33 ;
+    if(noExist(g),      put 'Y' else put '-' ) put @41 ;
+    if(commit(g),       put 'Y' else put '-' ) put @47 ;
+    if(new(g),          put 'Y' else put '-' ) put @52 ;
+    if(neverBuild(g),   put 'Y' else put '-' ) put @58 ;
+    if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @65 ;
+    if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @72 ;
+    if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @79 ;
+    if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @86 ;
+) ;

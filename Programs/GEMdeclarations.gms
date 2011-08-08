@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 05/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 08/08/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -64,7 +64,7 @@ Sets
 
 Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 40 mapping sets and subsets (grouped as per the navigation pane of Oasis)
+* 37 mapping sets and subsets (grouped as per the navigation pane of Oasis)
 Sets
 * 24 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -91,12 +91,9 @@ Sets
   lignite(f)                                    'Lignite fuel'
   gas(f)                                        'Gas fuel'
   diesel(f)                                     'Diesel fuel'
-* 6 generation
+* 3 generation
   mapGenPlant(g,k,i,o)                          'Generation plant mappings'
   exist(g)                                      'Generation plant that are presently operating'
-  commit(g)                                     'Generation plant that are assumed to be committed'
-  new(g)                                        'Potential generation plant that are neither existing nor committed'
-  neverBuild(g)                                 'Generation plant that are determined a priori by user never to be built'
   maps_r(s,r)                                   'Map regions to VOLL plants'
 * 6 location
   mapLocations(i,r,e,ild)                       'Location mappings'
@@ -319,6 +316,9 @@ Sets
 * Fuel prices and quantity limits.
 * Generation data.
   noExist(g)                                    'Generation plant that are not presently operating'
+  commit(g)                                     'Generation plant that are assumed to be committed'
+  new(g)                                        'Potential generation plant that are neither existing nor committed'
+  neverBuild(g)                                 'Generation plant that are determined a priori by user never to be built'
   nigen(g)                                      'North Island generation plant'
   sigen(g)                                      'South Island generation plant'
   schedHydroPlant(g)                            'Schedulable hydro generation plant'
