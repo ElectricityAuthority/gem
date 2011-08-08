@@ -5,7 +5,6 @@
 
 
 *** To do:
-*** add i_NorthwardHVDCtransfer(y) = 500 to GDX file.
 *** CBAdiscountRates are hard-coded - need to take values from UI.
 *** exist(g) is hard coded <= 46
 *** See comment on line #429
@@ -105,16 +104,12 @@ $load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
 $load i_peakLoadNZ i_peakLoadNI i_NrgDemand
 * 12 reserves and security
 $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
-$load   i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
+$load   i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_NorthwardHVDCtransfer i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
 * 3 hydrology
 $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
 
 * Initialise set 'n' - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
-
-***
-i_NorthwardHVDCtransfer(y) = 500 ;
-***
 
 
 
