@@ -1,11 +1,10 @@
 * GEMsolve.gms
 
-* Last modified by Dr Phil Bishop, 05/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 08/08/2011 (imm@ea.govt.nz)
 
 *** To do:
 *** Make sure the writing of GEMdataGDX is all that it should be
 *** Sort out the MIPtrace stuff
-*** Sort out GEMsolve.log. Where does it go and how does it get there?
 *** does each model type have the correct modelstat error condition driving the abort stmt?
 *** The abort if slacks present has gone. Bring it back? Warning if penalties?
 
@@ -129,8 +128,7 @@ historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 * 3. Write the GEMdataGDX file.
 
 * NB: The following symbols from input data file may have been changed in GEMdata.
-*     Sets: y, exist, commit, new, neverBuild
-*     Parameters: i_nrgtxCapacity, i_txCapacityPO
+*     Sets y and exist; and the parameter i_txCapacityPO.
 
 Execute_Unload "%GEMdataGDX%",
 *+++++++++++++++++++++++++
@@ -147,8 +145,7 @@ Execute_Unload "%GEMdataGDX%",
 * Financial
 * Fuel prices and quantity limits.
 * Generation data.
-  exist commit new neverBuild
-  noExist nigen sigen schedHydroPlant pumpedHydroPlant moverExceptions validYrBuild integerPlantBuild linearPlantBuild
+  exist nigen sigen schedHydroPlant pumpedHydroPlant moverExceptions validYrBuild integerPlantBuild linearPlantBuild
   possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire endogenousRetireDecisnYrs endogenousRetireYrs
   validYrOperate
 * Load data.
@@ -546,7 +543,7 @@ Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
   bigNIgen nxtBigNIgen i_bigSIgen i_fkNI i_fkSI
   i_fixedOM i_HVDCshr i_HVDClevy srmc locFac_recip i_plantReservesCost
 * Generation plant related sets and parameters
-  exist noExist commit new nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
+  exist noExist commit new neverBuild nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
   exogMWretired possibleToEndogRetire possibleToRetire possibleToRefurbish continueAftaEndogRetire peakConPlant NWpeakConPlant
   endogenousRetireDecisnYrs endogenousRetireYrs movers i_nameplate i_heatRate initialCapacity maxCapFactPlant minCapFactPlant AnnualMWlimit
   i_minUtilisation i_minUtilByTech i_maxNrgByFuel renNrgShrOn i_renewNrgShare i_renewCapShare i_VOLLcap i_VOLLcost i_fof
