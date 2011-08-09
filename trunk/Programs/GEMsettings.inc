@@ -26,11 +26,11 @@ $setglobal firstScenario    "Final GEM2.0 input data (2Reg 9Block mds1).gdx"
 *+++ Model +++
 $setglobal firstYear 2010
 * First modelled year.
-$setglobal lastYear 2040
+$setglobal lastYear 2020
 * Last modelled year.
-$setglobal RunType 1
+$setglobal RunType 0
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
-$setglobal GEMtype RMIP
+$setglobal GEMtype MIP
 * Specify whether GEM is to be a MIP or an RMIP - take care to get the spelling exact (default = MIP).
 $setglobal DISPtype RMIP
 * Specify whether DISP is to be a MIP or an RMIP - take care to get the spelling exact (default = RMIP).
@@ -51,9 +51,9 @@ Scalar hydroOutputScalar / .97 / ;
 
 
 *+++ CapitalExpenditure +++
-Scalar WACCg / .08 / ;
-Scalar WACCt / .08 / ;
-Scalar taxRate / .3 / ;
+Scalar WACCg / .07 / ;
+Scalar WACCt / .07 / ;
+Scalar taxRate / .28 / ;
 Scalar depType / 1 / ;
 Scalar txPlantLife / 60 / ;
 Scalar txDepRate / .06 / ;
