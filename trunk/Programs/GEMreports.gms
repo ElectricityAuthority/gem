@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 03/02/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/08/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -109,7 +109,7 @@ Sets
 *    d) Declare sets and parameters local to GEMreports, i.e. declared here for the first time.
 
 * NB: The following symbols from input data file may have been changed in GEMdata. So procure from
-*     GEMdataGDX rather than from GDXinputFile, or make commensurate change.
+*     GEMdataGDX rather than from GEMinputGDX, or make commensurate change.
 *     Sets: y, exist, commit, new, neverBuild
 *     Parameters: i_txCapacity, i_txCapacityPO
 

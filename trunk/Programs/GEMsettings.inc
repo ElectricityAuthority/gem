@@ -75,11 +75,11 @@ $setglobal NumVertices 4
 
 
 *+++ Load +++
-*$setglobal AClossesNI 0.0368
-$setglobal AClossesNI 0.0
+$setglobal AClossesNI 0.0368
+*$setglobal AClossesNI 0.0
 * Upwards adjustment to load to account for NI AC (or intraregional) losses - .0368 for 2-region and .0120 for 18-region
-*$setglobal AClossesSI 0.0534
-$setglobal AClossesSI 0.0
+$setglobal AClossesSI 0.0534
+*$setglobal AClossesSI 0.0
 * Upwards adjustment to load to account for SI AC (or intraregional) losses - .0534 for 2-region and .0180 for 18-region
 $setglobal EmbedAdjNZ 198
 * MW added to NZ peak load to overcome potential double-counting of embedded generation

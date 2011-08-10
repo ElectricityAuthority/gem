@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 09/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 11/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -21,8 +21,9 @@ $ontext
  used to restart GEMsolve. GEMsolve is invoked immediately after GEMdata.
 
  Code sections:
-  1. Load input data that comes from input GDX file (or the paths/settings include files).
-  2. Initialise sets and parameters.
+  1. Take care of a few preliminaries.
+  2. Load input data that comes from input GDX file (or the paths/settings include files).
+  3. Initialise sets and parameters.
      a) Time/date-related sets and parameters.
      b) Various mappings, subsets and counts.
      c) Financial parameters.
@@ -30,10 +31,15 @@ $ontext
      e) System security data.
      f) Transmission data.
      g) Reserve energy data.
-  3. Display sets and parameters.
-  4. Archive/save input files.
+  4. Prepare the outcome-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
+  5. Display sets and parameters.
+  6. Create input data summaries.
 $offtext
 
+
+
+*===============================================================================================
+* 1. Take care of a few preliminaries.
 
 * Track memory usage.
 * Higher numbers are for more detailed information inside loops. Alternatively, on the command line, type: gams xxx profile=1
@@ -52,10 +58,20 @@ $offuelxref offuellist
 $offsymxref offsymlist
 *$onsymxref  onsymlist
 
+* Create and execute a batch file to archive/save selected files.
+File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
+putclose bat
+  'copy "%DataPath%%GEMinputGDX%"       "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
+  'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %scenarioName%.inc"' /
+  'copy "%ProgPath%GEMstochastic.gms"   "%OutPath%\%runName%\Archive\GEMstochastic.gms"' /
+  ;
+execute 'temp.bat' ;
+
 
 
 *===============================================================================================
-* 1. Load input data that comes from input GDX file (or the paths/settings include files).
+* 2. Load input data that comes from input GDX file (or the paths/settings include files).
 
 * Initialise set y with the modelled years as specified in GEMsettings.inc.
 * NB: set y in the GDX file contains all years on which data is defined whereas %firstYear% and %lastYear%
@@ -63,7 +79,7 @@ $offsymxref offsymlist
 *     are loaded without domain checking, i.e. $load c.f. $loaddc.
 Set y  / %firstYear% * %lastYear% / ;
 
-$gdxin "%DataPath%%GDXinputFile%"
+$gdxin "%DataPath%%GEMinputGDX%"
 * 22 fundamental sets (i.e. all 23 less set y)
 $loaddc k f fg g s o i r e ild p ps tupg tgc t lb rc hY v m geo col
 * 37 mapping sets and subsets
@@ -114,7 +130,7 @@ Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
 
 *===============================================================================================
-* 2. Initialise sets and parameters.
+* 3. Initialise sets and parameters.
 
 * a) Time/date-related sets and parameters.
 firstYear = %firstYear% ;
@@ -518,8 +534,87 @@ bigM(ild1,ild) =
 
 
 
+
+*+++++++++++++++++++++++++
+* More code to do the non-free reserves stuff. 
+
+* Estimate free reserves by path state.
+freeReserves(nwd(r,rr),ps)$allowedStates(nwd,ps) = i_txCapacityPO(nwd,ps) + largestNIplant ;
+freeReserves(swd(r,rr),ps)$allowedStates(swd,ps) = i_txCapacityPO(swd,ps) + largestSIplant ;
+
+* Estimate non-free reserves by path state.
+nonFreeReservesCap(paths(r,rr),ps)$( allowedStates(paths,ps) and (nwd(paths) or swd(paths)) ) = i_txCapacity(paths,ps) - freeReserves(paths,ps) ;
+
+* Figure out capacities (really, upper bounds) of non-free reserves by step.
+* a) Find the biggest value in each direction
+bigSwd(swd) = smax(ps, nonFreeReservesCap(swd,ps)) ;
+bigNwd(nwd) = smax(ps, nonFreeReservesCap(nwd,ps)) ;
+* b) Set the first step to be 100
+pNFresvCap(paths(r,rr),stp)$( nwd(paths) or swd(paths) ) = 100 ;
+* c) Set subsequent steps to be 100 more than the previous step
+loop(stp$( ord(stp) > 1),
+  pNFresvCap(paths(r,rr),stp)$( ord(stp) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCap(paths,stp-1) + 100 ;
+) ;
+* d) Set the last step to be the biggest value over all states
+pNFresvCap(swd,stp)$( ord(stp) = card(stp) ) = bigswd(swd) ;
+pNFresvCap(nwd,stp)$( ord(stp) = card(stp) ) = bignwd(nwd) ;
+
+* Figure out costs by step - note that this cost function is entirely fabricated but it gives seemingly reasonable values.
+pNFresvCost(paths(r,rr),stp)$( nwd(paths) or swd(paths) ) = .0000009 * ( pnfresvcap(paths,stp)**3 ) + 150 ;
+
+* Cap the cost of the last step at the cost of VOLL.
+pNFresvCost(paths(r,rr),stp)$( pNFresvCost(paths,stp) > 500 ) = 500 ;
+*+++++++++++++++++++++++++
+
+
+
+
 *===============================================================================================
-* 3. Display sets and parameters.
+* 4. Prepare the outcome-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
+
+$include GEMstochastic.gms
+
+* Pro-rate weightOutcomesBySet values so that weights sum to exactly one for each outcomeSets:
+counter = 0 ;
+loop(outcomeSets,
+  counter = sum(outcomes, weightOutcomesBySet(outcomeSets,outcomes)) ;
+  weightOutcomesBySet(outcomeSets,outcomes)$counter = weightOutcomesBySet(outcomeSets,outcomes) / counter ;
+  counter = 0 ;
+) ;
+
+* Compute the short-run marginal cost (and its components) for each generating plant, $/MWh.
+totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
+
+CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
+
+CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
+
+SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
+
+* If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
+SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = 1e-3 * ord(g) / card(g) ;
+
+* Capture the island-wide AC loss adjustment factors.
+AClossFactors('ni') = %AClossesNI% ;
+AClossFactors('si') = %AClossesSI% ;
+
+* Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses and the outcome-specific energy factor.
+NrgDemand(r,y,t,lb,outcomes) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * outcomeNRGfactor(outcomes) ;
+
+* Use the GWh of NrgDemand and hours per LDC block to compute ldcMW (MW).
+ldcMW(r,y,t,lb,outcomes)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,outcomes) / hoursPerBlock(t,lb) ;
+
+* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation and the outcome-specific peak load factor.
+peakLoadNZ(y,outcomes) = ( i_peakLoadNZ(y) + %embedAdjNZ% ) * outcomePeakLoadFactor(outcomes) ;
+peakLoadNI(y,outcomes) = ( i_peakLoadNI(y) + %embedAdjNI% ) * outcomePeakLoadFactor(outcomes) ;
+
+* Transfer hydro output for all hydro years from i_historicalHydroOutput to historicalHydroOutput (no outcome-specific adjustment factors at this time).
+historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
+
+
+
+*===============================================================================================
+* 5. Display sets and parameters.
 
 $ontext 
 
@@ -566,65 +661,44 @@ $offtext
 
 
 *===============================================================================================
-* 4. Archive/save input files.
+* 6. Create input data summaries.
 
-*+++++++++++++++++++++++++
-* More code to do the non-free reserves stuff. 
-
-* Estimate free reserves by path state.
-freeReserves(nwd(r,rr),ps)$allowedStates(nwd,ps) = i_txCapacityPO(nwd,ps) + largestNIplant ;
-freeReserves(swd(r,rr),ps)$allowedStates(swd,ps) = i_txCapacityPO(swd,ps) + largestSIplant ;
-
-* Estimate non-free reserves by path state.
-nonFreeReservesCap(paths(r,rr),ps)$( allowedStates(paths,ps) and (nwd(paths) or swd(paths)) ) = i_txCapacity(paths,ps) - freeReserves(paths,ps) ;
-
-* Figure out capacities (really, upper bounds) of non-free reserves by step.
-* a) Find the biggest value in each direction
-bigSwd(swd) = smax(ps, nonFreeReservesCap(swd,ps)) ;
-bigNwd(nwd) = smax(ps, nonFreeReservesCap(nwd,ps)) ;
-* b) Set the first step to be 100
-pNFresvCap(paths(r,rr),stp)$( nwd(paths) or swd(paths) ) = 100 ;
-* c) Set subsequent steps to be 100 more than the previous step
-loop(stp$( ord(stp) > 1),
-  pNFresvCap(paths(r,rr),stp)$( ord(stp) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCap(paths,stp-1) + 100 ;
-) ;
-* d) Set the last step to be the biggest value over all states
-pNFresvCap(swd,stp)$( ord(stp) = card(stp) ) = bigswd(swd) ;
-pNFresvCap(nwd,stp)$( ord(stp) = card(stp) ) = bignwd(nwd) ;
-
-* Figure out costs by step - note that this cost function is entirely fabricated but it gives seemingly reasonable values.
-pNFresvCost(paths(r,rr),stp)$( nwd(paths) or swd(paths) ) = .0000009 * ( pnfresvcap(paths,stp)**3 ) + 150 ;
-
-* Cap the cost of the last step at the cost of VOLL.
-pNFresvCost(paths(r,rr),stp)$( pNFresvCost(paths,stp) > 500 ) = 500 ;
-*+++++++++++++++++++++++++
-
-
-* Create and execute a batch file to archive/save selected files.
-File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
-putclose bat
-  'copy "%DataPath%%GDXinputFile%"      "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
-  'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %scenarioName%.inc"' /
-  'copy "%ProgPath%GEMstochastic.gms"   "%OutPath%\%runName%\Archive\GEMstochastic.gms"' /
+Sets
+  stat   'Classes of statistics'      / Count    'Count'
+                                        Min      'Minimum, $/kW'
+                                        Max      'Maximum, $/kW'
+                                        Range    'Range, $/kW'
+                                        Variance 'Variance, $/kW'
+                                        Mean     'Mean, $/kW'
+                                        StdDev   'Standard deviation, $/kW'
+                                       'StdDev%' 'Standard deviation as a percentage'  /
   ;
-execute 'temp.bat' ;
 
+Parameters
+  capexStatistics(k,r,stat)            'Descriptive statistics of (lumpy) capex (incl. connection costs) by technology and region'
+  loadByRegionYear(r,y,outcomes)       'Load by region, year and outcome, GWh'
+  peakLoadNZByYear(y,outcomes)         'Peak load for New Zealand by year and outcome, MW'
+  peakLoadNIByYear(y,outcomes)         'Peak load NZ by year and outcome, MW'
+  ;
 
+Files
+  plantData     / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Plant summary.txt" /
+  capexStats    / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Capex statistics.txt" /
+  loadSummary   / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Load summary.txt" /
+  ;
 
+plantData.lw = 0 ;    plantData.pw = 999 ;
+capexStats.lw = 0 ;   capexStats.pw = 999 ;
+loadSummary.lw = 0 ;  loadSummary.pw = 999 ;
 
-* End of file.
-
-
-
-
-* Plant status.
-File plantStatus / "%OutPath%%runName%\Input data checks\Plant status.txt" / ; plantStatus.lw = 0 ; plantStatus.pw = 999 ;
-$set PlantStatusHdr "MW  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr" ;
-counter = 0 ;
-put plantStatus, 'Status of all plant - based on user-supplied data and the machinations of GEMdata.gms.' //
+* Plant dta summaries.
+$set plantDataHdr "MW     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr" ;
+put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Notes:' /
   'MW - nameplate MW.' /
+  'HR - Heat rate of generating plant, GJ/GWh' /
+  'varOM - Variable O&M costs by plant, $/MWh' /
+  'fixOM - Fixed O&M costs by plant, $/kW/year' /
   'Exist - plant already exists.' /
   'noExst - plant does not exist but may be a candidate for building.' /
   'Commit - plant is committed to be built in the single year given in the column entitled FixYr.' /
@@ -637,17 +711,73 @@ put plantStatus, 'Status of all plant - based on user-supplied data and the mach
 *  "Retire - for this MDS, the plant is retired or decommissioned in the year given in the 'RetYr' column." /
 *  'RetYr - the year in which plants to be retired are retired for this MDS.' /
 *  'Mover - if the timing run is reoptimised, then for this MDS the plant is able to have its build date moved.' ;
-put / 'Plant nbr/name' @22 "%PlantStatusHdr%" ;
+put / 'Plant nbr/name' @22 "%plantDataHdr%" ;
+counter = 0 ;
 loop(g,
   counter = counter + 1 ;
-  put / counter:<4:0, g.tl:<15, i_nameplate(g):4:0 @27 ;
-    if(exist(g),        put 'Y' else put '-' ) put @33 ;
-    if(noExist(g),      put 'Y' else put '-' ) put @41 ;
-    if(commit(g),       put 'Y' else put '-' ) put @47 ;
-    if(new(g),          put 'Y' else put '-' ) put @52 ;
-    if(neverBuild(g),   put 'Y' else put '-' ) put @58 ;
-    if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @65 ;
-    if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @72 ;
-    if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @79 ;
-    if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @86 ;
+  put / counter:<4:0, g.tl:<15, i_nameplate(g):4:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @48 ;
+    if(exist(g),        put 'Y' else put '-' ) put @54 ;
+    if(noExist(g),      put 'Y' else put '-' ) put @62 ;
+    if(commit(g),       put 'Y' else put '-' ) put @68 ;
+    if(new(g),          put 'Y' else put '-' ) put @73 ;
+    if(neverBuild(g),   put 'Y' else put '-' ) put @79 ;
+    if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @86 ;
+    if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @93 ;
+    if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @100 ;
+    if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @107 ;
 ) ;
+
+
+* Capex statistics
+capexStatistics(k,r,'count') = sum(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), 1 ) ; 
+capexStatistics(k,r,'min')$capexStatistics(k,r,'count')   = smin(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) ; 
+capexStatistics(k,r,'max')$capexStatistics(k,r,'count')   = smax(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) ; 
+capexStatistics(k,r,'range')$capexStatistics(k,r,'count') = capexStatistics(k,r,'max') - capexStatistics(k,r,'min') ;
+capexStatistics(k,r,'mean')$capexStatistics(k,r,'count')  = sum(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) / capexStatistics(k,r,'count') ; 
+capexStatistics(k,r,'variance')$capexStatistics(k,r,'count') = sum(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), sqr(1e-3 * capexPlant(g) - capexStatistics(k,r,'mean')) ) / capexStatistics(k,r,'count') ; 
+capexStatistics(k,r,'stdDev') = sqrt(capexStatistics(k,r,'variance')) ;
+capexStatistics(k,r,'stdDev%')$capexStatistics(k,r,'mean') = 100 * capexStatistics(k,r,'stdDev') / capexStatistics(k,r,'mean') ;
+
+put capexStats 'Descriptive statistics of (lumpy) capex, $/kW - includes connection costs.' // @24 ; loop(stat, put stat.tl:>10 ) ;
+loop(k,
+  counter = 0 ;
+  put / k.tl @15 ;
+  loop(r,
+    if(counter = 0, put r.tl else put / @15 r.tl ) ;
+    counter = 1 ;
+    put @24 ;
+    loop(stat,
+      if(not ord(stat) = card(stat), put capexStatistics(k,r,stat):>10:0 else put capexStatistics(k,r,stat):>10:1 ) ;
+    ) ;
+  ) ;
+) ;
+put / loop(stat, put / stat.tl @13 '- ' stat.te(stat) ) ;
+
+
+* Load summaries
+loop(outcomes$sameas(outcomes,'piAvg'),
+  loadByRegionYear(r,y,outcomes) = sum((t,lb), NrgDemand(r,y,t,lb,outcomes)) ;
+  peakLoadNZByYear(y,outcomes) = peakLoadNZ(y,outcomes) ;
+  peakLoadNIByYear(y,outcomes) =  peakLoadNZ(y,outcomes) ;
+) ;
+
+put loadSummary ;
+put 'Load by region, year and outcome, GWh' /
+    '- load grossed-up by AC loss factors and scaled by outcome-specific energy factor' // @12 ;
+loop(r, put r.tl:>10 ) ;
+loop((y,outcomes)$sameas(outcomes,'piAvg'),
+  put / @2 y.tl @12 ;
+  loop(r, put loadByRegionYear(r,y,outcomes):>10:0 ) ;
+) ;
+put // 'Intraregional AC loss factors, %' ;
+loop(ild, put / @2 ild.tl @12 (100 * AClossFactors(ild)):>10:2 ) ;
+
+put // 'Outcome-specific energy factor' ;
+loop(outcomes$sameas(outcomes,'piAvg'), put / @2 outcomes.tl @12 outcomeNRGfactor(outcomes):>10:2 ) ;
+
+*display AClossFactors, outcomeNRGfactor, loadByRegionYear ;
+
+
+
+
+* End of file.

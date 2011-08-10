@@ -570,6 +570,7 @@ Equations
   ;
 
 
+
 *===============================================================================================
 * 4. Specify the equations and declare the models.
 
@@ -882,7 +883,6 @@ Model DISP Dispatch model with build forced and timing fixed  /
 
 * Model GEM is just model DISP with 6 additional constraints added:
 Model GEM Generation expansion model / DISP, bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire, endogretonce / ;
-
 
 
 *===============================================================================================
