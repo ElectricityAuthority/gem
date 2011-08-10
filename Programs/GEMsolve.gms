@@ -1,12 +1,16 @@
 * GEMsolve.gms
 
-* Last modified by Dr Phil Bishop, 08/08/2011 (imm@ea.govt.nz)
+
+* Last modified by Dr Phil Bishop, 11/08/2011 (imm@ea.govt.nz)
+
 
 *** To do:
-*** Make sure the writing of GEMdataGDX is all that it should be
 *** Sort out the MIPtrace stuff
 *** does each model type have the correct modelstat error condition driving the abort stmt?
 *** The abort if slacks present has gone. Bring it back? Warning if penalties?
+
+* NB: The following symbols from input data file may have been changed in GEMdata.
+*     Sets y and exist; and the parameter i_txCapacityPO.
 
 $ontext
  This program continues sequentially from GEMdata. The GEMdata work file must be called
@@ -15,13 +19,10 @@ $ontext
 
  Code sections:
   1. Take care of preliminaries.
-  2. Prepare the outcome-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
-  3. Write the GEMdataGDX file.
-  4. Set bounds, initial levels and, in some cases, fix variables to a specified level.
-  5. Loop through all the solves
-  6. Prepare results to pass along to GEMreports in the form of a GDX file. 
-  7. Dump results out to GDX files and rename/relocate certain output files.
-
+  2. Set bounds, initial levels and, in some cases, fix variables to a specified level.
+  3. Loop through all the solves
+  4. Prepare results to pass along to GEMreports in the form of a GDX file. 
+  5. Dump results out to GDX files and rename/relocate certain output files.
 
   x. Move MIPtrace files to output directory and generate miptrace.bat.
   x. Create an awk script, which when executed, will produce a file containing the number of integer solutions per MIP model.
@@ -81,105 +82,7 @@ loop(solveGoal(goal),
 
 
 *===============================================================================================
-* 2. Prepare the outcome-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
-
-$include GEMstochastic.gms
-
-* Pro-rate weightOutcomesBySet values so that weights sum to exactly one for each outcomeSets:
-counter = 0 ;
-loop(outcomeSets,
-  counter = sum(outcomes, weightOutcomesBySet(outcomeSets,outcomes)) ;
-  weightOutcomesBySet(outcomeSets,outcomes)$counter = weightOutcomesBySet(outcomeSets,outcomes) / counter ;
-  counter = 0 ;
-) ;
-
-* Compute the short-run marginal cost (and its components) for each generating plant, $/MWh.
-totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
-
-CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
-
-CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
-
-SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
-
-* If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
-SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = 1e-3 * ord(g) / card(g) ;
-
-* Capture the island-wide AC loss adjustment factors.
-AClossFactors('ni') = %AClossesNI% ;
-AClossFactors('si') = %AClossesSI% ;
-
-* Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses and the outcome-specific energy factor.
-NrgDemand(r,y,t,lb,outcomes) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * outcomeNRGfactor(outcomes) ;
-
-* Use the GWh of NrgDemand and hours per LDC block to compute ldcMW (MW).
-ldcMW(r,y,t,lb,outcomes)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,outcomes) / hoursPerBlock(t,lb) ;
-
-* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation and the outcome-specific peak load factor.
-peakLoadNZ(y,outcomes) = ( i_peakLoadNZ(y) + %embedAdjNZ% ) * outcomePeakLoadFactor(outcomes) ;
-peakLoadNI(y,outcomes) = ( i_peakLoadNI(y) + %embedAdjNI% ) * outcomePeakLoadFactor(outcomes) ;
-
-* Transfer hydro output for all hydro years from i_historicalHydroOutput to historicalHydroOutput (no outcome-specific adjustment factors at this time).
-historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
-
-
-
-*===============================================================================================
-* 3. Write the GEMdataGDX file.
-
-* NB: The following symbols from input data file may have been changed in GEMdata.
-*     Sets y and exist; and the parameter i_txCapacityPO.
-
-Execute_Unload "%GEMdataGDX%",
-*+++++++++++++++++++++++++
-* More code to do the non-free reserves stuff. 
-  freeReserves nonFreeReservesCap bigSwd bigNwd pNFresvCap pNFresvCost
-*+++++++++++++++++++++++++
-* Sets
-* Re-declared and initialised
-  y ct d dt n
-* Time/date-related sets
-  firstYr lastYr allButFirstYr firstPeriod
-* Various mappings, subsets and counts.
-  mapg_k mapg_f mapg_o mapg_i mapg_r mapg_e mapg_ild mapi_r mapi_e mapild_r mapv_g thermalFuel
-* Financial
-* Fuel prices and quantity limits.
-* Generation data.
-  exist nigen sigen schedHydroPlant pumpedHydroPlant moverExceptions validYrBuild integerPlantBuild linearPlantBuild
-  possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire endogenousRetireDecisnYrs endogenousRetireYrs
-  validYrOperate
-* Load data.
-* Transmission data.
-  slackBus regLower interIsland nwd swd paths uniPaths biPaths transitions validTransitions allowedStates notAllowedStates
-  upgradedStates txEarlyComYrSet txFixedComYrSet validTGC nSegment
-* Parameters
-* Time/date-related sets and parameters.
-  lastYear yearNum hydroYearNum lastHydroYear hoursPerBlock
-* Various mappings, subsets and counts.
-  numReg
-* Financial parameters.
-  CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR txAnnuityFacN txAnnuityFacR
-  capRecFac depTCrecFac txCapRecFac txDeptCRecFac
-* Fuel prices and quantity limits.
-  SRMC totalFuelCost CO2taxByPlant CO2CaptureStorageCost
-* Generation data.
-  initialCapacity capexPlant capCharge refurbCapexPlant refurbCapCharge exogMWretired continueAftaEndogRetire
-  WtdAvgFOFmultiplier reservesCapability peakConPlant NWpeakConPlant maxCapFactPlant minCapFactPlant
-* Load data.
-  AClossFactors NrgDemand ldcMW peakLoadNZ peakLoadNI bigNIgen nxtbigNIgen
-* Transmission data.
-  locFac_Recip txEarlyComYr txFixedComYr reactanceYr susceptanceYr BBincidence pCap pLoss bigLoss slope intercept
-  txCapitalCost txCapCharge
-* Reserve energy data.
-  reservesAreas reserveViolationPenalty windCoverPropn bigM singleReservesReqF
-* Hydrology output data.
-  historicalHydroOutput
-  ;
-
-
-
-*===============================================================================================
-* 4. Set bounds, initial levels and, in some cases, fix variables to a specified level.
+* 2. Set bounds, initial levels and, in some cases, fix variables to a specified level.
 
 * Fix CGEN to zero for all years less than cGenYr and fix BGEN to zero for all years greater than or equal to cGenYr.
 CGEN.up(g,y) = 1 ;     CGEN.fx(g,y)$( yearNum(y) <  cGenYr ) = 0 ;
@@ -230,7 +133,7 @@ RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 
 
 *===============================================================================================
-* 5. Loop through all the solves
+* 3. Loop through all the solves
 
 $set AddUpSlacks    "sum(y, ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
 $set AddUpPenalties "sum((y,oc), PEAK_NZ_PENALTY.l(y,oc) + PEAK_NI_PENALTY.l(y,oc) + NOWINDPEAK_NZ_PENALTY.l(y,oc) + NOWINDPEAK_NI_PENALTY.l(y,oc) )"
@@ -414,7 +317,7 @@ $     include CollectResults.txt
 
 
 *===============================================================================================
-* 6. Prepare results to pass along to GEMreports in the form of a GDX file. 
+* 4. Prepare results to pass along to GEMreports in the form of a GDX file. 
 *    The 's_' solution values are averaged over all outcomeSets in an experiment. Hence, we lose the 'outcomeSets' domain.
 
 loop(experiments,
@@ -472,7 +375,7 @@ Display s2_TOTALCOST, solveReport ;
 
 
 *===============================================================================================
-* 7. Dump results out to GDX files and rename/relocate certain output files.
+* 5. Dump results out to GDX files and rename/relocate certain output files.
 
 * a) Dump output prepared for report writing into a GDX file (essentially, the 's2' parameters).
 Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
@@ -528,8 +431,7 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
   ;
 
 
-* d) Dump selected input data into a GDX file (as imported, or from intermediate GEMdata steps, or what's actually used to solve the model).
-*    NB: Some of what goes in here may also go into GEMdataGDX.
+* d) Dump selected input data into a GDX file (as imported, or from intermediate steps in GEMdata, or what's actually used to solve the model).
 Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
 * Basic sets, subsets, and mapping sets.
   y t f k g o lb r e ild ps outcomes rc n tgc
@@ -567,7 +469,6 @@ Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
 
 bat.ap = 0 ;
 putclose bat
-  'copy "%ProgPath%%GEMdataGDX%"                                        "%OutPath%\%runName%\GDX\"' /
   'copy "PreparedOutput - %runName% - %scenarioName%.gdx"               "%OutPath%\%runName%\GDX\"' /
   'copy "Slacks and penalties - %runName% - %scenarioName%.gdx"         "%OutPath%\%runName%\GDX\"' /
   'copy "Levels and marginals - %runName% - %scenarioName%.gdx"         "%OutPath%\%runName%\GDX\"' /
