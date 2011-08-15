@@ -53,6 +53,9 @@ Scalar hydroOutputScalar / .97 / ;
 *+++ CapitalExpenditure +++
 Scalar WACCg / .07 / ;
 Scalar WACCt / .07 / ;
+Scalar discRateLow  / .04 / ;
+Scalar discRateMed  / .07 / ;
+Scalar discRateHigh / .10 / ;
 Scalar taxRate / .28 / ;
 Scalar depType / 1 / ;
 Scalar txPlantLife / 60 / ;

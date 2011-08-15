@@ -5,7 +5,6 @@
 
 
 *** To do:
-*** CBAdiscountRates are hard-coded - need to take values from UI.
 *** exist(g) is hard coded <= 46
 *** See comment on line #429
 *** Add the old GEMbaseOut stuff at end and put result in Data checks folder
@@ -195,9 +194,9 @@ loop(hydroPumped(k), pumpedHydroPlant(g)$mapg_k(g,k) = yes ) ;
 * c) Financial parameters.
 CBAdiscountRates('WACCg') = WACCg ;
 CBAdiscountRates('WACCt') = WACCt ;
-CBAdiscountRates('dLow')  = .04 ;
-CBAdiscountRates('dMed')  = .07 ;
-CBAdiscountRates('dHigh') = .10 ;
+CBAdiscountRates('dLow')  = discRateLow ;
+CBAdiscountRates('dMed')  = discRateMed ;
+CBAdiscountRates('dHigh') = discRateHigh ;
 
 PVfacG(y,t) = 1 / ( 1 + WACCg ) ** ( (yearNum(y) - firstYear) + (ord(t) * 2 - 1) / ( 2 * card(t) ) ) ;
 
