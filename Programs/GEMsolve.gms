@@ -416,7 +416,7 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
 * Binary variables.
   s_BGEN s_BRET s_ISRETIRED s_BTX s_NORESVTRFR
 * Positive variables (sans the reserves-related variables).
-  s_REFURBCOST s_GENBLDCONT s_CGEN s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_PUMPEDGEN s_SPILL s_LOSS
+  s_REFURBCOST s_GENBLDCONT s_CGEN s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_PUMPEDGEN s_LOSS
   s_TXPROJVAR s_TXUPGRADE
 * Reserve variables.
   s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
