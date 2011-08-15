@@ -1,16 +1,15 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 11/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:
-*** Sort out the MIPtrace stuff
+*** Sort out the MIPtrace stuff, also, can it be made to work on all solvers?
 *** does each model type have the correct modelstat error condition driving the abort stmt?
 *** The abort if slacks present has gone. Bring it back? Warning if penalties?
 
-* NB: The following symbols from input data file may have been changed in GEMdata.
-*     Sets y and exist; and the parameter i_txCapacityPO.
+* NB: The following symbols from input data file may have been changed in GEMdata: Sets y and exist.
 
 $ontext
  This program continues sequentially from GEMdata. The GEMdata work file must be called
@@ -42,6 +41,7 @@ $offuelxref offuellist
 *$onuelxref  onuellist	
 $offsymxref offsymlist
 *$onsymxref  onsymlist
+
 
 
 *===============================================================================================
@@ -136,7 +136,7 @@ RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 * 3. Loop through all the solves
 
 $set AddUpSlacks    "sum(y, ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
-$set AddUpPenalties "sum((y,oc), PEAK_NZ_PENALTY.l(y,oc) + PEAK_NI_PENALTY.l(y,oc) + NOWINDPEAK_NZ_PENALTY.l(y,oc) + NOWINDPEAK_NI_PENALTY.l(y,oc) )"
+$set AddUpPenalties "sum((y,oc), PEAK_NZ_PENALTY.l(y,oc) + PEAK_NI_PENALTY.l(y,oc) + NOWINDPEAK_NI_PENALTY.l(y,oc) )"
 
 * First, loop through all the experiments
 loop(experiments,
@@ -324,9 +324,9 @@ loop(experiments,
 
   loop(steps,
 
-    sumSolves(outcomeSets) = no;
-    sumSolves(outcomeSets)$allSolves(experiments,steps,outcomeSets) = yes;
-    numSolves = sum(sumSolves, 1);
+    sumSolves(outcomeSets) = no ;
+    sumSolves(outcomeSets)$allSolves(experiments,steps,outcomeSets) = yes ;
+    numSolves = sum(sumSolves, 1) ;
 
     s2_TOTALCOST(experiments,steps)$numSolves                          = sum(sumSolves, s_TOTALCOST(experiments,steps,sumSolves)) / numSolves ;
     s2_OUTCOME_COSTS(experiments,steps,oc)$numSolves                   = sum(sumSolves, s_OUTCOME_COSTS(experiments,steps,sumSolves,oc)) / numSolves ;
@@ -351,7 +351,6 @@ loop(experiments,
     s2_RENNRGPENALTY(experiments,steps,y)$numSolves                    = sum(sumSolves, s_RENNRGPENALTY(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_PEAK_NZ_PENALTY(experiments,steps,y,oc)$numSolves               = sum(sumSolves, s_PEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
     s2_PEAK_NI_PENALTY(experiments,steps,y,oc)$numSolves               = sum(sumSolves, s_PEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_NOWINDPEAK_NZ_PENALTY(experiments,steps,y,oc)$numSolves         = sum(sumSolves, s_NOWINDPEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
     s2_NOWINDPEAK_NI_PENALTY(experiments,steps,y,oc)$numSolves         = sum(sumSolves, s_NOWINDPEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
     s2_ANNMWSLACK(experiments,steps,y)$numSolves                       = sum(sumSolves, s_ANNMWSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_RENCAPSLACK(experiments,steps,y)$numSolves                      = sum(sumSolves, s_RENCAPSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
@@ -359,6 +358,9 @@ loop(experiments,
     s2_MINUTILSLACK(experiments,steps,y)$numSolves                     = sum(sumSolves, s_MINUTILSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_FUELSLACK(experiments,steps,y)$numSolves                        = sum(sumSolves, s_FUELSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_bal_supdem(experiments,steps,r,y,t,lb,oc)$numSolves             = sum(sumSolves, s_bal_supdem(experiments,steps,sumSolves,r,y,t,lb,oc) ) / numSolves ;
+    s2_peak_nz(experiments,steps,y,oc)                                 = sum(sumSolves, s_peak_nz(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_peak_ni(experiments,steps,y,oc)                                 = sum(sumSolves, s_peak_ni(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_noWindPeak_ni(experiments,steps,y,oc)                           = sum(sumSolves, s_noWindPeak_ni(experiments,steps,sumSolves,y,oc) ) / numSolves ;
 *++++++++++
 * More non-free reserves code.
     s2_RESVCOMPONENTS(experiments,steps,paths,y,t,lb,outcomes,stp)$numSolves = sum(sumSolves, s_RESVCOMPONENTS(experiments,steps,sumSolves,paths,y,t,lb,outcomes,stp) ) / numSolves ;
@@ -382,14 +384,15 @@ Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
 * Miscellaneous sets and parameters
   solveGoal experiments steps oc solveReport
 * The 's2' output parameters
-  s2_TOTALCOST s2_OUTCOME_COSTS s2_TX s2_BRET s2_ISRETIRED s2_BTX s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY s2_TXCAPCHARGES
-  s2_GEN s2_VOLLGEN s2_PUMPEDGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL s2_RESVTRFR s2_bal_supdem
+  s2_TOTALCOST s2_OUTCOME_COSTS s2_TX s2_BRET s2_ISRETIRED s2_BTX s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY
+  s2_TXCAPCHARGES s2_GEN s2_VOLLGEN s2_PUMPEDGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL s2_RESVTRFR
+  s2_bal_supdem s2_peak_nz s2_peak_ni s2_noWindPeak_ni
 *++++++++++
 * More non-free reserves code.
   s2_RESVCOMPONENTS
 *++++++++++
 * The 's2' penalties.
-  s2_RENNRGPENALTY s2_PEAK_NZ_PENALTY s2_PEAK_NI_PENALTY s2_NOWINDPEAK_NZ_PENALTY s2_NOWINDPEAK_NI_PENALTY
+  s2_RENNRGPENALTY s2_PEAK_NZ_PENALTY s2_PEAK_NI_PENALTY s2_NOWINDPEAK_NI_PENALTY
 * The 's2' slacks.
   s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
   ;
@@ -397,7 +400,7 @@ Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
 
 * b) Dump all 's' slacks and penalties into a GDX file.
 Execute_Unload "Slacks and penalties - %runName% - %scenarioName%.gdx",
-  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NZ_PENALTY s_NOWINDPEAK_NI_PENALTY
+  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
   s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
   ;
 
@@ -418,12 +421,12 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
 * Reserve variables.
   s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
 * Penalty variables.
-  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NZ_PENALTY s_NOWINDPEAK_NI_PENALTY
+  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
 * Slack variables.
   s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
 * Equation marginals. 
   s_calc_outcomeCosts s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire
-  s_endogretonce s_balance_capacity s_bal_supdem s_peak_nz s_peak_ni s_noWindPEak_nz s_noWindPeak_ni s_limit_maxgen s_limit_mingen
+  s_endogretonce s_balance_capacity s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_mingen
   s_minutil s_limit_fueluse s_limit_nrg s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3
   s_boundtxloss s_tx_capacity s_tx_projectdef s_tx_onestate s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss
   s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1 s_resvtrfr1 s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc
@@ -442,7 +445,7 @@ Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
   taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
   capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost capexPlant refurbCapexPlant
   capCharge refurbCapCharge txCapCharge
-  bigNIgen nxtBigNIgen i_bigSIgen i_fkNI i_fkSI
+  i_largestGenerator, i_smallestPole, i_winterCapacityMargin, i_P200ratioNZ, i_P200ratioNI, i_fkNI
   i_fixedOM i_HVDCshr i_HVDClevy srmc locFac_recip i_plantReservesCost
 * Generation plant related sets and parameters
   exist noExist commit new neverBuild nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
@@ -451,9 +454,9 @@ Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
   i_minUtilisation i_minUtilByTech i_maxNrgByFuel renNrgShrOn i_renewNrgShare i_renewCapShare i_VOLLcap i_VOLLcost i_fof
   i_distdGenRenew i_distdGenFossil i_pumpedHydroEffic i_PumpedHydroMonth i_UnitLargestProp
 * Load and peak
-  hoursPerBlock AClossFactors outcomeNRGfactor i_NrgDemand NrgDemand ldcMW i_peakLoadNZ i_peakLoadNI outcomePeakLoadFactor peakLoadNZ peakLoadNI
+  hoursPerBlock AClossFactors outcomeNRGfactor i_NrgDemand NrgDemand ldcMW outcomePeakLoadFactor peakLoadNZ peakLoadNI
 * Transmission and grid
-  DCloadFlow gridSecurity transitions validTransitions allowedStates upgradedStates i_txCapacity i_HVDClosses i_northwardHVDCtransfer
+  DCloadFlow transitions validTransitions allowedStates upgradedStates i_txCapacity
   slope intercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 * Reserves
   useReserves singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve

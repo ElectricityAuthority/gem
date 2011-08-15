@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 11/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -28,9 +28,8 @@ $ontext
      b) Various mappings, subsets and counts.
      c) Financial parameters.
      d) Generation data.
-     e) System security data.
-     f) Transmission data.
-     g) Reserve energy data.
+     e) Transmission data.
+     f) Reserve energy data.
   4. Prepare the outcome-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
   5. Display sets and parameters.
   6. Create input data summaries.
@@ -98,7 +97,7 @@ $loaddc mapm_t
 * 1 hydrology
 $loaddc mapReservoirs
 
-* 85 parameters 
+* 81 parameters 
 * 18 technology and fuel
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
@@ -111,16 +110,15 @@ $loaddc i_VOLLcap i_VOLLcost i_HVDCshr
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
 * 2 location
 $loaddc i_substnCoordinates i_zonalLocFacs
-* 12 transmission
+* 11 transmission
 $loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
 $loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
-$load   i_HVDClevy i_HVDCreqRevenue
-* 7 load and time
-$load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
-$load i_peakLoadNZ i_peakLoadNI i_NrgDemand
-* 12 reserves and security
+$load   i_HVDClevy
+* 5 load and time
+$load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation i_NrgDemand
+* 11 reserves and security
 $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
-$load   i_reserveReqMW i_bigNIgen i_nxtbigNIgen i_bigSIgen i_NorthwardHVDCtransfer i_fkNI i_fkSI i_HVDClosses i_HVDClossesPO
+$load   i_reserveReqMW i_fkNI i_largestGenerator i_smallestPole i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
 * 3 hydrology
 $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
 
@@ -166,6 +164,9 @@ loop(maplocations(i,r,e,ild),
   mapi_e(i,e) = yes ;
   mapild_r(ild,r) = yes ;
 ) ;
+mapAggR_r('nz',r) = yes ;
+mapAggR_r('ni',r) = yes$sum(mapild_r('ni',r), 1) ;
+mapAggR_r('si',r) = yes$sum(mapild_r('si',r), 1) ;
 * Generation plant mappings
 loop(mapgenplant(g,k,i,o),
   mapg_k(g,k) = yes ;
@@ -378,19 +379,7 @@ refurbCapCharge(g,y)$( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i
 reservesCapability(g,rc)$i_plantReservesCap(g,rc) = i_nameplate(g) * i_plantReservesCap(g,rc) ;
 
 
-* e) System security data.
-bigNIgen(y) = i_BigNIgen(y) ;
-nxtbigNIgen(y) = i_nxtBigNIgen(y) ;
-
-* Set largest two NI generators to zero if n security level is desired (assumes biggest SI generator < 2 biggest NI generators).
-BigNIgen(y)$( gridSecurity = 0 ) = 0 ;
-nxtBigNIgen(y)$( gridSecurity = 0 ) = 0 ;
-
-* Set the 2nd largest NI generator to zero if n-1 security level is desired (assumes biggest SI generator < biggest NI generator).
-nxtBigNIgen(y)$( gridSecurity = 1 ) = 0 ;
-
-
-* f) Transmission data.
+* e) Transmission data.
 * Let the last region declared be the slack bus (note that set r may not be ordered if users don't maintain unique set elements).
 slackBus(r) = no ;
 slackBus(r)$( ord(r) = card(r) ) = yes ;
@@ -519,7 +508,7 @@ txCapitalCost(r,rr,ps)$( unipaths(r,rr) and (txCapitalCost(r,rr,ps) = 0) ) = i_t
 txCapCharge(r,rr,ps,y) = txCapitalCost(r,rr,ps) * txCapRecFac(y) ;
 
 
-* g) Reserve energy data.
+* f) Reserve energy data.
 reservesAreas(rc) = min(2, max(1, i_ReserveAreas(rc) ) ) ;
 
 singleReservesReqF(rc)$( reservesAreas(rc) = 1 ) = 1 ;
@@ -537,7 +526,6 @@ bigM(ild1,ild) =
 
 *+++++++++++++++++++++++++
 * More code to do the non-free reserves stuff. 
-
 * Estimate free reserves by path state.
 freeReserves(nwd(r,rr),ps)$allowedStates(nwd,ps) = i_txCapacityPO(nwd,ps) + largestNIplant ;
 freeReserves(swd(r,rr),ps)$allowedStates(swd,ps) = i_txCapacityPO(swd,ps) + largestSIplant ;
@@ -604,9 +592,9 @@ NrgDemand(r,y,t,lb,outcomes) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i
 * Use the GWh of NrgDemand and hours per LDC block to compute ldcMW (MW).
 ldcMW(r,y,t,lb,outcomes)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,outcomes) / hoursPerBlock(t,lb) ;
 
-* Transfer i_peakLoadNZ/NI to peakLoadNZ/NI and adjust for embedded generation and the outcome-specific peak load factor.
-peakLoadNZ(y,outcomes) = ( i_peakLoadNZ(y) + %embedAdjNZ% ) * outcomePeakLoadFactor(outcomes) ;
-peakLoadNI(y,outcomes) = ( i_peakLoadNI(y) + %embedAdjNI% ) * outcomePeakLoadFactor(outcomes) ;
+* Calculate peak load as peak:average ratio and adjust by the outcome-specific peak load factor.
+peakLoadNZ(y,outcomes) = outcomePeakLoadFactor(outcomes) * i_P200ratioNZ(y) * ( 1 / 8.76 ) * sum((r,t,lb)$mapAggR_r('nz',r), NrgDemand(r,y,t,lb,outcomes)) ;
+peakLoadNI(y,outcomes) = outcomePeakLoadFactor(outcomes) * i_P200ratioNI(y) * ( 1 / 8.76 ) * sum((r,t,lb)$mapAggR_r('ni',r), NrgDemand(r,y,t,lb,outcomes)) ;
 
 * Transfer hydro output for all hydro years from i_historicalHydroOutput to historicalHydroOutput (no outcome-specific adjustment factors at this time).
 historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
@@ -649,7 +637,6 @@ Display
   initialCapacity, capexPlant, capCharge, refurbCapexPlant, refurbCapCharge, exogMWretired, continueAftaEndogRetire
   WtdAvgFOFmultiplier, reservesCapability, peakConPlant, NWpeakConPlant, maxCapFactPlant, minCapFactPlant
 * Load data.
-  bigNIgen, nxtbigNIgen,
 * Transmission data.
   locFac_Recip, txEarlyComYr, txFixedComYr, reactanceYr, susceptanceYr, BBincidence, pCap, pLoss, bigLoss, slope, intercept
   txCapitalCost, txCapCharge
@@ -691,11 +678,12 @@ plantData.lw = 0 ;    plantData.pw = 999 ;
 capexStats.lw = 0 ;   capexStats.pw = 999 ;
 loadSummary.lw = 0 ;  loadSummary.pw = 999 ;
 
-* Plant dta summaries.
-$set plantDataHdr "MW     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr" ;
+* Plant data summaries.
+$set plantDataHdr "MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr" ;
 put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Notes:' /
   'MW - nameplate MW.' /
+  'Capex - Capital cost of new plant, $/kW. Includes any connection cost and randomisation - as levelised and used in objective function.' / 
   'HR - Heat rate of generating plant, GJ/GWh' /
   'varOM - Variable O&M costs by plant, $/MWh' /
   'fixOM - Fixed O&M costs by plant, $/kW/year' /
@@ -708,23 +696,28 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
   'FixYr - the year in which committed plant will be built or, if 3333, the plant can never be built.' /
   'inVbld - the plant is in the set called validYrBuild.' /
   'inVopr - the plant is in the set called validYrOperate.' /
-*  "Retire - for this MDS, the plant is retired or decommissioned in the year given in the 'RetYr' column." /
-*  'RetYr - the year in which plants to be retired are retired for this MDS.' /
+  'Retire - plant is able to be retired, either exogenouosly or endogenoously (see next 2 columns).' /
+  'EndogY - year in which endogenous retire/refurbish decision is made.' /
+  'ExogYr - year in which plant is exogenously retired.' /
 *  'Mover - if the timing run is reoptimised, then for this MDS the plant is able to have its build date moved.' ;
-put / 'Plant nbr/name' @22 "%plantDataHdr%" ;
+put / 'Plant number/name' @22 "%plantDataHdr%" ;
 counter = 0 ;
 loop(g,
   counter = counter + 1 ;
-  put / counter:<4:0, g.tl:<15, i_nameplate(g):4:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @48 ;
-    if(exist(g),        put 'Y' else put '-' ) put @54 ;
-    if(noExist(g),      put 'Y' else put '-' ) put @62 ;
-    if(commit(g),       put 'Y' else put '-' ) put @68 ;
-    if(new(g),          put 'Y' else put '-' ) put @73 ;
-    if(neverBuild(g),   put 'Y' else put '-' ) put @79 ;
-    if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @86 ;
-    if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @93 ;
-    if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @100 ;
-    if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @107 ;
+  put / counter:<4:0, g.tl:<15, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @55 ;
+    if(exist(g),        put 'Y' else put '-' ) put @61 ;
+    if(noExist(g),      put 'Y' else put '-' ) put @69 ;
+    if(commit(g),       put 'Y' else put '-' ) put @75 ;
+    if(new(g),          put 'Y' else put '-' ) put @80 ;
+    if(neverBuild(g),   put 'Y' else put '-' ) put @86 ;
+    if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @93 ;
+    if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @100 ;
+    if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @107 ;
+    if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @114 ;
+    if(possibleToRetire(g),     put 'Y' else put '-' ) put @120 ;
+    if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put ' -' ) put @127 ;
+    if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put ' -' ) put @136 ;
+    put g.te(g) ;
 ) ;
 
 
@@ -758,7 +751,7 @@ put / loop(stat, put / stat.tl @13 '- ' stat.te(stat) ) ;
 loop(outcomes$sameas(outcomes,'piAvg'),
   loadByRegionYear(r,y,outcomes) = sum((t,lb), NrgDemand(r,y,t,lb,outcomes)) ;
   peakLoadNZByYear(y,outcomes) = peakLoadNZ(y,outcomes) ;
-  peakLoadNIByYear(y,outcomes) =  peakLoadNZ(y,outcomes) ;
+  peakLoadNIByYear(y,outcomes) = peakLoadNZ(y,outcomes) ;
 ) ;
 
 put loadSummary ;
@@ -774,8 +767,6 @@ loop(ild, put / @2 ild.tl @12 (100 * AClossFactors(ild)):>10:2 ) ;
 
 put // 'Outcome-specific energy factor' ;
 loop(outcomes$sameas(outcomes,'piAvg'), put / @2 outcomes.tl @12 outcomeNRGfactor(outcomes):>10:2 ) ;
-
-*display AClossFactors, outcomeNRGfactor, loadByRegionYear ;
 
 
 
