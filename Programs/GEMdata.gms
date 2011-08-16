@@ -8,7 +8,6 @@
 *** exist(g) is hard coded <= 46
 *** See comment on line #429
 *** Add the old GEMbaseOut stuff at end and put result in Data checks folder
-*** Make sure nothng remains that should go to GEMsolve, i.e. all stuff susceptible to stochastic settings
 
 
 $ontext
@@ -16,8 +15,8 @@ $ontext
  from a GDX file, and undertakes some manipulations, transformations, and integrity checks.
 
  The GEMdata invocation requires GEMdata to be restarted from the GEMdeclarations work file. The files
- called GEMpaths.inc and GEMsettings.inc are included into GEMdata. The GEMdata work file is saved and
- used to restart GEMsolve. GEMsolve is invoked immediately after GEMdata.
+ called GEMpaths.inc, GEMsettings.inc and GEMstochastic.inc are included into GEMdata. The GEMdata work
+ file is saved and used to restart GEMsolve. GEMsolve is invoked immediately after GEMdata.
 
  Code sections:
   1. Take care of a few preliminaries.
@@ -123,6 +122,9 @@ $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
 
 * Initialise set 'n' - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
+
+*i_FixComYr(g)$( (i_FixComYr(g) > 2012) and (i_FixComYr(g) < 3333) ) = 0 ; 
+*i_EarlyComYr(g)$( (ord(g) > 46) and (i_FixComYr(g) = 0) and (i_EarlyComYr(g) = 0) ) = 2015 ; 
 
 
 
@@ -678,8 +680,18 @@ capexStats.lw = 0 ;   capexStats.pw = 999 ;
 loadSummary.lw = 0 ;  loadSummary.pw = 999 ;
 
 * Plant data summaries.
-$set plantDataHdr "MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr" ;
+$set plantDataHdr 'MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover' ;
 put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
+  'Summary counts:' /
+  'Count of plant in input file:'        @38 card(g):>4:0 /
+  'Count of existing plant:'             @38 card(exist):>4:0 /
+  'Count of committed plant:'            @38 card(commit):>4:0 /
+  'Count of plant not able to be built:' @38 card(neverBuild):>4:0 /
+  'Count of plant able to be retired:'   @38 card(possibleToRetire):>4:0 //
+  'VoLL plant count (note that VoLL plant are not counted with generating plant' /
+  'Number VoLL plant:'                   @38 (sum(s$i_VOLLcap(s), 1)):>4:0 /
+  'Average VoLL plant capacity, MW:'     @38 (sum(s, i_VOLLcap(s))  / card(s)):>4:0 /
+  'Average VoLL plant cost, $/MWh:'      @38 (sum(s, i_VOLLcost(s)) / card(s)):>4:0 //
   'Notes:' /
   'MW - nameplate MW.' /
   'Capex - Capital cost of new plant, $/kW. Includes any connection cost and randomisation - as levelised and used in objective function.' / 
@@ -698,8 +710,8 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
   'Retire - plant is able to be retired, either exogenouosly or endogenoously (see next 2 columns).' /
   'EndogY - year in which endogenous retire/refurbish decision is made.' /
   'ExogYr - year in which plant is exogenously retired.' /
-*  'Mover - if the timing run is reoptimised, then for this MDS the plant is able to have its build date moved.' ;
-put / 'Plant number/name' @22 "%plantDataHdr%" ;
+  'Mover - plant for which the commissioning date is able to move if the timing run is re-optimised.' //
+  'Plant number/name' @22 "%plantDataHdr%" ;
 counter = 0 ;
 loop(g,
   counter = counter + 1 ;
@@ -714,8 +726,9 @@ loop(g,
     if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @107 ;
     if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @114 ;
     if(possibleToRetire(g),     put 'Y' else put '-' ) put @120 ;
-    if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put ' -' ) put @127 ;
-    if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put ' -' ) put @136 ;
+    if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @127 ;
+    if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @136 ;
+    if(sum(movers(k)$mapg_k(g,k), 1) and not moverExceptions(g), put 'Y' else put '-' ) put @143 ;
     put g.te(g) ;
 ) ;
 
