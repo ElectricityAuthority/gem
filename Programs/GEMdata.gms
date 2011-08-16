@@ -798,14 +798,10 @@ loop(outcomes, put / @2 outcomes.tl @12 outcomeNRGfactor(outcomes):>10:2 ) ;
 
 put // 'Energy, GWh' @12 ;
 loop(r, put r.tl:>10 ) ;
-loop(y,
-  put / @2 y.tl @12 loop(r, put loadByRegionYear(r,y):>10:0 ) ;
-) ;
+loop(y, put / @2 y.tl @12 loop(r, put loadByRegionYear(r,y):>10:0 ) ) ;
 
 put // 'Peak load, MW' @20 'NZ' @30 'NI' ;
-loop(y,
-  put / @2 y.tl @12 peakLoadNZByYear(y):>10:0, peakLoadNIByYear(y):>10:0 ;
-) ;
+loop(y, put / @2 y.tl @12 peakLoadNZByYear(y):>10:0, peakLoadNIByYear(y):>10:0 ) ;
 
 
 
