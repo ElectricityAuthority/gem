@@ -358,9 +358,9 @@ loop(experiments,
     s2_MINUTILSLACK(experiments,steps,y)$numSolves                     = sum(sumSolves, s_MINUTILSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_FUELSLACK(experiments,steps,y)$numSolves                        = sum(sumSolves, s_FUELSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
     s2_bal_supdem(experiments,steps,r,y,t,lb,oc)$numSolves             = sum(sumSolves, s_bal_supdem(experiments,steps,sumSolves,r,y,t,lb,oc) ) / numSolves ;
-    s2_peak_nz(experiments,steps,y,oc)                                 = sum(sumSolves, s_peak_nz(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_peak_ni(experiments,steps,y,oc)                                 = sum(sumSolves, s_peak_ni(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_noWindPeak_ni(experiments,steps,y,oc)                           = sum(sumSolves, s_noWindPeak_ni(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_peak_nz(experiments,steps,y,oc)$numSolves                       = sum(sumSolves, s_peak_nz(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_peak_ni(experiments,steps,y,oc)$numSolves                       = sum(sumSolves, s_peak_ni(experiments,steps,sumSolves,y,oc) ) / numSolves ;
+    s2_noWindPeak_ni(experiments,steps,y,oc)$numSolves                 = sum(sumSolves, s_noWindPeak_ni(experiments,steps,sumSolves,y,oc) ) / numSolves ;
 *++++++++++
 * More non-free reserves code.
     s2_RESVCOMPONENTS(experiments,steps,paths,y,t,lb,outcomes,stp)$numSolves = sum(sumSolves, s_RESVCOMPONENTS(experiments,steps,sumSolves,paths,y,t,lb,outcomes,stp) ) / numSolves ;
