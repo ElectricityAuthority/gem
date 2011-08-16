@@ -4,10 +4,9 @@
 * Last modified by Dr Phil Bishop, 16/08/2011 (imm@ea.govt.nz)
 
 
-*** To do:
-*** exist(g) is hard coded <= 46
-*** See comment on line #429
-*** Add the old GEMbaseOut stuff at end and put result in Data checks folder
+** To do:
+** exist(g) is hard coded <= 46
+** See comment on line #429
 
 
 $ontext
@@ -652,32 +651,47 @@ $offtext
 * 6. Create input data summaries.
 
 Sets
-  stat   'Classes of statistics'      / Count    'Count'
-                                        Min      'Minimum, $/kW'
-                                        Max      'Maximum, $/kW'
-                                        Range    'Range, $/kW'
-                                        Variance 'Variance, $/kW'
-                                        Mean     'Mean, $/kW'
-                                        StdDev   'Standard deviation, $/kW'
-                                       'StdDev%' 'Standard deviation as a percentage'  /
+  stat   'Classes of statistics'   / Count    'Count'
+                                     Min      'Minimum, $/kW'
+                                     Max      'Maximum, $/kW'
+                                     Range    'Range, $/kW'
+                                     Variance 'Variance, $/kW'
+                                     Mean     'Mean, $/kW'
+                                     StdDev   'Standard deviation, $/kW'
+                                    'StdDev%' 'Standard deviation as a percentage'  /
   ;
 
 Parameters
-  capexStatistics(k,r,stat)            'Descriptive statistics of (lumpy) capex (incl. connection costs) by technology and region'
-  loadByRegionYear(r,y,outcomes)       'Load by region, year and outcome, GWh'
-  peakLoadNZByYear(y,outcomes)         'Peak load for New Zealand by year and outcome, MW'
-  peakLoadNIByYear(y,outcomes)         'Peak load NZ by year and outcome, MW'
+  capexStatistics(k,r,stat)    'Descriptive statistics of (lumpy) capex (incl. connection costs) by technology and region'
+  loadByRegionYear(r,y)        'Load by region and year, GWh'
+  peakLoadNZByYear(y)          'Peak load for New Zealand by year, MW'
+  peakLoadNIByYear(y)          'Peak load North Island by year, MW'
   ;
 
 Files
-  plantData     / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Plant summary.txt" /
-  capexStats    / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Capex statistics.txt" /
-  loadSummary   / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Load summary.txt" /
+  stochasticSummary / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Stochastic summary.txt" /
+  plantData         / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Plant summary.txt" /
+  capexStats        / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Capex statistics.txt" /
+  loadSummary       / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Load summary.txt" /
   ;
 
-plantData.lw = 0 ;    plantData.pw = 999 ;
-capexStats.lw = 0 ;   capexStats.pw = 999 ;
-loadSummary.lw = 0 ;  loadSummary.pw = 999 ;
+stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;
+plantData.lw = 0 ;         plantData.pw = 999 ;
+capexStats.lw = 0 ;        capexStats.pw = 999 ;
+loadSummary.lw = 0 ;       loadSummary.pw = 999 ;
+
+* Experiment-outcomeSets-outcomes summary.
+put stochasticSummary 'Summary of mappings, weights and factors relating to experiments, outcomeSets, and outcomes.' // @61
+  'Outcome' @71 'Outcome factors:' /
+  'Experiments' @18 'Steps' @28 'outcomeSets' @45 'Outcomes' @61 'Weight' @71 'PeakLoad' @81 'Co2' @91 'FuelCost' @101 'Energy' ;
+loop(allSolves(experiments,steps,outcomeSets),
+  put / experiments.tl @18 steps.tl @28 outcomeSets.tl @45
+  loop(mapOutcomes(outcomeSets,outcomes),
+    put outcomes.tl @56 weightOutcomesBySet(outcomeSets,outcomes):10:3, outcomePeakLoadFactor(outcomes):10:3
+      outcomeCO2TaxFactor(outcomes):10:3, outcomeFuelCostFactor(outcomes):10:3, outcomeNRGFactor(outcomes):10:3
+  ) ;
+);
+
 
 * Plant data summaries.
 $set plantDataHdr 'MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover' ;
@@ -743,7 +757,9 @@ capexStatistics(k,r,'variance')$capexStatistics(k,r,'count') = sum(g$( mapg_k(g,
 capexStatistics(k,r,'stdDev') = sqrt(capexStatistics(k,r,'variance')) ;
 capexStatistics(k,r,'stdDev%')$capexStatistics(k,r,'mean') = 100 * capexStatistics(k,r,'stdDev') / capexStatistics(k,r,'mean') ;
 
-put capexStats 'Descriptive statistics of (lumpy) capex, $/kW - includes connection costs.' // @24 ; loop(stat, put stat.tl:>10 ) ;
+put capexStats 'Descriptive statistics of (lumpy) capex, $/kW - includes connection costs.' // ;
+loop(stat, put / stat.tl @13 '- ' stat.te(stat) ) ;
+put / @24 ; loop(stat, put stat.tl:>10 ) ;
 loop(k,
   counter = 0 ;
   put / k.tl @15 ;
@@ -756,29 +772,36 @@ loop(k,
     ) ;
   ) ;
 ) ;
-put / loop(stat, put / stat.tl @13 '- ' stat.te(stat) ) ;
 
 
 * Load summaries
-loop(outcomes$sameas(outcomes,'piAvg'),
-  loadByRegionYear(r,y,outcomes) = sum((t,lb), NrgDemand(r,y,t,lb,outcomes)) ;
-  peakLoadNZByYear(y,outcomes) = peakLoadNZ(y,outcomes) ;
-  peakLoadNIByYear(y,outcomes) = peakLoadNZ(y,outcomes) ;
+loop(outcomes$reportingOutcome(outcomes),
+  loadByRegionYear(r,y) = sum((t,lb), NrgDemand(r,y,t,lb,outcomes)) ;
+  peakLoadNZByYear(y) = peakLoadNZ(y,outcomes) ;
+  peakLoadNIByYear(y) = peakLoadNZ(y,outcomes) ;
 ) ;
 
-put loadSummary ;
-put 'Load by region, year and outcome, GWh' /
-    '- load grossed-up by AC loss factors and scaled by outcome-specific energy factor' // @12 ;
-loop(r, put r.tl:>10 ) ;
-loop((y,outcomes)$sameas(outcomes,'piAvg'),
-  put / @2 y.tl @12 ;
-  loop(r, put loadByRegionYear(r,y,outcomes):>10:0 ) ;
-) ;
+put loadSummary 'Energy and peak load by region/island and year, GWh' /
+  ' - GWh energy grossed-up by AC loss factors and scaled by outcome-specific energy factor' /
+  " - GWh energy and peak load reported here relates only to the '" ;
+  loop(reportingOutcome(outcomes), put outcomes.tl ) put "' outcome." ;
+
 put // 'Intraregional AC loss factors, %' ;
 loop(ild, put / @2 ild.tl @12 (100 * AClossFactors(ild)):>10:2 ) ;
 
-put // 'Outcome-specific energy factor' ;
-loop(outcomes$sameas(outcomes,'piAvg'), put / @2 outcomes.tl @12 outcomeNRGfactor(outcomes):>10:2 ) ;
+put // 'Outcome-specific energy factors' ;
+loop(outcomes, put / @2 outcomes.tl @12 outcomeNRGfactor(outcomes):>10:2 ) ;
+
+put // 'Energy, GWh' @12 ;
+loop(r, put r.tl:>10 ) ;
+loop(y,
+  put / @2 y.tl @12 loop(r, put loadByRegionYear(r,y):>10:0 ) ;
+) ;
+
+put // 'Peak load, MW' @20 'NZ' @30 'NI' ;
+loop(y,
+  put / @2 y.tl @12 peakLoadNZByYear(y):>10:0, peakLoadNIByYear(y):>10:0 ;
+) ;
 
 
 
