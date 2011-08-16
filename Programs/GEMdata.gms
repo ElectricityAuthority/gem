@@ -681,14 +681,18 @@ capexStats.lw = 0 ;        capexStats.pw = 999 ;
 loadSummary.lw = 0 ;       loadSummary.pw = 999 ;
 
 * Experiment-outcomeSets-outcomes summary.
-put stochasticSummary 'Summary of mappings, weights and factors relating to experiments, outcomeSets, and outcomes.' // @61
-  'Outcome' @71 'Outcome factors:' /
-  'Experiments' @18 'Steps' @28 'outcomeSets' @45 'Outcomes' @61 'Weight' @71 'PeakLoad' @81 'Co2' @91 'FuelCost' @101 'Energy' ;
+put stochasticSummary 'Summary of mappings, weights and factors relating to experiments, outcomeSets, and outcomes.' // @61 'Outcome' @71
+  'Outcome factors:' @110 'Same => averaged over the listed hydro years; Sequential => listed hydro year maps to first modelled year.' /
+  'Experiments' @18 'Steps' @28 'outcomeSets' @45 'Outcomes' @61 'Weight' @71 'PeakLoad' @81 'Co2' @91 'FuelCost' @101 'Energy' @110
+  'SeqType' @121 'Hydro years' ;
 loop(allSolves(experiments,steps,outcomeSets),
   put / experiments.tl @18 steps.tl @28 outcomeSets.tl @45
   loop(mapOutcomes(outcomeSets,outcomes),
     put outcomes.tl @56 weightOutcomesBySet(outcomeSets,outcomes):10:3, outcomePeakLoadFactor(outcomes):10:3
       outcomeCO2TaxFactor(outcomes):10:3, outcomeFuelCostFactor(outcomes):10:3, outcomeNRGFactor(outcomes):10:3
+    put @110 ;
+    loop(mapOC_hydroSeqTypes(outcomes,hydroSeqTypes), put hydroSeqTypes.tl:<11 ) ;
+    loop(mapOC_hY(outcomes,hY), put hY.tl:<5 ) ;
   ) ;
 );
 
