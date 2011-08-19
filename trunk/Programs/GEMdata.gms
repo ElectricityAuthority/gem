@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 17/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 19/08/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -701,17 +701,20 @@ loop(allSolves(experiments,steps,outcomeSets),
 $set plantDataHdr 'MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover' ;
 put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Summary counts' /
-  'Count of plant in input file:'        @38 card(g):<4:0 /
-  'Count of existing plant:'             @38 card(exist):<4:0 /
-  'Count of committed plant:'            @38 card(commit):<4:0 /
-  'Count of plant not able to be built:' @38 card(neverBuild):<4:0 /
-  'Count of plant able to be retired:'   @38 card(possibleToRetire):<4:0 //
+  'Plant in input file:'        @38 card(g):<4:0 /
+  'Existing plant:'             @38 card(exist):<4:0 /
+  'Committed plant:'            @38 card(commit):<4:0 /
+  'Plant not able to be built:' @38 card(neverBuild):<4:0 /
+  'Plant able to be retired:'   @38 card(possibleToRetire):<4:0 //
+
   'VoLL plant count (note that VoLL plant are not counted with generating plant' /
-  'Number VoLL plant:'                   @38 (sum(s$i_VOLLcap(s), 1)):<4:0 /
-  'Average VoLL plant capacity, MW:'     @38 (sum(s, i_VOLLcap(s))  / card(s)):<4:0 /
-  'Average VoLL plant cost, $/MWh:'      @38 (sum(s, i_VOLLcost(s)) / card(s)):<4:0 //
-  'Technologies with randomised capex:'  @38 if(sum(movers(k), 1), loop(movers(k), put k.tl, ', ' ) else put 'There are none' ) put /
-  'Randomised cost range (+/-):'         @38 (100 * randomCapexCostAdjuster):<5:1 //
+  'VoLL plant:'                         @38 (sum(s$i_VOLLcap(s), 1)):<4:0 /
+  'Average VoLL plant capacity, MW:'    @38 (sum(s, i_VOLLcap(s))  / card(s)):<4:0 /
+  'Average VoLL plant cost, $/MWh:'     @38 (sum(s, i_VOLLcost(s)) / card(s)):<4:0 //
+
+  'Technologies with randomised capex:' @38 if(sum(movers(k), 1), loop(movers(k), put k.tl, ', ' ) else put 'There are none' ) put /
+  'Randomised cost range (+/-), %:'     @38 (100 * randomCapexCostAdjuster):<5:1 //
+
   'Notes:' /
   'MW - nameplate MW.' /
   'Capex - Capital cost of new plant, $/kW. Includes any connection cost and randomisation - as levelised and used in objective function.' / 
@@ -727,7 +730,7 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
   'FixYr - the year in which committed plant will be built or, if 3333, the plant can never be built.' /
   'inVbld - the plant is in the set called validYrBuild.' /
   'inVopr - the plant is in the set called validYrOperate.' /
-  'Retire - plant is able to be retired, either exogenouosly or endogenoously (see next 2 columns).' /
+  'Retire - plant is able to be retired, either exogenouosly or endogenously (see next 2 columns).' /
   'EndogY - year in which endogenous retire/refurbish decision is made.' /
   'ExogYr - year in which plant is exogenously retired.' /
   'Mover - plant for which the commissioning date is able to move if the timing run is re-optimised.' //
@@ -736,8 +739,13 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
 counter = 0 ;
 loop((k,exist(g))$mapg_k(g,k),
   counter = counter + 1 ;
-  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @67 ;
-  put 'Y' @73 '-' @81 '-' @87 '-' @92 '-' @98 '-' @105 '-' @112 '-' @120
+  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @67 'Y' @73 '-' @81 ;
+  if(commit(g),       put 'Y' else put '-' ) put @87 ;
+  if(new(g),          put 'Y' else put '-' ) put @92 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @98 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @105 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @112 ;
+  if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @120 ;
   if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @126 ;
   if(possibleToRetire(g),     put 'Y' else put '-' ) put @132 ;
   if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @139 ;
@@ -746,8 +754,7 @@ loop((k,exist(g))$mapg_k(g,k),
 put // 'Non-existing plant' @34 "%plantDataHdr%" ;
 loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
   counter = counter + 1 ;
-  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @67 '-' @73 ;
-  if(noExist(g),      put 'Y' else put '-' ) put @81 ;
+  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @67 '-' @73 'Y' @81 ;
   if(commit(g),       put 'Y' else put '-' ) put @87 ;
   if(new(g),          put 'Y' else put '-' ) put @92 ;
   if(neverBuild(g),   put 'Y' else put '-' ) put @98 ;
@@ -758,8 +765,7 @@ loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
   if(possibleToRetire(g),     put 'Y' else put '-' ) put @132 ;
   if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @139 ;
   if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @148 ;
-  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;
-  put @155 g.te(g) ;
+  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @155 g.te(g) ;
 ) ;
 
 
@@ -773,9 +779,9 @@ capexStatistics(k,r,'variance')$capexStatistics(k,r,'count') = sum(g$( mapg_k(g,
 capexStatistics(k,r,'stdDev') = sqrt(capexStatistics(k,r,'variance')) ;
 capexStatistics(k,r,'stdDev%')$capexStatistics(k,r,'mean') = 100 * capexStatistics(k,r,'stdDev') / capexStatistics(k,r,'mean') ;
 
-put capexStats 'Descriptive statistics of (lumpy) capex, $/kW - includes connection costs.' // ;
+put capexStats 'Descriptive statistics of (lumpy) capex, $/kW - includes connection costs.' / ;
 loop(stat, put / stat.tl @13 '- ' stat.te(stat) ) ;
-put / @24 ; loop(stat, put stat.tl:>10 ) ;
+put // @24 ; loop(stat, put stat.tl:>10 ) ;
 loop(k,
   counter = 0 ;
   put / k.tl @15 ;
@@ -794,7 +800,7 @@ loop(k,
 loop(outcomes$reportingOutcome(outcomes),
   loadByRegionYear(r,y) = sum((t,lb), NrgDemand(r,y,t,lb,outcomes)) ;
   peakLoadNZByYear(y) = peakLoadNZ(y,outcomes) ;
-  peakLoadNIByYear(y) = peakLoadNZ(y,outcomes) ;
+  peakLoadNIByYear(y) = peakLoadNI(y,outcomes) ;
 ) ;
 
 put loadSummary 'Energy and peak load by region/island and year, GWh' /
