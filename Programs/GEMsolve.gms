@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 16/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:

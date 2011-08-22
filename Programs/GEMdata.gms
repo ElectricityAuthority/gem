@@ -1,12 +1,12 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 19/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/08/2011 (imm@ea.govt.nz)
 
 
 ** To do:
-** exist(g) is hard coded <= 46
-** See comment on line #429
+** See comment on line #469, i.e. "Should this next line be ord or card?"
+** Formalise/fix up the override stuff once we get GEM back into emi.
 
 
 $ontext
@@ -165,7 +165,7 @@ if(sum((r,y,t,lb), i_NrgDemandOvrd(r,y,t,lb)), i_NrgDemand(r,y,t,lb) = 0 ) ; i_N
 
 * J Culy overrides:
 *i_FixComYr(g)$( (i_FixComYr(g) > 2012) and (i_FixComYr(g) < 3333) ) = 0 ; 
-*i_EarlyComYr(g)$( (ord(g) > 46) and (i_FixComYr(g) = 0) and (i_EarlyComYr(g) = 0) ) = 2015 ; 
+*i_EarlyComYr(g)$( (not exist(g)) and (i_FixComYr(g) = 0) and (i_EarlyComYr(g) = 0) ) = 2015 ; 
 
 *$offtext
 
@@ -278,10 +278,10 @@ if(depType = 0,
 ) ;
 
 
+
 * d) Generation data.
 * Derive various generating plant subsets.
 * i) Existing plant - remove any plant where i_nameplate(g) = 0 from exist(g).
-exist(g)$( ord(g) <= 46 ) = yes ;
 exist(g)$( i_nameplate(g) = 0 ) = no ;
 
 * ii) A plant is not an existing plant if it hasn't been defined to be existing - remove any plant where i_nameplate(g) = 0 from noExist(g).
