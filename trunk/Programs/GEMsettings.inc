@@ -7,21 +7,20 @@ $setglobal OutPath          "%system.fp%..\Output\"
 
 $setglobal runName          "Test"
 
-Set sc 'Scenarios'     / mds1 '2010 Sustainable path'
-                         mds2 '2010 SI wind'
-                         mds3 '2010 Medium renewables'
-                         mds4 '2010 Coal'
-                         mds5 '2010 High gas discovery' /
+Set sc 'Scenarios'     / sc1 '2010 Sustainable path (mds1)'
+                         sc2 '2010 SI wind (mds2)'
+                         sc3 '2010 Medium renewables (mds3)'
+                         sc4 '2010 Coal (mds4)'
+                         sc5 '2010 High gas discovery (mds5)' /
 
 Set scenarioColor(sc,*,*,*) 'RGB color mix for scenarios - to pass to plotting applications' ;
-scenarioColor('mds1','0','0','255')   = yes ;
-scenarioColor('mds2','255','0','0')   = yes ;
-scenarioColor('mds3','0','255','0')   = yes ;
-scenarioColor('mds4','0','0','0')     = yes ;
-scenarioColor('mds5','255','0','255') = yes ;
+scenarioColor('sc1','0','0','255')   = yes ;
+scenarioColor('sc2','255','0','0')   = yes ;
+scenarioColor('sc3','0','255','0')   = yes ;
+scenarioColor('sc4','0','0','0')     = yes ;
+scenarioColor('sc5','255','0','255') = yes ;
 
-$setglobal firstScenario    "Final GEM2.0 input data (2Reg 9Block mds1).gdx"
-
+$setglobal firstScenario    "2Region-9LoadBlock.gdx"
 
 *+++ Model +++
 $setglobal firstYear 2010

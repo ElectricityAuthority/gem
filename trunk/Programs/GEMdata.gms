@@ -122,8 +122,52 @@ $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
 * Initialise set 'n' - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
+
+
+*$ontext
+
+** Data overrides:
+Parameters
+  i_fuelPricesOvrd(f,y)        'Fuel prices by fuel type and year, $/GJ'
+  i_fuelQuantitiesOvrd(f,y)    'Quantitative limit on availability of various fuels by year, PJ'
+  i_co2taxOvrd(y)              'CO2 tax by year, $/tonne CO2-equivalent'
+  i_fixComYrOvrd(g)            'Fixed commissioning year for potentially new generation plant (includes plant fixed never to be built)'
+  i_EarlyComYrOvrd(g)          'Earliest possible commissioning year for each potentially new generation plant'
+  i_ExogenousRetireYrOvrd(g)   'Exogenous retirement year for generation plant'
+  i_refurbDecisionYearOvrd(g)  'Decision year for endogenous "refurbish or retire" decision for eligble generation plant'
+  i_hydroOutputAdjOvrd(y)      'Schedulable hydro output adjuster by year (default = 1)'
+  i_NrgDemandOvrd(r,y,t,lb)    'Load by region, year, time period and load block, GWh'
+  ;
+
+** Data overrides excluding NrgDemand:
+** mds1, mds2 and mds5 override 7 params: i_fuelPrices, i_fuelQuantities, i_co2tax, i_fixComYr, i_EarlyComYr, i_ExogenousRetireYr, and i_refurbDecisionYear.
+** mds4 overrides 6 params: i_co2tax, i_fixComYr, i_EarlyComYr, i_ExogenousRetireYr, i_refurbDecisionYear, and i_hydroOutputAdj.
+*$gdxin "%DataPath%mds4-2Region-9LoadBlock-Override.gdx"
+*$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd i_hydroOutputAdjOvrd
+*$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
+*$load   i_co2taxOvrd i_hydroOutputAdjOvrd
+*$loaddc i_fixComYrOvrd i_EarlyComYrOvrd i_ExogenousRetireYrOvrd i_refurbDecisionYearOvrd
+*if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
+*if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
+*if(sum(y, i_co2taxOvrd(y)), i_co2tax(y) = 0 ) ;                         i_co2tax(y) = i_co2taxOvrd(y) ;
+*if(sum(g, i_fixComYrOvrd(g)), i_fixComYr(g) = 0 ) ;                     i_fixComYr(g) = i_fixComYrOvrd(g) ;
+*if(sum(g, i_EarlyComYrOvrd(g)), i_EarlyComYr(g) = 0 ) ;                 i_EarlyComYr(g) = i_EarlyComYrOvrd(g) ;
+*if(sum(g, i_ExogenousRetireYrOvrd(g)), i_ExogenousRetireYr(g) = 0 ) ;   i_ExogenousRetireYr(g) = i_ExogenousRetireYrOvrd(g) ;
+*if(sum(g, i_refurbDecisionYearOvrd(g)), i_refurbDecisionYear(g) = 0 ) ; i_refurbDecisionYear(g) = i_refurbDecisionYearOvrd(g) ;
+*if(sum(y, i_hydroOutputAdjOvrd(y)), i_hydroOutputAdj(y) = 0 ) ;         i_hydroOutputAdj(y) = i_hydroOutputAdjOvrd(y) ;
+
+** NRGdemand overrides:
+** mds3 requires the TiwaiGoes override; mds1 and mds4 require the EVdemand override; mds2 and mds5 require no Nrg override.
+$gdxin "%DataPath%NRG-2region-9loadblock-TiwaiGoes.gdx"
+*$gdxin "%DataPath%NRG-2region-9loadblock-EVdemand.gdx"
+$load  i_NrgDemandOvrd
+if(sum((r,y,t,lb), i_NrgDemandOvrd(r,y,t,lb)), i_NrgDemand(r,y,t,lb) = 0 ) ; i_NrgDemand(r,y,t,lb) = i_NrgDemandOvrd(r,y,t,lb) ;
+
+* J Culy overrides:
 *i_FixComYr(g)$( (i_FixComYr(g) > 2012) and (i_FixComYr(g) < 3333) ) = 0 ; 
 *i_EarlyComYr(g)$( (ord(g) > 46) and (i_FixComYr(g) = 0) and (i_EarlyComYr(g) = 0) ) = 2015 ; 
+
+*$offtext
 
 
 
