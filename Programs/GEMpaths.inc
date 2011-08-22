@@ -1,6 +1,6 @@
 $setglobal runName        "Test"
-$setglobal scenarioName   "mds3"
-$setglobal GEMinputGDX    "Final GEM2.0 input data (2Reg 9Block mds3).gdx"
+$setglobal scenarioName   "sc3"
+$setglobal GEMinputGDX    "2Region-9LoadBlock.gdx"
 $setglobal Mode            0
 
 $inlinecom { } eolcom !
