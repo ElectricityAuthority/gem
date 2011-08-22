@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 16/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/08/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -64,7 +64,7 @@ Sets
 
 Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 37 mapping sets and subsets (grouped as per the navigation pane of Oasis)
+* 37 mapping sets and subsets (grouped as per the navigation pane of emi)
 Sets
 * 24 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -112,7 +112,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 81 parameters (again, grouped as per the navigation pane of Oasis).
+* Declare 81 parameters (again, grouped as per the navigation pane of emi).
 Parameters
 * 18 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
