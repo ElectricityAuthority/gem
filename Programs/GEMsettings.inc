@@ -23,9 +23,9 @@ scenarioColor('sc5','255','0','255') = yes ;
 $setglobal firstScenario    "2Region-9LoadBlock.gdx"
 
 *+++ Model +++
-$setglobal firstYear 2010
+$setglobal firstYear 2012
 * First modelled year.
-$setglobal lastYear 2020
+$setglobal lastYear 2025
 * Last modelled year.
 $setglobal RunType 0
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only

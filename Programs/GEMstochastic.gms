@@ -1,7 +1,7 @@
-* GEMstochastic.gms (Standard)
+* GEMstochastic.gms (the 'old way')
 
 * A temporary GEM input file to contain the stuff related to outcomes that will need to come from
-* a yet to be created GUI in Oasis.
+* a yet to be created GUI in emi.
 
 * 'pi' denotes perfect information, i.e. no uncertainty dealt with in this configuration.
 * 'Standard' implies this version of GEMstochastic enables the following solves to occur:
