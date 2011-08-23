@@ -143,18 +143,17 @@ Parameters
 ** Data overrides:
 ** mds1, mds2 and mds5 override 7 params: i_fuelPrices, i_fuelQuantities, i_co2tax, i_fixComYr, i_EarlyComYr, i_ExogenousRetireYr, and i_refurbDecisionYear.
 ** mds4 overrides 6 params: i_co2tax, i_fixComYr, i_EarlyComYr, i_ExogenousRetireYr, i_refurbDecisionYear, and i_hydroOutputAdj.
-*$gdxin "%DataPath%mds4-2Region-9LoadBlock-Override.gdx"
-*$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd i_hydroOutputAdjOvrd
-*$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
+$gdxin "%DataPath%mds5-2Region-9LoadBlock-Override.gdx"
+$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
 *$load   i_co2taxOvrd i_hydroOutputAdjOvrd
-*$loaddc i_fixComYrOvrd i_EarlyComYrOvrd i_ExogenousRetireYrOvrd i_refurbDecisionYearOvrd
-*if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
-*if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
-*if(sum(y, i_co2taxOvrd(y)), i_co2tax(y) = 0 ) ;                         i_co2tax(y) = i_co2taxOvrd(y) ;
-*if(sum(g, i_fixComYrOvrd(g)), i_fixComYr(g) = 0 ) ;                     i_fixComYr(g) = i_fixComYrOvrd(g) ;
-*if(sum(g, i_EarlyComYrOvrd(g)), i_EarlyComYr(g) = 0 ) ;                 i_EarlyComYr(g) = i_EarlyComYrOvrd(g) ;
-*if(sum(g, i_ExogenousRetireYrOvrd(g)), i_ExogenousRetireYr(g) = 0 ) ;   i_ExogenousRetireYr(g) = i_ExogenousRetireYrOvrd(g) ;
-*if(sum(g, i_refurbDecisionYearOvrd(g)), i_refurbDecisionYear(g) = 0 ) ; i_refurbDecisionYear(g) = i_refurbDecisionYearOvrd(g) ;
+$loaddc i_fixComYrOvrd i_EarlyComYrOvrd i_ExogenousRetireYrOvrd i_refurbDecisionYearOvrd
+if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
+if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
+if(sum(y, i_co2taxOvrd(y)), i_co2tax(y) = 0 ) ;                         i_co2tax(y) = i_co2taxOvrd(y) ;
+if(sum(g, i_fixComYrOvrd(g)), i_fixComYr(g) = 0 ) ;                     i_fixComYr(g) = i_fixComYrOvrd(g) ;
+if(sum(g, i_EarlyComYrOvrd(g)), i_EarlyComYr(g) = 0 ) ;                 i_EarlyComYr(g) = i_EarlyComYrOvrd(g) ;
+if(sum(g, i_ExogenousRetireYrOvrd(g)), i_ExogenousRetireYr(g) = 0 ) ;   i_ExogenousRetireYr(g) = i_ExogenousRetireYrOvrd(g) ;
+if(sum(g, i_refurbDecisionYearOvrd(g)), i_refurbDecisionYear(g) = 0 ) ; i_refurbDecisionYear(g) = i_refurbDecisionYearOvrd(g) ;
 *if(sum(y, i_hydroOutputAdjOvrd(y)), i_hydroOutputAdj(y) = 0 ) ;         i_hydroOutputAdj(y) = i_hydroOutputAdjOvrd(y) ;
 
 
