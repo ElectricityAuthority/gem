@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 23/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 24/08/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -19,7 +19,7 @@ $ontext
 
  Code sections:
   1. Take care of a few preliminaries.
-  2. Load input data that comes from input GDX file (or the paths/settings include files).
+  2. Load input data that comes from input GDX files (or the paths/settings include files).
   3. Initialise sets and parameters.
      a) Time/date-related sets and parameters.
      b) Various mappings, subsets and counts.
@@ -58,6 +58,7 @@ $offsymxref offsymlist
 File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
 putclose bat
   'copy "%DataPath%%GEMinputGDX%"       "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%%GEMdemandGDX%"      "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
   'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %scenarioName%.inc"' /
   'copy "%ProgPath%GEMstochastic.gms"   "%OutPath%\%runName%\Archive\GEMstochastic.gms"' /
@@ -68,16 +69,14 @@ execute 'temp.bat' ;
 
 *===============================================================================================
 * 2. Load input data that comes from input GDX file (or the paths/settings include files).
+*    NB: Some symbols in the input GDX files are defined on years that may extend beyond %firstYear% and %lastYear%.
+*        Hence, those symbols must be loaded without domain checking, i.e. $load c.f. $loaddc.
 
-* Initialise set y with the modelled years as specified in GEMsettings.inc.
-* NB: set y in the GDX file contains all years on which data is defined whereas %firstYear% and %lastYear%
-*     define a subset of data years. This means that all parameters in the GDX file that defined on set y
-*     are loaded without domain checking, i.e. $load c.f. $loaddc.
 Set y  / %firstYear% * %lastYear% / ;
 
 $gdxin "%DataPath%%GEMinputGDX%"
-* 22 fundamental sets (i.e. all 23 less set y)
-$loaddc k f fg g s o i r e ild p ps tupg tgc t lb rc hY v m geo col
+* 18 fundamental sets
+$loaddc k f fg g s o i r e p ps tupg tgc t lb rc hY v
 * 37 mapping sets and subsets
 * 24 technology and fuel
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
@@ -111,13 +110,17 @@ $loaddc i_substnCoordinates i_zonalLocFacs
 $loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
 $loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 $load   i_HVDClevy
-* 5 load and time
-$load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation i_NrgDemand
+* 4 load and time
+$load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
 * 11 reserves and security
 $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
 $load   i_reserveReqMW i_fkNI i_largestGenerator i_smallestPole i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
 * 3 hydrology
 $load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
+
+* 1 more 'load and time' symbol - this one from a different GDX file.
+$gdxin "%DataPath%%GEMdemandGDX%"
+$load   i_NrgDemand
 
 * Initialise set 'n' - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
@@ -125,7 +128,6 @@ Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
 
 *$ontext
-
 ** Data overrides:
 Parameters
   i_fuelPricesOvrd(f,y)        'Fuel prices by fuel type and year, $/GJ'
@@ -136,10 +138,9 @@ Parameters
   i_ExogenousRetireYrOvrd(g)   'Exogenous retirement year for generation plant'
   i_refurbDecisionYearOvrd(g)  'Decision year for endogenous "refurbish or retire" decision for eligble generation plant'
   i_hydroOutputAdjOvrd(y)      'Schedulable hydro output adjuster by year (default = 1)'
-  i_NrgDemandOvrd(r,y,t,lb)    'Load by region, year, time period and load block, GWh'
   ;
 
-** Data overrides excluding NrgDemand:
+** Data overrides:
 ** mds1, mds2 and mds5 override 7 params: i_fuelPrices, i_fuelQuantities, i_co2tax, i_fixComYr, i_EarlyComYr, i_ExogenousRetireYr, and i_refurbDecisionYear.
 ** mds4 overrides 6 params: i_co2tax, i_fixComYr, i_EarlyComYr, i_ExogenousRetireYr, i_refurbDecisionYear, and i_hydroOutputAdj.
 *$gdxin "%DataPath%mds4-2Region-9LoadBlock-Override.gdx"
@@ -156,12 +157,6 @@ Parameters
 *if(sum(g, i_refurbDecisionYearOvrd(g)), i_refurbDecisionYear(g) = 0 ) ; i_refurbDecisionYear(g) = i_refurbDecisionYearOvrd(g) ;
 *if(sum(y, i_hydroOutputAdjOvrd(y)), i_hydroOutputAdj(y) = 0 ) ;         i_hydroOutputAdj(y) = i_hydroOutputAdjOvrd(y) ;
 
-** NRGdemand overrides:
-** mds3 requires the TiwaiGoes override; mds1 and mds4 require the EVdemand override; mds2 and mds5 require no Nrg override.
-$gdxin "%DataPath%NRG-2region-9loadblock-TiwaiGoes.gdx"
-*$gdxin "%DataPath%NRG-2region-9loadblock-EVdemand.gdx"
-$load  i_NrgDemandOvrd
-if(sum((r,y,t,lb), i_NrgDemandOvrd(r,y,t,lb)), i_NrgDemand(r,y,t,lb) = 0 ) ; i_NrgDemand(r,y,t,lb) = i_NrgDemandOvrd(r,y,t,lb) ;
 
 * J Culy overrides:
 *i_FixComYr(g)$( (i_FixComYr(g) > 2012) and (i_FixComYr(g) < 3333) ) = 0 ; 
