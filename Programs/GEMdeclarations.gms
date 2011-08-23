@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 23/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 24/08/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -12,7 +12,7 @@ $ontext
   The GEMdeclarations work file is saved and used at invocation to restart GEMdata.
 
  Code sections:
-  1. Declare sets and parameters - the data for which is imported from an input GDX file.
+  1. Declare sets and parameters - the data for which is imported from input GDX files.
   2. Declare remaining sets and parameters.
      a) Hard-coded sets.
      b) Outcome-specific sets and parameters.
@@ -33,9 +33,17 @@ $offsymxref offsymlist
 
 
 *===============================================================================================
-* 1. Declare sets and parameters - the data for which is imported from an input GDX file.
+* 1. Declare sets and parameters - the data for which is imported from input GDX files.
 
-* 23 fundamental sets
+* First declare 5 sets with non-varying membership that does not need to come from the input GDX files.
+Sets
+  y            'Modelled calendar years'
+  ild          'Islands'
+  m            '12 months'
+  geo          'Geographic co-ordinate types'
+  col          'RGB color codes' ;
+
+* 18 fundamental sets
 Sets
   k            'Generation technologies'
   f            'Fuels'
@@ -46,21 +54,15 @@ Sets
   i            'Substations'
   r            'Regions'
   e            'Zones'
-  ild          'Islands'
   p            'Transmission paths (or branches)'
   ps           'Transmission path states (state of upgrade)'
   tupg         'Transmission upgrade projects'
   tgc          'Transmission group constraints'
-  y            'Modelled calendar years'
   t            'Time periods (within a year)'
   lb           'Load blocks'
   rc           'Reserve classes'
   hY           'Hydrology output years'
-  v            'Hydro reservoirs or river systems'
-  m            '12 months'
-  geo          'Geographic co-ordinate types'
-  col          'RGB color codes'
-  ;
+  v            'Hydro reservoirs or river systems'  ;
 
 Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
@@ -233,9 +235,28 @@ Sets
                                                                                         dispatch   'Solve for the dispatch only with investment timing fixed'  /
   hydroSeqTypes                                 'Types of hydro sequences to use'     / Same       'Use the same sequence of hydro years to be used in every modelled year'
                                                                                         Sequential 'Use a sequentially developed mapping of hydro years to modelled years' /
+  ild                                           'Islands'                             / ni         'North Island'
+                                                                                        si         'South Island' /
   aggR                                          'Aggregate regional entities'         / nz         'New Zealand'
                                                                                         ni         'North Island'
-                                                                                        si         'South Island' / ;
+                                                                                        si         'South Island' /
+  m                                             '12 months'                           / Jan        'January'
+                                                                                        Feb        'February'
+                                                                                        Mar        'March'
+                                                                                        Apr        'April'
+                                                                                        May        'May'
+                                                                                        Jun        'June'
+                                                                                        Jul        'July'
+                                                                                        Aug        'August'
+                                                                                        Sep        'September'
+                                                                                        Oct        'October'
+                                                                                        Nov        'November'
+                                                                                        Dec        'December'  /
+  geo                                           'Geographic co-ordinate types'        / Easting    'New Zealand Transverse Mercator, metres'
+                                                                                        Northing   'New Zealand Transverse Mercator, metres'
+                                                                                        Long       'Degrees of longitude - note that the minutes are expressed as a decimal'
+                                                                                        Lat        'Degrees of latitude - note that the minutes are expressed as a decimal'  /
+  col                                           'RGB color codes'                     / 0 * 256 / ;
 
 * b) Outcome-specific sets and parameters - see (mostly) GEMstochastic.
 Sets

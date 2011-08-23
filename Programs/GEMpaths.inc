@@ -1,6 +1,7 @@
 $setglobal runName        "Test"
 $setglobal scenarioName   "sc3"
 $setglobal GEMinputGDX    "2Region-9LoadBlock.gdx"
+$setglobal GEMdemandGDX   "NRG-2region-9loadblock-standard.gdx"
 $setglobal Mode            0
 
 $inlinecom { } eolcom !
