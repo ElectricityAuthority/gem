@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 24/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 25/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -230,7 +230,7 @@ loop(experiments,
       modelledHydroOutput(g,y,t,outcomes) = 0 ;
       loop(oc(outcomes),
         if(mapOC_hydroSeqTypes(outcomes,'same'),
-          modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar * i_hydroOutputAdj(y) *
+          modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar *
             sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapOC_hY(outcomes,hY)), historicalHydroOutput(v,hY,m)) / sum(mapOC_hY(outcomes,hY1), 1) ;
           mapHydroYearsToModelledYears(experiments,steps,outcomeSets,oc,y,hY)$( ord(hY) = sum(mapOC_hY(outcomes,hY1), 1) ) = yes ;
           else
@@ -239,7 +239,7 @@ loop(experiments,
             chooseHydroYears(hY)$(sum(hY1$(mapOC_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
             chooseHydroYears(hY)$(sum(hY1$(mapOC_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
             modelledHydroOutput(g,y,t,oc) =
-              i_hydroOutputAdj(y) * sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+              sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
             mapHydroYearsToModelledYears(experiments,steps,outcomeSets,oc,y,chooseHydroYears) = yes ;
           ) ;
         ) ;
@@ -461,7 +461,7 @@ Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
 * Reserves
   useReserves singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve
 * Hydro related sets and parameters
-  hydroOutputScalar i_hydroOutputAdj allModelledHydroOutput mapHydroYearsToModelledYears
+  hydroOutputScalar allModelledHydroOutput mapHydroYearsToModelledYears
 * Penalties
   penaltyViolateRenNrg reserveViolationPenalty penaltyLostPeak
 *+++++++++++++++++++++++++

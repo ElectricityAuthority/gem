@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 24/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 25/08/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -113,7 +113,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 79 parameters (again, grouped as per the navigation pane of emi).
+* Declare 78 parameters (again, grouped as per the navigation pane of emi).
 Parameters
 * 16 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -197,10 +197,9 @@ Parameters
   i_winterCapacityMargin(y)                     'Required winter capacity margin, MW' 
   i_P200ratioNZ(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), New Zealand'   
   i_P200ratioNI(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), North Island'   
-* 3 hydrology
+* 2 hydrology
   i_firstHydroYear                              'First year of hydrology output data'
   i_historicalHydroOutput(v,hY,m)               'Historical hydro output sequences by reservoir and month, GWh'
-  i_hydroOutputAdj(y)                           'Schedulable hydro output adjuster by year (default = 1)'
   ;
 
 
