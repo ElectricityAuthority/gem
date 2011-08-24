@@ -66,9 +66,9 @@ Sets
 
 Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 37 mapping sets and subsets (grouped as per the navigation pane of emi)
+* 36 mapping sets and subsets (grouped as per the navigation pane of emi)
 Sets
-* 24 technology and fuel
+* 23 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
   mapf_fg(f,fg)                                 'Map fuel groups to fuel types'
   techColor(k,red,green,blue)                   'RGB color mix for technologies - to pass to plotting applications'
@@ -84,7 +84,6 @@ Sets
   wind(k)                                       'Wind technologies'
   renew(k)                                      'Renewable technologies'
   thermalTech(k)                                'Thermal technologies'
-  CCStech(k)                                    'Carbon capture and storage technologies'
   minUtilTechs(k)                               'Technologies to which minimum utilisation constraints may apply'
   demandGen(k)                                  'Demand side technologies modelled as generation'
   randomiseCapex(k)                             'Specify the technologies able to have their capital costs randomised within some narrow user-defined range'
@@ -114,9 +113,9 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 81 parameters (again, grouped as per the navigation pane of emi).
+* Declare 79 parameters (again, grouped as per the navigation pane of emi).
 Parameters
-* 18 technology and fuel
+* 16 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
   i_refurbishmentLife(k)                        'Generation plant life following refurbishment, years'
   i_retireOffsetYrs(k)                          'Number of years a technology continues to operate for after the decision to endogenously retire has been made'
@@ -130,8 +129,6 @@ Parameters
   i_maxNrgByFuel(f)                             'Maximum proportion of total energy from any one fuel type (0-1)'
   i_emissionFactors(f)                          'CO2e emissions, tonnes CO2/PJ'
   i_minUtilByTech(y,k)                          'Minimum utilisation of plant by technology type, proportion (0-1 but define only when > 0)'
-  i_CCSfactor(y,k)                              'Carbon capture and storage factor, i.e. share of emissions sequestered'
-  i_CCScost(y,k)                                'Carbon capture and storage cost, $/t CO2e sequestered'
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantities(f,y)                         'Quantitative limit on availability of various fuels by year, PJ'
   i_co2tax(y)                                   'CO2 tax by year, $/tonne CO2-equivalent'
@@ -407,7 +404,6 @@ Parameters
   SRMC(g,y,outcomes)                            'Short run marginal cost of each generation project by year and outcome, $/MWh'
   totalFuelCost(g,y,outcomes)                   'Total fuel cost - price plus fuel delivery charge all times heatrate - by plant, year and outcome, $/MWh'
   CO2taxByPlant(g,y,outcomes)                   'CO2 tax by plant, year and outcome, $/MWh'
-  CO2CaptureStorageCost(g,y)                    'Carbon capture and storage cost by plant and year, $/MWh'
 * Generation data.
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'
   capexPlant(g)                                 'Capital cost for new generation plant, $/MW'

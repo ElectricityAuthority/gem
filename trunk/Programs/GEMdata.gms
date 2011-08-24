@@ -77,10 +77,10 @@ Set y  / %firstYear% * %lastYear% / ;
 $gdxin "%DataPath%%GEMinputGDX%"
 * 18 fundamental sets
 $loaddc k f fg g s o i r e p ps tupg tgc t lb rc hY v
-* 37 mapping sets and subsets
-* 24 technology and fuel
+* 36 mapping sets and subsets
+* 23 technology and fuel
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
-$loaddc wind renew thermalTech CCStech minUtilTechs demandGen randomiseCapex linearBuildTech coal lignite gas diesel
+$loaddc wind renew thermalTech minUtilTechs demandGen randomiseCapex linearBuildTech coal lignite gas diesel
 * 3 generation
 $loaddc mapGenPlant exist maps_r
 * 6 location
@@ -93,11 +93,11 @@ $loaddc mapm_t
 * 1 hydrology
 $loaddc mapReservoirs
 
-* 81 parameters 
-* 18 technology and fuel
+* 79 parameters 
+* 16 technology and fuel
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
-$load   i_minUtilByTech  i_CCSfactor i_CCScost i_fuelPrices i_fuelQuantities i_co2tax
+$load   i_minUtilByTech i_fuelPrices i_fuelQuantities i_co2tax
 * 31 generation
 $loaddc i_nameplate i_UnitLargestProp i_baseload i_minUtilisation i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear
 $loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_FuelDeliveryCost
@@ -127,7 +127,7 @@ Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
 
 
-*$ontext
+$ontext
 ** Data overrides:
 Parameters
   i_fuelPricesOvrd(f,y)        'Fuel prices by fuel type and year, $/GJ'
@@ -143,25 +143,25 @@ Parameters
 ** Data overrides:
 ** mds1, mds2 and mds5 override 7 params: i_fuelPrices, i_fuelQuantities, i_co2tax, i_fixComYr, i_EarlyComYr, i_ExogenousRetireYr, and i_refurbDecisionYear.
 ** mds4 overrides 6 params: i_co2tax, i_fixComYr, i_EarlyComYr, i_ExogenousRetireYr, i_refurbDecisionYear, and i_hydroOutputAdj.
-$gdxin "%DataPath%mds5-2Region-9LoadBlock-Override.gdx"
-$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
-*$load   i_co2taxOvrd i_hydroOutputAdjOvrd
+$gdxin "%DataPath%mds4-2Region-9LoadBlock-Override.gdx"
+*$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
+$load   i_co2taxOvrd i_hydroOutputAdjOvrd
 $loaddc i_fixComYrOvrd i_EarlyComYrOvrd i_ExogenousRetireYrOvrd i_refurbDecisionYearOvrd
-if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
-if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
+*if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
+*if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
 if(sum(y, i_co2taxOvrd(y)), i_co2tax(y) = 0 ) ;                         i_co2tax(y) = i_co2taxOvrd(y) ;
 if(sum(g, i_fixComYrOvrd(g)), i_fixComYr(g) = 0 ) ;                     i_fixComYr(g) = i_fixComYrOvrd(g) ;
 if(sum(g, i_EarlyComYrOvrd(g)), i_EarlyComYr(g) = 0 ) ;                 i_EarlyComYr(g) = i_EarlyComYrOvrd(g) ;
 if(sum(g, i_ExogenousRetireYrOvrd(g)), i_ExogenousRetireYr(g) = 0 ) ;   i_ExogenousRetireYr(g) = i_ExogenousRetireYrOvrd(g) ;
 if(sum(g, i_refurbDecisionYearOvrd(g)), i_refurbDecisionYear(g) = 0 ) ; i_refurbDecisionYear(g) = i_refurbDecisionYearOvrd(g) ;
-*if(sum(y, i_hydroOutputAdjOvrd(y)), i_hydroOutputAdj(y) = 0 ) ;         i_hydroOutputAdj(y) = i_hydroOutputAdjOvrd(y) ;
+if(sum(y, i_hydroOutputAdjOvrd(y)), i_hydroOutputAdj(y) = 0 ) ;         i_hydroOutputAdj(y) = i_hydroOutputAdjOvrd(y) ;
 
 
 * J Culy overrides:
 *i_FixComYr(g)$( (i_FixComYr(g) > 2012) and (i_FixComYr(g) < 3333) ) = 0 ; 
 *i_EarlyComYr(g)$( (not exist(g)) and (i_FixComYr(g) = 0) and (i_EarlyComYr(g) = 0) ) = 2015 ; 
 
-*$offtext
+$offtext
 
 
 
@@ -611,11 +611,9 @@ loop(outcomeSets,
 * Compute the short-run marginal cost (and its components) for each generating plant, $/MWh.
 totalFuelCost(g,y,outcomes) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * outcomeFuelCostFactor(outcomes) + i_FuelDeliveryCost(g) ) ) ;
 
-CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * (1 - i_CCSfactor(y,k)) * i_emissionFactors(f) ) ;
+CO2taxByPlant(g,y,outcomes) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * outcomeCO2TaxFactor(outcomes) * i_emissionFactors(f) ) ;
 
-CO2CaptureStorageCost(g,y) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_CCScost(y,k) * i_CCSfactor(y,k) * i_emissionFactors(f) ) ;
-
-SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) + CO2CaptureStorageCost(g,y) ;
+SRMC(g,y,outcomes) = i_varOM(g) + totalFuelCost(g,y,outcomes) + CO2taxByPlant(g,y,outcomes) ;
 
 * If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
 SRMC(g,y,outcomes)$( SRMC(g,y,outcomes) < .05 ) = 1e-3 * ord(g) / card(g) ;
