@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 24/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 25/08/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -93,7 +93,7 @@ $loaddc mapm_t
 * 1 hydrology
 $loaddc mapReservoirs
 
-* 79 parameters 
+* 78 parameters 
 * 16 technology and fuel
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
@@ -115,8 +115,8 @@ $load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
 * 11 reserves and security
 $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
 $load   i_reserveReqMW i_fkNI i_largestGenerator i_smallestPole i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
-* 3 hydrology
-$load   i_firstHydroYear i_historicalHydroOutput i_hydroOutputAdj
+* 2 hydrology
+$load   i_firstHydroYear i_historicalHydroOutput
 
 * 1 more 'load and time' symbol - this one from a different GDX file.
 $gdxin "%DataPath%%GEMdemandGDX%"
@@ -332,8 +332,8 @@ possibleToRetire(g)$( possibleToEndogRetire(g) or i_ExogenousRetireYr(g) ) = yes
 * Define contribution to peak capacity by plant
 peakConPlant(g,y)   = sum(mapg_k(g,k), i_peakContribution(k) ) ;
 NWpeakConPlant(g,y) = sum(mapg_k(g,k), i_NWpeakContribution(k) ) ;
-peakConPlant(g,y)$schedHydroPlant(g)   = sum(mapg_k(g,k), i_peakContribution(k) * i_hydroOutputAdj(y) ) ;
-NWpeakConPlant(g,y)$schedHydroPlant(g) = sum(mapg_k(g,k), i_NWpeakContribution(k) * i_hydroOutputAdj(y) ) ;
+peakConPlant(g,y)$schedHydroPlant(g)   = sum(mapg_k(g,k), i_peakContribution(k) ) ;
+NWpeakConPlant(g,y)$schedHydroPlant(g) = sum(mapg_k(g,k), i_NWpeakContribution(k) ) ;
 
 * Initialise the FOF multiplier - compute a weighted average using annual hours per load block as the weights.
 WtdAvgFOFmultiplier(k,lb) = sum(t, hoursPerBlock(t,lb) * i_FOFmultiplier(k,lb)) / sum(t, hoursPerBlock(t,lb)) ;
@@ -348,7 +348,7 @@ maxCapFactPlant(g,t,lb)$i_maxHydroCapFact(g) = i_maxHydroCapFact(g) ;
 * Now adjust all max capacity factors for forced outage factor.
 maxCapFactPlant(g,t,lb) = maxCapFactPlant(g,t,lb) * sum(mapg_k(g,k), (1 - i_fof(g) * WtdAvgFOFmultiplier(k,lb)) ) ;
 * Min capacity factor only meaningfully defined for hydro units.
-minCapFactPlant(schedHydroPlant(g),y,t) = i_minHydroCapFact(g) * i_hydroOutputAdj(y) ;
+minCapFactPlant(schedHydroPlant(g),y,t) = i_minHydroCapFact(g) ;
 * But it is also 'non-meaningfully' defined to a low non-zero value for wind plant.
 loop(mapg_k(g,wind(k)), minCapFactPlant(g,y,t) = .001 ) ;
 
