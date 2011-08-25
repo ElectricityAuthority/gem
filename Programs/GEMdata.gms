@@ -682,6 +682,7 @@ Sets
 
 Parameters
   capexStatistics(k,r,stat)    'Descriptive statistics of (lumpy) capex (incl. connection costs) by technology and region'
+  MWtoBuild(k,ild)             'MW available for installation by technology and island'
   loadByRegionYear(r,y)        'Load by region and year, GWh'
   peakLoadNZByYear(y)          'Peak load for New Zealand by year, MW'
   peakLoadNIByYear(y)          'Peak load North Island by year, MW'
@@ -690,14 +691,17 @@ Parameters
 Files
   stochasticSummary / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Stochastic summary.txt" /
   plantData         / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Plant summary.txt" /
-  capexStats        / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Capex statistics.txt" /
+  capexStats        / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Capex statistics and available MW.txt" /
   loadSummary       / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Load summary.txt" /
+  lrmc_inData       / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - LRMC estimates based on GEM input data (non-existing plant only).csv" /
   ;
 
 stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;
 plantData.lw = 0 ;         plantData.pw = 999 ;
 capexStats.lw = 0 ;        capexStats.pw = 999 ;
 loadSummary.lw = 0 ;       loadSummary.pw = 999 ;
+lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
+
 
 * Experiment-outcomeSets-outcomes summary.
 put stochasticSummary 'Summary of mappings, weights and factors relating to experiments, outcomeSets, and outcomes.' // @61 'Outcome' @71
@@ -719,6 +723,8 @@ loop(allSolves(experiments,steps,outcomeSets),
 * Plant data summaries.
 $set plantDataHdr 'MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover' ;
 put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
+  'First modelled year:'        @38 firstYear:<4:0 /
+  'Last modelled year:'         @38 lastYear:<4:0 //
   'Summary counts' /
   'Plant in input file:'        @38 card(g):<4:0 /
   'Existing plant:'             @38 card(exist):<4:0 /
@@ -798,6 +804,8 @@ capexStatistics(k,r,'variance')$capexStatistics(k,r,'count') = sum(g$( mapg_k(g,
 capexStatistics(k,r,'stdDev') = sqrt(capexStatistics(k,r,'variance')) ;
 capexStatistics(k,r,'stdDev%')$capexStatistics(k,r,'mean') = 100 * capexStatistics(k,r,'stdDev') / capexStatistics(k,r,'mean') ;
 
+MWtoBuild(k,ild) = sum(possibleToBuild(g)$( mapg_k(g,k) * mapg_ild(g,ild) ), i_nameplate(g)) ;
+
 put capexStats 'Descriptive statistics of (lumpy) capex, $/kW - includes connection costs.' / ;
 loop(stat, put / stat.tl @13 '- ' stat.te(stat) ) ;
 put // @24 ; loop(stat, put stat.tl:>10 ) ;
@@ -812,6 +820,10 @@ loop(k,
       if(not ord(stat) = card(stat), put capexStatistics(k,r,stat):>10:0 else put capexStatistics(k,r,stat):>10:1 ) ;
     ) ;
   ) ;
+) ;
+put /// 'MW available for installation by technology and island' / @22 'North Island' @41 'South Island' ;
+loop(k,
+  put / k.tl @15 loop(ild, put MWtoBuild(k,ild):>19:0 ) ;
 ) ;
 
 
@@ -839,6 +851,10 @@ loop(y, put / @2 y.tl @12 loop(r, put loadByRegionYear(r,y):>10:0 ) ) ;
 
 put // 'Peak load, MW' @20 'NZ' @30 'NI' ;
 loop(y, put / @2 y.tl @12 peakLoadNZByYear(y):>10:0, peakLoadNIByYear(y):>10:0 ) ;
+
+
+* Include code to compute and write out LRMC of all non-existing plant.
+*$include GEMlrmc.gms
 
 
 
