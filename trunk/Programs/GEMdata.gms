@@ -126,7 +126,6 @@ $load   i_NrgDemand
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
 
-
 $ontext
 ** Data overrides:
 Parameters
@@ -669,6 +668,7 @@ $offtext
 *===============================================================================================
 * 6. Create input data summaries.
 
+* Declare sets and parameters.
 Sets
   stat   'Classes of statistics'   / Count    'Count'
                                      Min      'Minimum, $/kW'
@@ -677,17 +677,49 @@ Sets
                                      Variance 'Variance, $/kW'
                                      Mean     'Mean, $/kW'
                                      StdDev   'Standard deviation, $/kW'
-                                    'StdDev%' 'Standard deviation as a percentage'  /
-  ;
+                                    'StdDev%' 'Standard deviation as a percentage'  / ;
 
 Parameters
-  capexStatistics(k,r,stat)    'Descriptive statistics of (lumpy) capex (incl. connection costs) by technology and region'
-  MWtoBuild(k,ild)             'MW available for installation by technology and island'
+  assumedGWh(g)                'Gigawatt hours per plant using assumed technology-specific capacity factors'
+  MWtoBuild(k,aggR)            'MW available for installation by technology, island and NZ'
+  GWhtoBuild(k,aggR)           'Assumed GWh from all plant available for installation by technology, island and NZ'
   loadByRegionYear(r,y)        'Load by region and year, GWh'
-  peakLoadNZByYear(y)          'Peak load for New Zealand by year, MW'
-  peakLoadNIByYear(y)          'Peak load North Island by year, MW'
-  ;
+  loadByAggRegionYear(aggR,y)  'Load by aggregated region and year, GWh'
+  peakLoadByYearAggR(y,aggR)   'Peak load by year for each island and NZ as a whole, MW'
+  capexStatistics(k,aggR,stat) 'Descriptive statistics of (lumpy) capex (incl. connection costs) by technology, island and NZ'  ;
 
+
+* Do the calculations.
+assumedGWh(g) = sum(mapg_k(g,k), 8.760 * i_capFacTech(k) * i_nameplate(g)) ;
+assumedGWh(pumpedHydroPlant(g)) = i_PumpedHydroEffic(g) * sum(mapm_t(m,t), 1) * i_PumpedHydroMonth(g) ;
+
+MWtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), i_nameplate(g)) ;
+GWhtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), assumedGWh(g)) ;
+
+loop(outcomes$reportingOutcome(outcomes),
+
+  loadByRegionYear(r,y) = sum((t,lb), NrgDemand(r,y,t,lb,outcomes)) ;
+  loadByAggRegionYear(aggR,y) = sum(mapAggR_r(aggR,r), loadByRegionYear(r,y)) ; 
+
+  peakLoadByYearAggR(y,'nz') = peakLoadNZ(y,outcomes) ;
+  peakLoadByYearAggR(y,'ni') = peakLoadNI(y,outcomes) ;
+  peakLoadByYearAggR(y,'si') = peakLoadByYearAggR(y,'nz') - peakLoadByYearAggR(y,'ni') ;
+
+) ;
+
+capexStatistics(k,aggR,'count') = sum((g,r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) * possibleToBuild(g) ), 1 ) ; 
+capexStatistics(k,aggR,'min')$capexStatistics(k,aggR,'count')   = smin((g,r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) ; 
+capexStatistics(k,aggR,'max')$capexStatistics(k,aggR,'count')   = smax((g,r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) ; 
+capexStatistics(k,aggR,'range')$capexStatistics(k,aggR,'count') = capexStatistics(k,aggR,'max') - capexStatistics(k,aggR,'min') ;
+capexStatistics(k,aggR,'mean')$capexStatistics(k,aggR,'count')  =
+  sum((g,r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) / capexStatistics(k,aggR,'count') ; 
+capexStatistics(k,aggR,'variance')$capexStatistics(k,aggR,'count') =
+  sum((g,r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) * possibleToBuild(g) ), sqr(1e-3 * capexPlant(g) - capexStatistics(k,aggR,'mean')) ) / capexStatistics(k,aggR,'count') ; 
+capexStatistics(k,aggR,'stdDev') = sqrt(capexStatistics(k,aggR,'variance')) ;
+capexStatistics(k,aggR,'stdDev%')$capexStatistics(k,aggR,'mean') = 100 * capexStatistics(k,aggR,'stdDev') / capexStatistics(k,aggR,'mean') ;
+
+
+* Declare input data summary files.
 Files
   stochasticSummary / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Stochastic summary.txt" /
   plantData         / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Plant summary.txt" /
@@ -703,7 +735,7 @@ loadSummary.lw = 0 ;       loadSummary.pw = 999 ;
 lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
 
 
-* Experiment-outcomeSets-outcomes summary.
+* Write the experiment-outcomeSets-outcomes summary.
 put stochasticSummary 'Summary of mappings, weights and factors relating to experiments, outcomeSets, and outcomes.' // @61 'Outcome' @71
   'Outcome factors:' @110 'Same => averaged over the listed hydro years; Sequential => listed hydro year maps to first modelled year.' /
   'Experiments' @18 'Steps' @28 'outcomeSets' @45 'Outcomes' @61 'Weight' @71 'PeakLoad' @81 'Co2' @91 'FuelCost' @101 'Energy' @110
@@ -720,7 +752,7 @@ loop(allSolves(experiments,steps,outcomeSets),
 );
 
 
-* Plant data summaries.
+* Write the plant data summaries.
 $set plantDataHdr 'MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover' ;
 put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
   'First modelled year:'        @38 firstYear:<4:0 /
@@ -794,68 +826,57 @@ loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
 ) ;
 
 
-* Capex statistics
-capexStatistics(k,r,'count') = sum(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), 1 ) ; 
-capexStatistics(k,r,'min')$capexStatistics(k,r,'count')   = smin(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) ; 
-capexStatistics(k,r,'max')$capexStatistics(k,r,'count')   = smax(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) ; 
-capexStatistics(k,r,'range')$capexStatistics(k,r,'count') = capexStatistics(k,r,'max') - capexStatistics(k,r,'min') ;
-capexStatistics(k,r,'mean')$capexStatistics(k,r,'count')  = sum(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), 1e-3 * capexPlant(g) ) / capexStatistics(k,r,'count') ; 
-capexStatistics(k,r,'variance')$capexStatistics(k,r,'count') = sum(g$( mapg_k(g,k) * mapg_r(g,r) * possibleToBuild(g) ), sqr(1e-3 * capexPlant(g) - capexStatistics(k,r,'mean')) ) / capexStatistics(k,r,'count') ; 
-capexStatistics(k,r,'stdDev') = sqrt(capexStatistics(k,r,'variance')) ;
-capexStatistics(k,r,'stdDev%')$capexStatistics(k,r,'mean') = 100 * capexStatistics(k,r,'stdDev') / capexStatistics(k,r,'mean') ;
-
-MWtoBuild(k,ild) = sum(possibleToBuild(g)$( mapg_k(g,k) * mapg_ild(g,ild) ), i_nameplate(g)) ;
-
+* Write the capex statistics.
 put capexStats 'Descriptive statistics of (lumpy) capex, $/kW - includes connection costs.' / ;
 loop(stat, put / stat.tl @13 '- ' stat.te(stat) ) ;
 put // @24 ; loop(stat, put stat.tl:>10 ) ;
 loop(k,
   counter = 0 ;
   put / k.tl @15 ;
-  loop(r,
-    if(counter = 0, put r.tl else put / @15 r.tl ) ;
+  loop(aggR,
+    if(counter = 0, put aggR.tl else put / @15 aggR.tl ) ;
     counter = 1 ;
     put @24 ;
     loop(stat,
-      if(not ord(stat) = card(stat), put capexStatistics(k,r,stat):>10:0 else put capexStatistics(k,r,stat):>10:1 ) ;
+      if(not ord(stat) = card(stat), put capexStatistics(k,aggR,stat):>10:0 else put capexStatistics(k,aggR,stat):>10:1 ) ;
     ) ;
   ) ;
 ) ;
-put /// 'MW available for installation by technology and island' / @22 'North Island' @41 'South Island' ;
+put /// 'MW available for installation by technology and island' / @15 loop(aggR, put aggR.te(aggR):>15 ) ;
 loop(k,
-  put / k.tl @15 loop(ild, put MWtoBuild(k,ild):>19:0 ) ;
+  put / k.tl @15 loop(aggR, put MWtoBuild(k,aggR):>15:0 ) ;
+) ;
+put /// 'Assumed GWh from all plant available for installation by technology and island' / @15 loop(aggR, put aggR.te(aggR):>15 ) ;
+loop(k,
+  put / k.tl @15 loop(aggR, put GWhtoBuild(k,aggR):>15:0 ) ;
 ) ;
 
 
-* Load summaries
-loop(outcomes$reportingOutcome(outcomes),
-  loadByRegionYear(r,y) = sum((t,lb), NrgDemand(r,y,t,lb,outcomes)) ;
-  peakLoadNZByYear(y) = peakLoadNZ(y,outcomes) ;
-  peakLoadNIByYear(y) = peakLoadNI(y,outcomes) ;
-) ;
-
+* Write the load summaries.
 put loadSummary 'Energy and peak load by region/island and year, GWh' /
   ' - GWh energy grossed-up by AC loss factors and scaled by outcome-specific energy factor' /
-  " - GWh energy and peak load reported here relates only to the '" ;
-  loop(reportingOutcome(outcomes), put outcomes.tl ) put "' outcome." ;
+  ' - GWh energy and peak load reported here relates only to the default outcome (' ;
+  loop(reportingOutcome(outcomes), put outcomes.tl ) put ').' ;
 
 put // 'Intraregional AC loss factors, %' ;
-loop(ild, put / @2 ild.tl @12 (100 * AClossFactors(ild)):>10:2 ) ;
+loop(ild, put / @2 ild.tl @14 (100 * AClossFactors(ild)):>10:2 ) ;
 
 put // 'Outcome-specific energy factors' ;
-loop(outcomes, put / @2 outcomes.tl @12 outcomeNRGfactor(outcomes):>10:2 ) ;
+loop(outcomes, put / @2 outcomes.tl @14 outcomeNRGfactor(outcomes):>10:2 ) ;
 
-put // 'Energy, GWh' @12 ;
-loop(r, put r.tl:>10 ) ;
-loop(y, put / @2 y.tl @12 loop(r, put loadByRegionYear(r,y):>10:0 ) ) ;
+put // 'Energy, GWh' @14 loop(r, put r.tl:>10 ) loop(aggR, put aggR.tl:>10 ) ;
+loop(y,
+  put / @2 y.tl @14
+  loop(r,    put loadByRegionYear(r,y):>10:0 ) ;
+  loop(aggR, put loadByAggRegionYear(aggR,y):>10:0 ) ;
+) ;
 
-put // 'Peak load, MW' @20 'NZ' @30 'NI' ;
-loop(y, put / @2 y.tl @12 peakLoadNZByYear(y):>10:0, peakLoadNIByYear(y):>10:0 ) ;
+put // 'Peak load, MW' @14 loop(aggR, put aggR.tl:>10 ) ;
+loop(y, put / @2 y.tl @14  loop(aggR, put peakLoadByYearAggR(y,aggR):>10:0 ) ) ;
 
 
 * Include code to compute and write out LRMC of all non-existing plant.
-*$include GEMlrmc.gms
-
+$include GEMlrmc.gms
 
 
 
