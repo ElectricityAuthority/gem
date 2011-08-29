@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 25/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/08/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -252,6 +252,14 @@ Sets
                                                                                         Northing   'New Zealand Transverse Mercator, metres'
                                                                                         Long       'Degrees of longitude - note that the minutes are expressed as a decimal'
                                                                                         Lat        'Degrees of latitude - note that the minutes are expressed as a decimal'  /
+  stat                                          'Classes of statistics'               / Count      'Number of plant'
+                                                                                        Min        'Lowest cost, $/kW'
+                                                                                        Max        'Highest cost, $/kW'
+                                                                                        Range      'Range of costs, $/kW'
+                                                                                        Variance   'Variance, $/kW'
+                                                                                        Mean       'Mean, $/kW'
+                                                                                        StdDev     'Standard deviation, $/kW'
+                                                                                       'StdDev%'   'Standard deviation as a percentage'  /
   col                                           'RGB color codes'                     / 0 * 256 / ;
 
 * b) Outcome-specific sets and parameters - see (mostly) GEMstochastic.
@@ -446,6 +454,14 @@ Parameters
 * Hydrology output data
   historicalHydroOutput(v,hY,m)                 'Historical hydro output sequences by reservoir and month, GWh'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
+* Input data summaries
+  assumedGWh(g)                                 'Gigawatt hours per plant using assumed technology-specific capacity factors'
+  MWtoBuild(k,aggR)                             'MW available for installation by technology, island and NZ'
+  GWhtoBuild(k,aggR)                            'Assumed GWh from all plant available for installation by technology, island and NZ'
+  loadByRegionYear(r,y)                         'Load by region and year, GWh'
+  loadByAggRegionYear(aggR,y)                   'Load by aggregated region and year, GWh'
+  peakLoadByYearAggR(y,aggR)                    'Peak load by year for each island and NZ as a whole, MW'
+  capexStatistics(k,aggR,stat)                  'Descriptive statistics of plant capex (lumpy and including grid connection costs) by technology, island and NZ'
   ;
 
 

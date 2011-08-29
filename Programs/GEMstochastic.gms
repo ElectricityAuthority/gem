@@ -91,7 +91,7 @@ allSolves(experiments,'dispatch',outcomeSets) = dispatchSolves(experiments,outco
 
 Display allSolves ;
 
-Set reportingOutcome(outcomes) 'Select a single outcome for reporting input summary data' / piAvg / ;
+Set defaultOutcome(outcomes) 'Select a default outcome - used when reporting summaries of input data' / piAvg / ;
 
 
 

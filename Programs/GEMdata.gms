@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 25/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/08/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -10,8 +10,9 @@
 
 
 $ontext
- This program prepares the data for a single scenario. It imports the raw scenario-specific data
- from a GDX file, and undertakes some manipulations, transformations, and integrity checks.
+ This program prepares the data for a single run of GEM (note that a GEM run may comprise many experiments and
+ scenarios). GEMdata imports the input data from GDX files, undertakes some manipulations, transformations, and
+ performs integrity checks. It finishes by writing out some input data summary tables.
 
  The GEMdata invocation requires GEMdata to be restarted from the GEMdeclarations work file. The files
  called GEMpaths.inc, GEMsettings.inc and GEMstochastic.inc are included into GEMdata. The GEMdata work
@@ -60,7 +61,7 @@ putclose bat
   'copy "%DataPath%%GEMinputGDX%"       "%OutPath%\%runName%\Archive\"' /
   'copy "%DataPath%%GEMdemandGDX%"      "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
-  'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %scenarioName%.inc"' /
+  'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %runVersionName%.inc"' /
   'copy "%ProgPath%GEMstochastic.gms"   "%OutPath%\%runName%\Archive\GEMstochastic.gms"' /
   ;
 execute 'temp.bat' ;
@@ -668,25 +669,20 @@ $offtext
 *===============================================================================================
 * 6. Create input data summaries.
 
-* Declare sets and parameters.
-Sets
-  stat   'Classes of statistics'   / Count    'Count'
-                                     Min      'Minimum, $/kW'
-                                     Max      'Maximum, $/kW'
-                                     Range    'Range, $/kW'
-                                     Variance 'Variance, $/kW'
-                                     Mean     'Mean, $/kW'
-                                     StdDev   'Standard deviation, $/kW'
-                                    'StdDev%' 'Standard deviation as a percentage'  / ;
+* Declare input data summary files.
+Files
+  stochasticSummary / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - Stochastic summary.txt" /
+  plantData         / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - Plant summary.txt" /
+  capexStats        / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - Capex, MW and GWh summaries.txt" /
+  loadSummary       / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - Load summary.txt" /
+  lrmc_inData       / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - LRMC estimates based on GEM input data (non-existing plant only).csv" /
+  ;
 
-Parameters
-  assumedGWh(g)                'Gigawatt hours per plant using assumed technology-specific capacity factors'
-  MWtoBuild(k,aggR)            'MW available for installation by technology, island and NZ'
-  GWhtoBuild(k,aggR)           'Assumed GWh from all plant available for installation by technology, island and NZ'
-  loadByRegionYear(r,y)        'Load by region and year, GWh'
-  loadByAggRegionYear(aggR,y)  'Load by aggregated region and year, GWh'
-  peakLoadByYearAggR(y,aggR)   'Peak load by year for each island and NZ as a whole, MW'
-  capexStatistics(k,aggR,stat) 'Descriptive statistics of (lumpy) capex (incl. connection costs) by technology, island and NZ'  ;
+stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;
+plantData.lw = 0 ;         plantData.pw = 999 ;
+capexStats.lw = 0 ;        capexStats.pw = 999 ;
+loadSummary.lw = 0 ;       loadSummary.pw = 999 ;
+lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
 
 
 * Do the calculations.
@@ -696,7 +692,7 @@ assumedGWh(pumpedHydroPlant(g)) = i_PumpedHydroEffic(g) * sum(mapm_t(m,t), 1) * 
 MWtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), i_nameplate(g)) ;
 GWhtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), assumedGWh(g)) ;
 
-loop(outcomes$reportingOutcome(outcomes),
+loop(defaultOutcome(outcomes),
 
   loadByRegionYear(r,y) = sum((t,lb), NrgDemand(r,y,t,lb,outcomes)) ;
   loadByAggRegionYear(aggR,y) = sum(mapAggR_r(aggR,r), loadByRegionYear(r,y)) ; 
@@ -717,22 +713,6 @@ capexStatistics(k,aggR,'variance')$capexStatistics(k,aggR,'count') =
   sum((g,r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) * possibleToBuild(g) ), sqr(1e-3 * capexPlant(g) - capexStatistics(k,aggR,'mean')) ) / capexStatistics(k,aggR,'count') ; 
 capexStatistics(k,aggR,'stdDev') = sqrt(capexStatistics(k,aggR,'variance')) ;
 capexStatistics(k,aggR,'stdDev%')$capexStatistics(k,aggR,'mean') = 100 * capexStatistics(k,aggR,'stdDev') / capexStatistics(k,aggR,'mean') ;
-
-
-* Declare input data summary files.
-Files
-  stochasticSummary / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Stochastic summary.txt" /
-  plantData         / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Plant summary.txt" /
-  capexStats        / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Capex statistics and available MW.txt" /
-  loadSummary       / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - Load summary.txt" /
-  lrmc_inData       / "%OutPath%%runName%\Input data checks\%runName% - %scenarioName% - LRMC estimates based on GEM input data (non-existing plant only).csv" /
-  ;
-
-stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;
-plantData.lw = 0 ;         plantData.pw = 999 ;
-capexStats.lw = 0 ;        capexStats.pw = 999 ;
-loadSummary.lw = 0 ;       loadSummary.pw = 999 ;
-lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
 
 
 * Write the experiment-outcomeSets-outcomes summary.
@@ -764,8 +744,8 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
   'Plant not able to be built:' @38 card(neverBuild):<4:0 /
   'Plant able to be retired:'   @38 card(possibleToRetire):<4:0 //
 
-  'VoLL plant count (note that VoLL plant are not counted with generating plant' /
-  'VoLL plant:'                         @38 (sum(s$i_VOLLcap(s), 1)):<4:0 /
+  'VoLL plant (note that VoLL plant are not counted with generating plant)' /
+  'VoLL plant count:'                   @38 (sum(s$i_VOLLcap(s), 1)):<4:0 /
   'Average VoLL plant capacity, MW:'    @38 (sum(s, i_VOLLcap(s))  / card(s)):<4:0 /
   'Average VoLL plant cost, $/MWh:'     @38 (sum(s, i_VOLLcost(s)) / card(s)):<4:0 //
 
@@ -827,7 +807,9 @@ loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
 
 
 * Write the capex statistics.
-put capexStats 'Descriptive statistics of (lumpy) capex, $/kW - includes connection costs.' / ;
+put capexStats 'Descriptive statistics of plant capex (lumpy and including grid connection costs).' //
+  'First modelled year:' @22 firstYear:<4:0 /
+  'Last modelled year:'  @22 lastYear:<4:0 / ;
 loop(stat, put / stat.tl @13 '- ' stat.te(stat) ) ;
 put // @24 ; loop(stat, put stat.tl:>10 ) ;
 loop(k,
@@ -856,7 +838,7 @@ loop(k,
 put loadSummary 'Energy and peak load by region/island and year, GWh' /
   ' - GWh energy grossed-up by AC loss factors and scaled by outcome-specific energy factor' /
   ' - GWh energy and peak load reported here relates only to the default outcome (' ;
-  loop(reportingOutcome(outcomes), put outcomes.tl ) put ').' ;
+  loop(defaultOutcome(outcomes), put outcomes.tl ) put ').' ;
 
 put // 'Intraregional AC loss factors, %' ;
 loop(ild, put / @2 ild.tl @14 (100 * AClossFactors(ild)):>10:2 ) ;
