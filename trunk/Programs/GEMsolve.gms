@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 25/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/08/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -51,7 +51,7 @@ $offsymxref offsymlist
 File rep "Write to a report"       / "%ProgPath%Report.txt" / ; rep.lw = 0 ; rep.ap = 1 ;
 File con "Write to the console"    / con / ;                    con.lw = 0 ;
 
-putclose rep 'Run: "%runName%"' / 'Scenario: "%scenarioName%"' / '  - started at ', system.time, ' on ' system.date ;
+putclose rep 'Run: "%runName%"' / 'Run version: "%runVersionName%"' / '  - started at ', system.time, ' on ' system.date ;
 
 * Specify various .lst file and solver-related options.
 if(%limitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ; ) ; 
@@ -274,7 +274,7 @@ loop(experiments,
         else
         putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
       ) ;
-      putclose con // '    The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve for "%runName% -- %scenarioName% has just finished' /
+      putclose con // '    The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve for "%runName% -- %runVersionName% has just finished' /
                       '    Objective function value: ' TOTALCOST.l:<12:1 // ;
 
       if(sameas(steps,'dispatch'),
@@ -286,7 +286,7 @@ loop(experiments,
 
 *     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
 $     if not %PlotMIPtrace%==1 $goto NoTrace3
-      putclose bat 'copy MIPtrace.txt "%runName%-%scenarioName%-MIPtrace-' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl '.txt"' ;
+      putclose bat 'copy MIPtrace.txt "%runName%-%runVersionName%-MIPtrace-' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl '.txt"' ;
       execute 'temp.bat';
 $     label NoTrace3
 
@@ -380,7 +380,7 @@ Display s2_TOTALCOST, solveReport ;
 * 5. Dump results out to GDX files and rename/relocate certain output files.
 
 * a) Dump output prepared for report writing into a GDX file (essentially, the 's2' parameters).
-Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
+Execute_Unload "PreparedOutput - %runName% - %runVersionName%.gdx",
 * Miscellaneous sets and parameters
   solveGoal experiments steps oc solveReport
 * The 's2' output parameters
@@ -399,14 +399,14 @@ Execute_Unload "PreparedOutput - %runName% - %scenarioName%.gdx",
 
 
 * b) Dump all 's' slacks and penalties into a GDX file.
-Execute_Unload "Slacks and penalties - %runName% - %scenarioName%.gdx",
+Execute_Unload "Slacks and penalties - %runName% - %runVersionName%.gdx",
   s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
   s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
   ;
 
 
 * c) Dump all variable levels and constraint marginals into a GDX file (ignore the objective function marginal).
-Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
+Execute_Unload "Levels and marginals - %runName% - %runVersionName%.gdx",
 *+++++++++++++++++++++++++
 * More non-free reserves code.
   s_RESVCOMPONENTS s_calc_nfreserves s_resv_capacity
@@ -435,7 +435,7 @@ Execute_Unload "Levels and marginals - %runName% - %scenarioName%.gdx",
 
 
 * d) Dump selected input data into a GDX file (as imported, or from intermediate steps in GEMdata, or what's actually used to solve the model).
-Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
+Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
   y t f k g o lb r e ild ps outcomes rc n tgc
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r paths nwd swd interIsland firstPeriod firstYr lastYr allButFirstYr pumpedHydroPlant wind gas diesel
@@ -472,11 +472,11 @@ Execute_Unload "Selected prepared input data - %runName% - %scenarioName%.gdx",
 
 bat.ap = 0 ;
 putclose bat
-  'copy "PreparedOutput - %runName% - %scenarioName%.gdx"               "%OutPath%\%runName%\GDX\"' /
-  'copy "Slacks and penalties - %runName% - %scenarioName%.gdx"         "%OutPath%\%runName%\GDX\"' /
-  'copy "Levels and marginals - %runName% - %scenarioName%.gdx"         "%OutPath%\%runName%\GDX\"' /
-  'copy "Selected prepared input data - %runName% - %scenarioName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
-  'copy "GEMsolve.log"                                                  "%OutPath%\%runName%\%runName% - %scenarioName% - GEMsolve.log"' /
+  'copy "PreparedOutput - %runName% - %runVersionName%.gdx"               "%OutPath%\%runName%\GDX\"' /
+  'copy "Slacks and penalties - %runName% - %runVersionName%.gdx"         "%OutPath%\%runName%\GDX\"' /
+  'copy "Levels and marginals - %runName% - %runVersionName%.gdx"         "%OutPath%\%runName%\GDX\"' /
+  'copy "Selected prepared input data - %runName% - %runVersionName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
+  'copy "GEMsolve.log"                                                    "%OutPath%\%runName%\%runName% - %runVersionName% - GEMsolve.log"' /
   ;
 execute 'temp.bat' ;
 
@@ -488,7 +488,7 @@ $stop
 
 $if not %PlotMIPtrace%==1 $goto NoTrace
 * Copy current MIPtrace files from the programs to the Traceplots directory, and erase MIPtrace files from programs directory. 
-putclose bat 'copy "%runName%-%scenarioName%-MIPtrace*.txt" "%OutPath%\%runName%\Traceplots"' / 'erase *MIPtrace*.txt' ;
+putclose bat 'copy "%runName%-%runVersionName%-MIPtrace*.txt" "%OutPath%\%runName%\Traceplots"' / 'erase *MIPtrace*.txt' ;
 execute 'temp.bat';
 
 * Create the batch file to call Matlab to make the MIPtrace plots - note that miptrace.bat will be invoked from RunGem.gms.

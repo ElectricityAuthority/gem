@@ -1,31 +1,32 @@
 $inlinecom { }
 $eolcom !
-$setglobal ProgPath         "%system.fp%"
-$setglobal DataPath         "%system.fp%..\Data\"
-$setglobal MatCodePath      "%system.fp%..\Matlab code\"
-$setglobal OutPath          "%system.fp%..\Output\"
+$setglobal ProgPath       "%system.fp%"
+$setglobal DataPath       "%system.fp%..\Data\"
+$setglobal MatCodePath    "%system.fp%..\Matlab code\"
+$setglobal OutPath        "%system.fp%..\Output\"
 
-$setglobal runName          "Test"
+$setglobal runName        "Test"
 
-Set sc 'Scenarios'     / sc1 '2010 Sustainable path (mds1)'
-                         sc2 '2010 SI wind (mds2)'
-                         sc3 '2010 Medium renewables (mds3)'
-                         sc4 '2010 Coal (mds4)'
-                         sc5 '2010 High gas discovery (mds5)' /
+Set runVersions 'Variants or instances of the overarching run' /
+  mds1 '2010 Sustainable path'
+  mds2 '2010 SI wind'
+  mds3 '2010 Medium renewables'
+  mds4 '2010 Coal'
+  mds5 '2010 High gas discovery' /
 
-Set scenarioColor(sc,*,*,*) 'RGB color mix for scenarios - to pass to plotting applications' ;
-scenarioColor('sc1','0','0','255')   = yes ;
-scenarioColor('sc2','255','0','0')   = yes ;
-scenarioColor('sc3','0','255','0')   = yes ;
-scenarioColor('sc4','0','0','0')     = yes ;
-scenarioColor('sc5','255','0','255') = yes ;
+Set runVersionColor(runVersions,*,*,*) 'RGB color mix for the various versions comprising the run - to pass to plotting applications' ;
+runVersionColor('mds1','0','0','255')   = yes ;
+runVersionColor('mds2','255','0','0')   = yes ;
+runVersionColor('mds3','0','255','0')   = yes ;
+runVersionColor('mds4','0','0','0')     = yes ;
+runVersionColor('mds5','255','0','255') = yes ;
 
-$setglobal firstScenario    "2Region-9LoadBlock.gdx"
+$setglobal firstRunVersionGDX "2Region-9LoadBlock.gdx"
 
 *+++ Model +++
 $setglobal firstYear 2012
 * First modelled year.
-$setglobal lastYear 2050
+$setglobal lastYear 2025
 * Last modelled year.
 $setglobal RunType 0
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only

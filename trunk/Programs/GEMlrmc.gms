@@ -1,7 +1,8 @@
 * GEMlrmc.gms
 
 
-* Last modified by Dr Phil Bishop, 26/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/08/2011 (imm@ea.govt.nz)
+
 
 * This program takes the GEM input data and computes the LRMC by plant.
 * It gets $include'd into GEMdata.
@@ -38,7 +39,7 @@ loop((noExist(g),z)$( ( ord(z) > 1 ) and ( ord(z) <= plantLifeYears(g) ) ),
 
 * Convert costs from modelled years (y) to sequential years (z), from $/MWh to $m, and collect into a parameter called totalCosts.
 loop((noExist(g),z,y)$( ( ord(z) <= plantLifeYears(g) ) and ( ord(z) = ord(y) ) ),
-  totalCosts(g,z)$possibleToBuild(g) = 1e-6 * ( 1e3 * assumedGWh(g) * sum(reportingOutcome(outcomes), SRMC(g,y,outcomes)) + i_nameplate(g) * i_fixedOM(g) ) ;
+  totalCosts(g,z)$possibleToBuild(g) = 1e-6 * ( 1e3 * assumedGWh(g) * sum(defaultOutcome(outcomes), SRMC(g,y,outcomes)) + i_nameplate(g) * i_fixedOM(g) ) ;
 ) ;
 
 * Complete the series for sequential years up to the number of plant life years.
@@ -79,7 +80,9 @@ loop((k,noExist(g),ild)$( mapg_k(g,k) * sum(possibleToBuild(g), 1) * mapg_ild(g,
   put / g.tl, k.tl, ild.tl, i_nameplate(g), i_capFacTech(k), assumedGWh(g), LRMC(g) ;
 ) ;
 
-*Display assumedGWh, plantLifeYears, depreciation, unDepCapital, totalCosts, cndte_LRMC, dcf, LRMC, large_LRMC, small_LRMC, LRMC_offset ;
+Display LRMC, large_LRMC, small_LRMC, LRMC_offset
+* assumedGWh, plantLifeYears, depreciation, unDepCapital, totalCosts, cndte_LRMC, dcf
+  ;
 
 
 
