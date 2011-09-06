@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 29/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 06/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -50,6 +50,7 @@ $offsymxref offsymlist
 * Declare and create basic run-time reporting capability.
 File rep "Write to a report"       / "%ProgPath%Report.txt" / ; rep.lw = 0 ; rep.ap = 1 ;
 File con "Write to the console"    / con / ;                    con.lw = 0 ;
+File dummy ;
 
 putclose rep 'Run: "%runName%"' / 'Run version: "%runVersionName%"' / '  - started at ', system.time, ' on ' system.date ;
 
@@ -311,133 +312,69 @@ $     include CollectResults.txt
 * End of steps loop.
   ) ;
 
+* Before going around the 'Experiments' loop again, dump all output for the current experiment to a GDX file named after the experiment.
+  put dummy ;
+  put_utility 'gdxout' / '%OutPath%\%runName%\GDX\All output\' experiments.tl ;
+  execute_unload
+*+++++++++++++++++++++++++
+* More non-free reserves code.
+  s_RESVCOMPONENTS, s_calc_nfreserves, s_resv_capacity
+*+++++++++++++++++++++++++
+* Free Variables
+  s_TOTALCOST, s_OUTCOME_COSTS, s_TX, s_THETA
+* Binary Variables
+  s_BGEN, s_BRET, s_ISRETIRED, s_BTX, s_NORESVTRFR
+* Positive Variables
+  s_REFURBCOST, s_GENBLDCONT, s_CGEN, s_BUILD, s_RETIRE, s_CAPACITY, s_TXCAPCHARGES, s_GEN, s_VOLLGEN, s_PUMPEDGEN, s_LOSS, s_TXPROJVAR, s_TXUPGRADE
+* Reserve variables
+  s_RESV, s_RESVVIOL, s_RESVTRFR, s_RESVREQINT
+* Penalty variables
+  s_RENNRGPENALTY, s_PEAK_NZ_PENALTY, s_PEAK_NI_PENALTY, s_NOWINDPEAK_NI_PENALTY
+* Slack variables
+  s_ANNMWSLACK, s_RENCAPSLACK, s_HYDROSLACK, s_MINUTILSLACK, s_FUELSLACK
+* Equations (ignore the objective function)
+  s_calc_outcomeCosts, s_calc_refurbcost, s_calc_txcapcharges, s_bldgenonce, s_buildcapint, s_buildcapcont, s_annnewmwcap, s_endogpltretire, s_endogretonce
+  s_balance_capacity, s_bal_supdem, s_peak_nz, s_peak_ni, s_noWindPeak_ni, s_limit_maxgen, s_limit_mingen, s_minutil, s_limit_fueluse, s_limit_nrg
+  s_minreq_rennrg, s_minreq_rencap, s_limit_hydro, s_limit_pumpgen1, s_limit_pumpgen2, s_limit_pumpgen3, s_boundtxloss, s_tx_capacity, s_tx_projectdef
+  s_tx_onestate, s_tx_upgrade, s_tx_oneupgrade, s_tx_dcflow, s_tx_dcflow0, s_equatetxloss, s_txGrpConstraint, s_resvsinglereq1, s_genmaxresv1, s_resvtrfr1
+  s_resvtrfr2, s_resvtrfr3, s_resvrequnit, s_resvreq2, s_resvreqhvdc, s_resvtrfr4, s_resvtrfrdef, s_resvoffcap, s_resvreqwind
+  ;
+
+* Repeat the output dump to a GDX file named after the experiment, but this time only dump the output required for reporting.
+  put dummy ;
+  put_utility 'gdxout' / '%OutPath%\%runName%\GDX\Report output\' experiments.tl ;
+  execute_unload
+* Variable levels
+  s_TOTALCOST, s_TX, s_REFURBCOST, s_BUILD, s_CAPACITY, s_TXCAPCHARGES, s_GEN, s_VOLLGEN
+  s_RENNRGPENALTY, s_PEAK_NZ_PENALTY, s_PEAK_NI_PENALTY, s_NOWINDPEAK_NI_PENALTY
+  s_ANNMWSLACK, s_RENCAPSLACK, s_HYDROSLACK, s_MINUTILSLACK, s_FUELSLACK, s_RESV, s_RESVVIOL, s_RESVCOMPONENTS
+* Equation marginals (ignore the objective function)
+  s_bal_supdem, s_peak_nz, s_peak_ni, s_noWindPeak_ni
+  ;
+
 * End of experiments loop.
 ) ;
 
 
+* Merge the GDX files from each experiment into a single GDX file called 'allExperimentsXXX.gdx'.
+execute 'gdxmerge "%OutPath%\%runName%\GDX\All output\"*.gdx    output="%OutPath%\%runName%\GDX\allExperimentsAllOutput - %runVersionName%.gdx" big=100000'
+execute 'gdxmerge "%OutPath%\%runName%\GDX\Report output\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runVersionName%.gdx" big=100000'
 
-*===============================================================================================
-* 4. Prepare results to pass along to GEMreports in the form of a GDX file. 
-*    The 's_' solution values are averaged over all outcomeSets in an experiment. Hence, we lose the 'outcomeSets' domain.
-
-loop(experiments,
-
-  loop(steps,
-
-    sumSolves(outcomeSets) = no ;
-    sumSolves(outcomeSets)$allSolves(experiments,steps,outcomeSets) = yes ;
-    numSolves = sum(sumSolves, 1) ;
-
-    s2_TOTALCOST(experiments,steps)$numSolves                          = sum(sumSolves, s_TOTALCOST(experiments,steps,sumSolves)) / numSolves ;
-    s2_OUTCOME_COSTS(experiments,steps,oc)$numSolves                   = sum(sumSolves, s_OUTCOME_COSTS(experiments,steps,sumSolves,oc)) / numSolves ;
-    s2_TX(experiments,steps,paths,y,t,lb,oc)$numSolves                 = sum(sumSolves, s_TX(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
-    s2_BRET(experiments,steps,g,y)$numSolves                           = sum(sumSolves, s_BRET(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_ISRETIRED(experiments,steps,g)$numSolves                        = sum(sumSolves, s_ISRETIRED(experiments,steps,sumSolves,g) ) / numSolves ;
-    s2_BTX(experiments,steps,paths,ps,y)$numSolves                     = sum(sumSolves, s_BTX(experiments,steps,sumSolves,paths,ps,y) ) / numSolves ;
-    s2_REFURBCOST(experiments,steps,g,y)$numSolves                     = sum(sumSolves, s_REFURBCOST(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_BUILD(experiments,steps,g,y)$numSolves                          = sum(sumSolves, s_BUILD(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_RETIRE(experiments,steps,g,y)$numSolves                         = sum(sumSolves, s_RETIRE(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_CAPACITY(experiments,steps,g,y)$numSolves                       = sum(sumSolves, s_CAPACITY(experiments,steps,sumSolves,g,y) ) / numSolves ;
-    s2_TXCAPCHARGES(experiments,steps,paths,y)$numSolves               = sum(sumSolves, s_TXCAPCHARGES(experiments,steps,sumSolves,paths,y) ) / numSolves ;
-    s2_GEN(experiments,steps,g,y,t,lb,oc)$numSolves                    = sum(sumSolves, s_GEN(experiments,steps,sumSolves,g,y,t,lb,oc) ) / numSolves ;
-    s2_VOLLGEN(experiments,steps,s,y,t,lb,oc)$numSolves                = sum(sumSolves, s_VOLLGEN(experiments,steps,sumSolves,s,y,t,lb,oc) ) / numSolves ;
-    s2_PUMPEDGEN(experiments,steps,g,y,t,lb,oc)$numSolves              = sum(sumSolves, s_PUMPEDGEN(experiments,steps,sumSolves,g,y,t,lb,oc) ) / numSolves ;
-    s2_LOSS(experiments,steps,paths,y,t,lb,oc)$numSolves               = sum(sumSolves, s_LOSS(experiments,steps,sumSolves,paths,y,t,lb,oc) ) / numSolves ;
-    s2_TXPROJVAR(experiments,steps,tupg,y)$numSolves                   = sum(sumSolves, s_TXPROJVAR(experiments,steps,sumSolves,tupg,y) ) / numSolves ;
-    s2_TXUPGRADE(experiments,steps,paths,ps,pss,y)$numSolves           = sum(sumSolves, s_TXUPGRADE(experiments,steps,sumSolves,paths,ps,pss,y) ) / numSolves ;
-    s2_RESV(experiments,steps,g,rc,y,t,lb,oc)$numSolves                = sum(sumSolves, s_RESV(experiments,steps,sumSolves,g,rc,y,t,lb,oc) ) / numSolves ;
-    s2_RESVVIOL(experiments,steps,rc,ild,y,t,lb,oc)$numSolves          = sum(sumSolves, s_RESVVIOL(experiments,steps,sumSolves,rc,ild,y,t,lb,oc) ) / numSolves ;
-    s2_RESVTRFR(experiments,steps,rc,ild,ild1,y,t,lb,oc)$numSolves     = sum(sumSolves, s_RESVTRFR(experiments,steps,sumSolves,rc,ild,ild1,y,t,lb,oc) ) / numSolves ;
-    s2_RENNRGPENALTY(experiments,steps,y)$numSolves                    = sum(sumSolves, s_RENNRGPENALTY(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_PEAK_NZ_PENALTY(experiments,steps,y,oc)$numSolves               = sum(sumSolves, s_PEAK_NZ_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_PEAK_NI_PENALTY(experiments,steps,y,oc)$numSolves               = sum(sumSolves, s_PEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_NOWINDPEAK_NI_PENALTY(experiments,steps,y,oc)$numSolves         = sum(sumSolves, s_NOWINDPEAK_NI_PENALTY(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_ANNMWSLACK(experiments,steps,y)$numSolves                       = sum(sumSolves, s_ANNMWSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_RENCAPSLACK(experiments,steps,y)$numSolves                      = sum(sumSolves, s_RENCAPSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_HYDROSLACK(experiments,steps,y)$numSolves                       = sum(sumSolves, s_HYDROSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_MINUTILSLACK(experiments,steps,y)$numSolves                     = sum(sumSolves, s_MINUTILSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_FUELSLACK(experiments,steps,y)$numSolves                        = sum(sumSolves, s_FUELSLACK(experiments,steps,sumSolves,y) ) / numSolves ;
-    s2_bal_supdem(experiments,steps,r,y,t,lb,oc)$numSolves             = sum(sumSolves, s_bal_supdem(experiments,steps,sumSolves,r,y,t,lb,oc) ) / numSolves ;
-    s2_peak_nz(experiments,steps,y,oc)$numSolves                       = sum(sumSolves, s_peak_nz(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_peak_ni(experiments,steps,y,oc)$numSolves                       = sum(sumSolves, s_peak_ni(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-    s2_noWindPeak_ni(experiments,steps,y,oc)$numSolves                 = sum(sumSolves, s_noWindPeak_ni(experiments,steps,sumSolves,y,oc) ) / numSolves ;
-*++++++++++
-* More non-free reserves code.
-    s2_RESVCOMPONENTS(experiments,steps,paths,y,t,lb,outcomes,stp)$numSolves = sum(sumSolves, s_RESVCOMPONENTS(experiments,steps,sumSolves,paths,y,t,lb,outcomes,stp) ) / numSolves ;
-*++++++++++
-
-* End of steps loop
-  ) ;
-
-* End of experiments loop
-) ;
-
-Display s2_TOTALCOST, solveReport ;
+* NB: The big parameter is used to specify a cutoff for symbols that will be written one at a time. Each symbol
+* that exceeds the size will be processed by reading each gdx file and only process the data for that symbol. This
+* can lead to reading the same gdx file many times, but it allows the merging of large data sets.
 
 
 
 *===============================================================================================
-* 5. Dump results out to GDX files and rename/relocate certain output files.
+* 4. Dump results out to GDX files and rename/relocate certain output files.
 
-* a) Dump output prepared for report writing into a GDX file (essentially, the 's2' parameters).
-Execute_Unload "PreparedOutput - %runName% - %runVersionName%.gdx",
-* Miscellaneous sets and parameters
-  solveGoal experiments steps oc solveReport
-* The 's2' output parameters
-  s2_TOTALCOST s2_OUTCOME_COSTS s2_TX s2_BRET s2_ISRETIRED s2_BTX s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY
-  s2_TXCAPCHARGES s2_GEN s2_VOLLGEN s2_PUMPEDGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL s2_RESVTRFR
-  s2_bal_supdem s2_peak_nz s2_peak_ni s2_noWindPeak_ni
-*++++++++++
-* More non-free reserves code.
-  s2_RESVCOMPONENTS
-*++++++++++
-* The 's2' penalties.
-  s2_RENNRGPENALTY s2_PEAK_NZ_PENALTY s2_PEAK_NI_PENALTY s2_NOWINDPEAK_NI_PENALTY
-* The 's2' slacks.
-  s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK
-  ;
+* edit above heading
 
-
-* b) Dump all 's' slacks and penalties into a GDX file.
-Execute_Unload "Slacks and penalties - %runName% - %runVersionName%.gdx",
-  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
-  s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
-  ;
-
-
-* c) Dump all variable levels and constraint marginals into a GDX file (ignore the objective function marginal).
-Execute_Unload "Levels and marginals - %runName% - %runVersionName%.gdx",
-*+++++++++++++++++++++++++
-* More non-free reserves code.
-  s_RESVCOMPONENTS s_calc_nfreserves s_resv_capacity
-*+++++++++++++++++++++++++
-* Free variables.
-  s_TOTALCOST s_OUTCOME_COSTS s_TX s_THETA
-* Binary variables.
-  s_BGEN s_BRET s_ISRETIRED s_BTX s_NORESVTRFR
-* Positive variables (sans the reserves-related variables).
-  s_REFURBCOST s_GENBLDCONT s_CGEN s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_PUMPEDGEN s_LOSS
-  s_TXPROJVAR s_TXUPGRADE
-* Reserve variables.
-  s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
-* Penalty variables.
-  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
-* Slack variables.
-  s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
-* Equation marginals. 
-  s_calc_outcomeCosts s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire
-  s_endogretonce s_balance_capacity s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_mingen
-  s_minutil s_limit_fueluse s_limit_nrg s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3
-  s_boundtxloss s_tx_capacity s_tx_projectdef s_tx_onestate s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss
-  s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1 s_resvtrfr1 s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc
-  s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind
-  ;
-
-
-* d) Dump selected input data into a GDX file (as imported, or from intermediate steps in GEMdata, or what's actually used to solve the model).
+* x) Dump selected input data into a GDX file (as imported, or from intermediate steps in GEMdata, or what's actually used to solve the model).
 Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
-  y t f k g o lb r e ild ps outcomes rc n tgc
+  y t f k g s o lb i r e ild ps outcomes rc n tgc hY
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r paths nwd swd interIsland firstPeriod firstYr lastYr allButFirstYr pumpedHydroPlant wind gas diesel
   thermalFuel i_fuelQuantities renew schedHydroPlant nsegment demandGen 
   allSolves weightOutcomesBySet
@@ -472,9 +409,6 @@ Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx"
 
 bat.ap = 0 ;
 putclose bat
-  'copy "PreparedOutput - %runName% - %runVersionName%.gdx"               "%OutPath%\%runName%\GDX\"' /
-  'copy "Slacks and penalties - %runName% - %runVersionName%.gdx"         "%OutPath%\%runName%\GDX\"' /
-  'copy "Levels and marginals - %runName% - %runVersionName%.gdx"         "%OutPath%\%runName%\GDX\"' /
   'copy "Selected prepared input data - %runName% - %runVersionName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
   'copy "GEMsolve.log"                                                    "%OutPath%\%runName%\%runName% - %runVersionName% - GEMsolve.log"' /
   ;

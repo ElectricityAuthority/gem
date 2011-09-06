@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 29/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 06/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -20,7 +20,7 @@ $ontext
 
  Code sections:
   1. Take care of a few preliminaries.
-  2. Load input data that comes from input GDX files (or the paths/settings include files).
+  2. Load input data that comes from the input GDX files (or the paths/settings include files).
   3. Initialise sets and parameters.
      a) Time/date-related sets and parameters.
      b) Various mappings, subsets and counts.
@@ -59,92 +59,81 @@ $offsymxref offsymlist
 File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
 putclose bat
   'copy "%DataPath%%GEMinputGDX%"       "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%%GEMnetworkGDX%"     "%OutPath%\%runName%\Archive\"' /
   'copy "%DataPath%%GEMdemandGDX%"      "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
   'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %runVersionName%.inc"' /
-  'copy "%ProgPath%GEMstochastic.gms"   "%OutPath%\%runName%\Archive\GEMstochastic.gms"' /
-  ;
+  'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
+  'copy "%ProgPath%GEMstochastic.inc"   "%OutPath%\%runName%\Archive\GEMstochastic.inc"' / ;
 execute 'temp.bat' ;
 
 
 
 *===============================================================================================
-* 2. Load input data that comes from input GDX file (or the paths/settings include files).
+* 2. Load input data that comes from the input GDX files (or the paths/settings include files).
 *    NB: Some symbols in the input GDX files are defined on years that may extend beyond %firstYear% and %lastYear%.
 *        Hence, those symbols must be loaded without domain checking, i.e. $load c.f. $loaddc.
 
 Set y  / %firstYear% * %lastYear% / ;
 
+* Load the 109 network invariant symbols from GEMinputGDX.
 $gdxin "%DataPath%%GEMinputGDX%"
-* 18 fundamental sets
-$loaddc k f fg g s o i r e p ps tupg tgc t lb rc hY v
-* 36 mapping sets and subsets
-* 23 technology and fuel
+* Sets
+$loaddc k f fg g o i e tgc t lb rc hY v
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
 $loaddc wind renew thermalTech minUtilTechs demandGen randomiseCapex linearBuildTech coal lignite gas diesel
-* 3 generation
-$loaddc mapGenPlant exist maps_r
-* 6 location
-$loaddc mapLocations Haywards Benmore regionCentroid zoneCentroid islandCentroid
-* 2 transmission
-$loaddc txUpgradeTransitions mapArcNode
-* 1 load and time
+$loaddc mapGenPlant exist
+$loaddc Haywards Benmore zoneCentroid islandCentroid
 $loaddc mapm_t
-* 0 reserves and security
-* 1 hydrology
 $loaddc mapReservoirs
-
-* 78 parameters 
-* 16 technology and fuel
+* Parameters 
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
 $load   i_minUtilByTech i_fuelPrices i_fuelQuantities i_co2tax
-* 31 generation
 $loaddc i_nameplate i_UnitLargestProp i_baseload i_minUtilisation i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear
 $loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_FuelDeliveryCost
 $loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_plantReservesCap i_plantReservesCost i_PltCapFact
-$loaddc i_VOLLcap i_VOLLcost i_HVDCshr
+$loaddc i_HVDCshr
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
-* 2 location
 $loaddc i_substnCoordinates i_zonalLocFacs
-* 11 transmission
-$loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
-$loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 $load   i_HVDClevy
-* 4 load and time
 $load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
-* 11 reserves and security
 $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
 $load   i_reserveReqMW i_fkNI i_largestGenerator i_smallestPole i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
-* 2 hydrology
 $load   i_firstHydroYear i_historicalHydroOutput
 
-* 1 more 'load and time' symbol - this one from a different GDX file.
+* Load the 22 region/network-related symbols from GEMnetworkGDX.
+$gdxin "%DataPath%%GEMnetworkGDX%"
+* Sets
+$loaddc s r p ps tupg maps_r mapLocations regionCentroid txUpgradeTransitions mapArcNode
+* Parameters 
+$loaddc i_VOLLcap i_VOLLcost
+$loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
+$loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
+
+* Load the energy demand from GEMdemandGDX.
 $gdxin "%DataPath%%GEMdemandGDX%"
 $load   i_NrgDemand
 
 * Initialise set 'n' - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
-
-$ontext
-** Data overrides:
-Parameters
-  i_fuelPricesOvrd(f,y)        'Fuel prices by fuel type and year, $/GJ'
-  i_fuelQuantitiesOvrd(f,y)    'Quantitative limit on availability of various fuels by year, PJ'
-  i_co2taxOvrd(y)              'CO2 tax by year, $/tonne CO2-equivalent'
-  ;
-
+*$ontext
 ** Data overrides:
 ** mds1, mds2 and mds5 override 3 params: i_fuelPrices, i_fuelQuantities and i_co2tax.
 ** mds4 overrides 1 params: i_co2tax.
-$gdxin "%DataPath%mds1-2Region-9LoadBlock-Override.gdx"
+Parameters
+  i_fuelPricesOvrd(f,y)           'Fuel prices by fuel type and year, $/GJ'
+  i_fuelQuantitiesOvrd(f,y)       'Quantitative limit on availability of various fuels by year, PJ'
+  i_co2taxOvrd(y)                 'CO2 tax by year, $/tonne CO2-equivalent'
+  ;
+
+$gdxin "%DataPath%%GEMoverrideGDX%"
 $load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
-$load   i_co2taxOvrd
+*$load   i_co2taxOvrd
 if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
 if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
 if(sum(y, i_co2taxOvrd(y)), i_co2tax(y) = 0 ) ;                         i_co2tax(y) = i_co2taxOvrd(y) ;
-$offtext
+*$offtext
 
 
 
@@ -581,7 +570,7 @@ pNFresvCost(paths(r,rr),stp)$( pNFresvCost(paths,stp) > 500 ) = 500 ;
 *===============================================================================================
 * 4. Prepare the outcome-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
 
-$include GEMstochastic.gms
+$include GEMstochastic.inc
 
 * Pro-rate weightOutcomesBySet values so that weights sum to exactly one for each outcomeSets:
 counter = 0 ;
@@ -686,7 +675,7 @@ lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
 
 
 * Do the calculations.
-assumedGWh(g) = sum(mapg_k(g,k), 8.760 * i_capFacTech(k) * i_nameplate(g)) ;
+assumedGWh(g) = sum(mapg_k(g,k), 8.76 * i_capFacTech(k) * i_nameplate(g)) ;
 assumedGWh(pumpedHydroPlant(g)) = i_PumpedHydroEffic(g) * sum(mapm_t(m,t), 1) * i_PumpedHydroMonth(g) ;
 
 MWtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), i_nameplate(g)) ;

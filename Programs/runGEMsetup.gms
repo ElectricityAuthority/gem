@@ -5,7 +5,7 @@ $if %Mode%==0    $call gams GEMdeclarations.gms rf=GEMdeclarations s=GEMdeclarat
 $if errorlevel 1 $abort +++ Check GEMdeclarations.lst for errors +++
 
 * Create a couple of files.
-File bat "A recyclable batch file"  / "%ProgPath%temp.bat" / ;      bat.lw = 0 ;
+File bat "A recyclable batch file"  / "%ProgPath%\temp.bat" / ;     bat.lw = 0 ;
 File rep "Write a progess report"   / "runGEMsetupProgress.txt" / ; rep.lw = 0 ;
 
 * Create and execute a batch file to:
@@ -19,21 +19,25 @@ putclose bat
   'if exist runMergeGDXsProgress.txt       erase runMergeGDXsProgress.txt /q' /
   'if exist runGEMreportsProgress.txt      erase runGEMreportsProgress.txt /q' /
   'if exist "%OutPath%%runName%"           rmdir "%OutPath%%runName%" /s /q' /
-  'mkdir "%OutPath%%runName%"' /
-  'mkdir "%OutPath%%runName%\Archive"' /
-  'mkdir "%OutPath%%runName%\GDX"' /
-  'mkdir "%OutPath%%runName%\Processed files"' /
-  'mkdir "%OutPath%%runName%\Input data checks"' /
-  'copy "%ProgPath%GEMdeclarations.gms" "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMdeclarations.g00" "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%CollectResults.txt"  "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMdata.gms"         "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMsolve.gms"        "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMreports.gms"      "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMcplex.gms"        "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMgurobi.gms"       "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMxpress.gms"       "%OutPath%\%runName%\Archive\"' /
-  ;
+
+  'mkdir "%OutPath%\%runName%"' /
+  'mkdir "%OutPath%\%runName%\Archive"' /
+  'mkdir "%OutPath%\%runName%\GDX"' /
+  'mkdir "%OutPath%\%runName%\GDX\All output"' /
+  'mkdir "%OutPath%\%runName%\GDX\Report output"' /
+  'mkdir "%OutPath%\%runName%\Processed files"' /
+  'mkdir "%OutPath%\%runName%\Input data checks"' /
+
+  'copy "%ProgPath%\GEMdeclarations.gms" "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMdeclarations.g00" "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\CollectResults.txt"  "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMdata.gms"         "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMsolve.gms"        "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMreports.gms"      "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMcplex.gms"        "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMgurobi.gms"       "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMxpress.gms"       "%OutPath%\%runName%\Archive\"' / ;
+
 execute 'temp.bat' ;
 
 * Indicate that runGEMsetup is finished.

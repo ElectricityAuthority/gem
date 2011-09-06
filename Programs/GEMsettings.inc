@@ -1,34 +1,9 @@
-$inlinecom { }
-$eolcom !
-$setglobal ProgPath       "%system.fp%"
-$setglobal DataPath       "%system.fp%..\Data\"
-$setglobal MatCodePath    "%system.fp%..\Matlab code\"
-$setglobal OutPath        "%system.fp%..\Output\"
-
-$setglobal runName        "Test"
-
-Set runVersions 'Variants or instances of the overarching run' /
-  mds1 '2010 Sustainable path'
-  mds2 '2010 SI wind'
-  mds3 '2010 Medium renewables'
-  mds4 '2010 Coal'
-  mds5 '2010 High gas discovery' /
-
-Set runVersionColor(runVersions,*,*,*) 'RGB color mix for the various versions comprising the run - to pass to plotting applications' ;
-runVersionColor('mds1','0','0','255')   = yes ;
-runVersionColor('mds2','255','0','0')   = yes ;
-runVersionColor('mds3','0','255','0')   = yes ;
-runVersionColor('mds4','0','0','0')     = yes ;
-runVersionColor('mds5','255','0','255') = yes ;
-
-$setglobal firstRunVersionGDX "2Region-9LoadBlock.gdx"
-
 *+++ Model +++
 $setglobal firstYear 2012
 * First modelled year.
-$setglobal lastYear 2025
+$setglobal lastYear 2020
 * Last modelled year.
-$setglobal RunType 0
+$setglobal RunType 1
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
 $setglobal GEMtype MIP
 * Specify whether GEM is to be a MIP or an RMIP - take care to get the spelling exact (default = MIP).
@@ -78,9 +53,11 @@ $setglobal NumVertices 4
 
 *+++ Load +++
 $setglobal AClossesNI 0.0368
+*$setglobal AClossesNI 0.0120
 *$setglobal AClossesNI 0.0
 * Upwards adjustment to load to account for NI AC (or intraregional) losses - .0368 for 2-region and .0120 for 18-region
 $setglobal AClossesSI 0.0534
+*$setglobal AClossesSI 0.0180
 *$setglobal AClossesSI 0.0
 * Upwards adjustment to load to account for SI AC (or intraregional) losses - .0534 for 2-region and .0180 for 18-region
 
