@@ -298,8 +298,8 @@ Parameters
   lastYear                                      'Last modelled year - as a scalar, not a set'
   noRetire                                      'Number of years following and including the first modelled year for which endogenous generation plant retirement decisions are prohibited'
   AnnualMWlimit                                 'Upper bound on total MW of new plant able to be built nationwide in any single year'
-  penaltyViolatePeakLoad                        'Penalty for failing to meet peak load constraints, $m/MW'
-  penaltyViolateRenNrg                          'Penalty used to make renewable energy constrraint feasible, $m/GWh'
+  penaltyViolatePeakLoad                        'Penalty for failing to meet peak load constraints, $/MW'
+  penaltyViolateRenNrg                          'Penalty used to make renewable energy constraint feasible, $/MWh'
   penaltyViolateReserves(ild,rc)                'Penalty for failing to meet certain reserve classes, $/MWh'
   renNrgShrOn                                   'Switch to control usage of renewable energy share constraint 0=off/1=on'
   DCloadFlow                                    'Flag (0/1) to indicate use of either DC load flow (1) or transportation formulation (0)'
@@ -607,7 +607,7 @@ objectivefn..
                 sum(y, MINUTILSLACK(y) ) +
                 sum(y, FUELSLACK(y) )  ) +
 * Add in penalties at user-defined high, but not necessarily arbitrarily high, cost.
-  penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
+  1e-3 * penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
 * Fixed, variable and HVDC costs - discounted and adjusted for tax
 * NB: Fixed costs are scaled by 1/card(t) to convert annual costs to a periodic basis coz discounting is done by period.
 * NB: The HVDC charge applies only to committed and new SI projects.
@@ -629,9 +629,9 @@ objectivefn..
 calc_outcomeCosts(oc)..
   OUTCOME_COSTS(oc) =e=
 * Reserve violation costs, $m
-  1e-6 * sum((rc,ild,y,t,lb), RESVVIOL(rc,ild,y,t,lb,oc) * penaltyViolateReserves(ild,rc) ) +
+  1e-6 * sum((rc,ild,y,t,lb), penaltyViolateReserves(ild,rc) * RESVVIOL(rc,ild,y,t,lb,oc) ) +
 * Lost peak load penalties - why aren't they discounted and adjusted for tax?
-  penaltyViolatePeakLoad * sum(y, PEAK_NZ_PENALTY(y,oc) + PEAK_NI_PENALTY(y,oc) + NOWINDPEAK_NI_PENALTY(y,oc) ) +
+  1e-6 * penaltyViolatePeakLoad * sum(y, PEAK_NZ_PENALTY(y,oc) + PEAK_NI_PENALTY(y,oc) + NOWINDPEAK_NI_PENALTY(y,oc) ) +
 * Various costs, discounted and adjusted for tax
   1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(y,t) * (
 * Lost load

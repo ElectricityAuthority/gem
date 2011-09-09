@@ -141,7 +141,7 @@ Parameters
   refurbCapCharge(runVersions,g,y)                          'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
   SRMC(runVersions,g,y,outcomes)                            'Short run marginal cost of each generation project by year and outcome, $/MWh'
   locFac_Recip(runVersions,e)                               'Reciprocal of zonally-based location factors'
-  penaltyViolateReserves(runVersions,ild,rc)                'Penalty for failing to meet certain reserve classes, $/MWh'
+  penaltyViolateReserves(runVersions,ild,rc)                'Penalty for failing to meet certain reserve classes, $/MW'
   pNFresvCost(runVersions,r,rr,stp)                         'Constant cost of each non-free piece (or step) of function, $/MWh' ;
 
 
@@ -219,8 +219,8 @@ loop((rv,reportDomain(experiments,steps,outcomeSets)),
   objComponents(rv,reportDomain,'obj_nfrcosts')  = 1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(rv,y,t) * (
                                                    sum((paths,stp,oc)$( nwd(paths) or swd(paths) ), hoursPerBlock(rv,t,lb) * outcomeWeight(oc) * s_RESVCOMPONENTS(rv,reportDomain,paths,y,t,lb,oc,stp) * pNFresvcost(rv,paths,stp) ) ) ) ;
   objComponents(rv,reportDomain,'obj_Penalties') = sum((y,oc), outcomeWeight(oc) * (
-                                                     penaltyViolateRenNrg * s_RENNRGPENALTY(rv,reportDomain,y) +
-                                                     penaltyViolatePeakLoad * ( s_PEAK_NZ_PENALTY(rv,reportDomain,y,oc) + s_PEAK_NI_PENALTY(rv,reportDomain,y,oc) + s_NOWINDPEAK_NI_PENALTY(rv,reportDomain,y,oc) ) )
+                                                     1e-3 * penaltyViolateRenNrg * s_RENNRGPENALTY(rv,reportDomain,y) +
+                                                     1e-6 * penaltyViolatePeakLoad * ( s_PEAK_NZ_PENALTY(rv,reportDomain,y,oc) + s_PEAK_NI_PENALTY(rv,reportDomain,y,oc) + s_NOWINDPEAK_NI_PENALTY(rv,reportDomain,y,oc) ) )
                                                    ) ;
   objComponents(rv,reportDomain,'obj_Slacks')    = slackCost * sum(y, s_ANNMWSLACK(rv,reportDomain,y) + s_RENCAPSLACK(rv,reportDomain,y) + s_HYDROSLACK(rv,reportDomain,y) + s_MINUTILSLACK(rv,reportDomain,y) + s_FUELSLACK(rv,reportDomain,y) ) ;
 
