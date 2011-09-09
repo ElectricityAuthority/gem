@@ -1,6 +1,6 @@
 * GEMldc.gms
 
-* Last modified by Dr Phil Bishop, 07/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
 
 * NB: Aspects of this program require editing each time it is used - read the notes below.
 
@@ -16,7 +16,7 @@ $ontext
  Notes:
  1. The trading period nomenclature to deal with daylight saving is as per Gnash. That is, TPs 5 and 6 (i.e.
     2.00am-3.00am) are omitted on a short day, and TPs 4.5 and 5.5 are added on a long day.
- 2. Preparing load by GXP data (e.g. ..\Data\Files to create demand GDX\historical_GXP_load_data_Mar10.txt):
+ 2. Preparing load by GXP data (e.g. ..\Data\Files required to create GEM GDXs\historical_GXP_load_data_Mar10.txt):
     a. Have a matlab whizz extract data from Gnash to produce a file of load by GXP by trading period by day
        for a reference year:
        - have the whizz seperate date field into 3 fields - year, month number, and day number (1st 3 cols of file).
@@ -68,7 +68,7 @@ $setglobal Scheme               1        ! Choose a scheme for putting half hour
                                          ! 3 = nothing as yet...
 
 * Specify input file paths and names
-$setglobal DataPath            "%system.fp%..\Data\Files to create GEM GDXs\"
+$setglobal DataPath            "%system.fp%..\Data\Files required to create GEM GDXs\"
 $setglobal OfftakeByGXPdata    "historical_GXP_load_data_Mar10.txt"
 $setglobal FileOfGXPNames      "historical_GXP_list_Mar10.txt"
 * Specify output file names

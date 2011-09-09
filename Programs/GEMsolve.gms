@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 06/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -400,7 +400,7 @@ Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx"
 * Hydro related sets and parameters
   hydroOutputScalar allModelledHydroOutput mapHydroYearsToModelledYears
 * Penalties
-  penaltyViolateRenNrg reserveViolationPenalty penaltyLostPeak
+  penaltyViolatePeakLoad, penaltyViolateRenNrg, penaltyViolateReserves
 *+++++++++++++++++++++++++
 * More non-free reserves code.
   stp pNFresvCap pNFresvCost

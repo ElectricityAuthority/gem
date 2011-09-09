@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 06/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -101,9 +101,9 @@ Parameters
   s_RESVVIOL(runVersions,experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)  'Reserve energy supply violations, MWh'
   s_RESVCOMPONENTS(runVersions,experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes,stp) 'Non-free reserve components, MW'
   s_RENNRGPENALTY(runVersions,experiments,steps,outcomeSets,y)                  'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s_PEAK_NZ_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes)       'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s_PEAK_NI_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes)       'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
-  s_NOWINDPEAK_NI_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes) 'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  s_PEAK_NZ_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes)       'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
+  s_PEAK_NI_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes)       'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
+  s_NOWINDPEAK_NI_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes) 'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
   s_ANNMWSLACK(runVersions,experiments,steps,outcomeSets,y)                     'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
   s_RENCAPSLACK(runVersions,experiments,steps,outcomeSets,y)                    'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
   s_HYDROSLACK(runVersions,experiments,steps,outcomeSets,y)                     'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
@@ -141,13 +141,14 @@ Parameters
   refurbCapCharge(runVersions,g,y)                          'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
   SRMC(runVersions,g,y,outcomes)                            'Short run marginal cost of each generation project by year and outcome, $/MWh'
   locFac_Recip(runVersions,e)                               'Reciprocal of zonally-based location factors'
-  reserveViolationPenalty(runVersions,ild,rc)               'Reserve violation penalty, $/MWh'
+  penaltyViolateReserves(runVersions,ild,rc)                'Penalty for failing to meet certain reserve classes, $/MWh'
   pNFresvCost(runVersions,r,rr,stp)                         'Constant cost of each non-free piece (or step) of function, $/MWh' ;
+
 
 $gdxin "%OutPath%\%runName%\Input data checks\all_SelectedInputData.gdx"
 $loaddc possibleToBuild possibleToRefurbish validYrOperate
 $loaddc i_fixedOM i_VOLLcost i_HVDCshr i_HVDClevy i_plantReservesCost
-$loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge SRMC locFac_recip reserveViolationPenalty pNFresvCost
+$loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge SRMC locFac_recip penaltyViolateReserves pNFresvCost
 
 
 
@@ -214,15 +215,14 @@ loop((rv,reportDomain(experiments,steps,outcomeSets)),
   objComponents(rv,reportDomain,'VOLLcost')      = 1e-3 * (1 - taxRate) * sum((s,y,t,lb,oc), outcomeWeight(oc) * PVfacG(rv,y,t) * s_VOLLGEN(rv,reportDomain,s,y,t,lb,oc) * i_VOLLcost(rv,s) ) ;
   objComponents(rv,reportDomain,'obj_rescosts')  = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,oc), PVfacG(rv,y,t) * outcomeWeight(oc) * s_RESV(rv,reportDomain,g,rc,y,t,lb,oc) * i_plantReservesCost(rv,g,rc) ) ;
 
-  objComponents(rv,reportDomain,'obj_resvviol')  = 1e-6 * sum((rc,ild,y,t,lb,oc), outcomeWeight(oc) * s_RESVVIOL(rv,reportDomain,rc,ild,y,t,lb,oc) * reserveViolationPenalty(rv,ild,rc) ) ;
+  objComponents(rv,reportDomain,'obj_resvviol')  = 1e-6 * sum((rc,ild,y,t,lb,oc), outcomeWeight(oc) * s_RESVVIOL(rv,reportDomain,rc,ild,y,t,lb,oc) * penaltyViolateReserves(rv,ild,rc) ) ;
   objComponents(rv,reportDomain,'obj_nfrcosts')  = 1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(rv,y,t) * (
                                                    sum((paths,stp,oc)$( nwd(paths) or swd(paths) ), hoursPerBlock(rv,t,lb) * outcomeWeight(oc) * s_RESVCOMPONENTS(rv,reportDomain,paths,y,t,lb,oc,stp) * pNFresvcost(rv,paths,stp) ) ) ) ;
   objComponents(rv,reportDomain,'obj_Penalties') = sum((y,oc), outcomeWeight(oc) * (
                                                      penaltyViolateRenNrg * s_RENNRGPENALTY(rv,reportDomain,y) +
-                                                     penaltyLostPeak * ( s_PEAK_NZ_PENALTY(rv,reportDomain,y,oc) + s_PEAK_NI_PENALTY(rv,reportDomain,y,oc) + s_NOWINDPEAK_NI_PENALTY(rv,reportDomain,y,oc) ) )
+                                                     penaltyViolatePeakLoad * ( s_PEAK_NZ_PENALTY(rv,reportDomain,y,oc) + s_PEAK_NI_PENALTY(rv,reportDomain,y,oc) + s_NOWINDPEAK_NI_PENALTY(rv,reportDomain,y,oc) ) )
                                                    ) ;
-  objComponents(rv,reportDomain,'obj_Slacks')    = sum(y, 9999 * s_ANNMWSLACK(rv,reportDomain,y) + 9998 * s_RENCAPSLACK(rv,reportDomain,y) + 9997 * s_HYDROSLACK(rv,reportDomain,y) +
-                                                   9996 * s_MINUTILSLACK(rv,reportDomain,y) + 9995 * s_FUELSLACK(rv,reportDomain,y) ) ;
+  objComponents(rv,reportDomain,'obj_Slacks')    = slackCost * sum(y, s_ANNMWSLACK(rv,reportDomain,y) + s_RENCAPSLACK(rv,reportDomain,y) + s_HYDROSLACK(rv,reportDomain,y) + s_MINUTILSLACK(rv,reportDomain,y) + s_FUELSLACK(rv,reportDomain,y) ) ;
 
   builtByTechRegion(rv,reportDomain,k,r) = sum((g,y)$( mapg_k(g,k) * mapg_r(g,r) ), s_BUILD(rv,reportDomain,g,y)) ;
 
@@ -499,7 +499,7 @@ Parameters
   NrgDemand(sc,r,y,t,lb)                        'Load (or energy demand) by region, year, time period and load block for selected growth profile, GWh (used to create ldcMW)'
   txEarlyComYr(sc,tupg,r,rr,ps,pss)             'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
   txFixedComYr(sc,tupg,r,rr,ps,pss)             'Fixed year in which a transmission upgrade must occur (a parameter, not a set)'
-  reserveViolationPenalty(sc,ild,rc)            'Reserve violation penalty, $/MWh'
+  penaltyViolateReserves(sc,ild,rc)             'Reserve violation penalty, $/MWh'
 *++++++++++
 * More non-free reserves code.
   pNFresvCost(sc,r,rr,stp)                      'Constant cost of each non-free piece (or step) of function, $/MWh'

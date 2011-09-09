@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 06/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -117,7 +117,8 @@ $load   i_NrgDemand
 * Initialise set 'n' - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
-*$ontext
+
+$ontext
 ** Data overrides:
 ** mds1, mds2 and mds5 override 3 params: i_fuelPrices, i_fuelQuantities and i_co2tax.
 ** mds4 overrides 1 params: i_co2tax.
@@ -133,7 +134,7 @@ $load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
 if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
 if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
 if(sum(y, i_co2taxOvrd(y)), i_co2tax(y) = 0 ) ;                         i_co2tax(y) = i_co2taxOvrd(y) ;
-*$offtext
+$offtext
 
 
 
@@ -523,7 +524,7 @@ reservesAreas(rc) = min(2, max(1, i_ReserveAreas(rc) ) ) ;
 
 singleReservesReqF(rc)$( reservesAreas(rc) = 1 ) = 1 ;
 
-reserveViolationPenalty(ild,rc) = max(0, i_ReservePenalty(ild,rc) ) ;
+penaltyViolateReserves(ild,rc) = max(0, i_ReservePenalty(ild,rc) ) ;
 
 windCoverPropn(rc) = min(1, max(0, i_propWindCover(rc) ) ) ;
 
@@ -649,7 +650,7 @@ Display
   locFac_Recip, txEarlyComYr, txFixedComYr, reactanceYr, susceptanceYr, BBincidence, pCap, pLoss, bigLoss, slope, intercept
   txCapitalCost, txCapCharge
 * Reserve energy data.
-  reservesAreas, reserveViolationPenalty, windCoverPropn, bigM
+  reservesAreas, penaltyViolateReserves, windCoverPropn, bigM
   ;
 $offtext
 
@@ -826,8 +827,8 @@ loop(k,
 * Write the load summaries.
 put loadSummary 'Energy and peak load by region/island and year, GWh' /
   ' - GWh energy grossed-up by AC loss factors and scaled by outcome-specific energy factor' /
-  ' - GWh energy and peak load reported here relates only to the default outcome (' ;
-  loop(defaultOutcome(outcomes), put outcomes.tl ) put ').' ;
+  ' - GWh energy and peak load reported here relates only to the default outcome (' loop(defaultOutcome(outcomes), put outcomes.tl ) put ').' /
+  ' - Demand file: ' "%GEMdemandGDX%." ;
 
 put // 'Intraregional AC loss factors, %' ;
 loop(ild, put / @2 ild.tl @14 (100 * AClossFactors(ild)):>10:2 ) ;
