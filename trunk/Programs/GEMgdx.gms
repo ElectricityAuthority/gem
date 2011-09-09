@@ -1,6 +1,6 @@
 * GEMgdx.gms
 
-* Last modified by Dr Phil Bishop, 07/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
 
 * NB: This program requires editing each time it is used - read the notes below.
 
@@ -64,7 +64,7 @@ $setglobal NumBlks          9       ! Specify the number of blocks in LDC.
 $setglobal ThisScenario     std     ! Of all the scenarios in set sc, identify the one for which the GEM gdx file will be created.
 
 * Specify input file paths and names
-$setglobal DataPath         "%system.fp%..\Data\Files to create GEM GDXs\"
+$setglobal DataPath         "%system.fp%..\Data\Files required to create GEM GDXs\"
 $setglobal GXPgeography	    "216 GXPs geography.csv"
 $setglobal RawHydroData	    "Hydro sequences by 36 reservoirs and months, 1932-2007, GWh.csv"
 $setglobal RawEnergy        "Annual energy forecasts for 180 GXPs, 2012-50, GWh (Dec 2009).csv"
@@ -74,7 +74,8 @@ $setglobal Load_Prorata     "Load pro rata.csv"
 * Output file name - the resulting GDX file will be placed in the programs directory; move it to data directory if it's a keeper.
 $setglobal miscGDXfilename  "CheckGEM_GDXstuff%NumBlks%LB.gdx"
 $setglobal GEM_GDXfilename  "GEM_2Region36ReservoirHydro%NumBlks%LB.gdx"
-
+$setglobal GEM_LoadByPeriod "GEM_LoadByPeriod.gdx"
+$setglobal GEM_LoadByMonth  "GEM_LoadByMonth.gdx"
 
 
 
@@ -163,6 +164,7 @@ Parameters
   load_GXP(sc,gxp,y,m,lb)        'Load data by scenario, GXP, year, month and load block, GWh'
   i_load(sc,r,y,t,lb)            'Load data by scenario, region, year, desired time period and load block, GWh'
   i_NrgDemand(r,y,t,lb)          'Load by region, year, time period and load block, GWh'
+  i_NrgDemandMonthly(r,y,m,lb)   'Load by region, year, month and load block, GWh'
   chkloadyr(y,*)                 'Sum up load by year for the purpose of checking arithmetic'
   chkload(*)                     'Sum up load globally for the purpose of checking arithmetic'
 * Hydrology
@@ -414,6 +416,8 @@ $offtext
 * f) Aggregate load by GXPs and months to regions and time periods.
 i_load(sc,r,y,t,lb) = sum((gxp_r(gxp,r),mapm_t(m,t)), load_GXP(sc,gxp,y,m,lb)) ;
 
+i_NrgDemandMonthly(r,y,m,lb) = sum(gxp_r(gxp,r), load_GXP("%ThisScenario%",gxp,y,m,lb)) ;
+
 i_NrgDemand(r,y,t,lb) = i_load("%ThisScenario%",r,y,t,lb) ;
 
 * Compute check sums on energy data after it has been aggregated to regions and time periods.
@@ -450,11 +454,11 @@ display 'Load check sums', numGXPrawload, numGXPload, qtyGXPrawload, qtyGXPload,
 *   get put into that GDX file right here.
 * - Before unloading, round the decimals to avoid carrying along bogus precision.
 
-Execute_Unload '%miscGDXfilename%' m, t, mapm_t, lb, i_HalfHrsPerBlk, chkHydroRes, chkHydrohYr, chkHydro, i_historicalHydroOutput, LoadChkSum, i_load  ;
+Execute_Unload '%miscGDXfilename%'  m, t, mapm_t, lb, i_HalfHrsPerBlk, chkHydroRes, chkHydrohYr, chkHydro, i_historicalHydroOutput, LoadChkSum, i_load  ;
 
-Execute_Unload '%GEM_GDXfilename%' m, t, mapm_t, lb, i_HalfHrsPerBlk, i_historicalHydroOutput, LoadChkThisScen, i_NrgDemand  ;
-*Execute_Unload '%GEM_GDXfilename%' i_NrgDemand  ;
-
+Execute_Unload '%GEM_GDXfilename%'  m, t, mapm_t, lb, i_HalfHrsPerBlk, i_historicalHydroOutput, LoadChkThisScen, i_NrgDemand  ;
+Execute_Unload '%GEM_LoadByPeriod%' i_NrgDemand ;
+Execute_Unload '%GEM_LoadByMonth%'  i_NrgDemandMonthly ;
 
 
 

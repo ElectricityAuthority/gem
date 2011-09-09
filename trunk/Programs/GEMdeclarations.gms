@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 29/08/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -282,7 +282,6 @@ Parameters
   outcomeCO2TaxFactor(outcomes)                 'Outcome-specific scaling factor for CO2 tax data'
   outcomeFuelCostFactor(outcomes)               'Outcome-specific scaling factor for fuel cost data'
   outcomeNRGFactor(outcomes)                    'Outcome-specific scaling factor for energy demand data'
-  penaltyLostPeak                               'Penalty for failing to meet peak load constraints'
   weightOutcomesBySet(outcomeSets,outcomes)     'Assign weights to the outcomes comprising each set of outcomes'
   outcomeWeight(outcomes)                       'Individual outcome weights'
   modelledHydroOutput(g,y,t,outcomes)           'Hydro output used in each modelled year by scheduleable hydro plant'
@@ -299,13 +298,16 @@ Parameters
   lastYear                                      'Last modelled year - as a scalar, not a set'
   noRetire                                      'Number of years following and including the first modelled year for which endogenous generation plant retirement decisions are prohibited'
   AnnualMWlimit                                 'Upper bound on total MW of new plant able to be built nationwide in any single year'
-  penaltyViolateRenNrg                          'Penalty used to make renewable energy constraint feasible, $m/GWh'
+  penaltyViolatePeakLoad                        'Penalty for failing to meet peak load constraints, $m/MW'
+  penaltyViolateRenNrg                          'Penalty used to make renewable energy constrraint feasible, $m/GWh'
+  penaltyViolateReserves(ild,rc)                'Penalty for failing to meet certain reserve classes, $/MWh'
   renNrgShrOn                                   'Switch to control usage of renewable energy share constraint 0=off/1=on'
   DCloadFlow                                    'Flag (0/1) to indicate use of either DC load flow (1) or transportation formulation (0)'
   useReserves                                   'Global flag (0/1) to indicate use of at least one reserve class (0 = no reserves are modelled)'
   cGenYr                                        'First year in which integer generation build decisions can become continuous, i.e. CGEN or BGEN = 0 in any year'
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
   randomCapexCostAdjuster                       'Specify the bounds for a small +/- random adjustment to generation plant capital costs'
+  slackCost                                     'An arbitrarily high cost for slack variables to be able enter the objective function'
   slacks                                        'A flag indicating slack variables exist in at least one solution'
   penalties                                     'A flag indicating penalty variables exist in at least one solution'  ;
 
@@ -447,7 +449,6 @@ Parameters
 * Reserve energy data.
   reservesAreas(rc)                             'Reserves areas (single area or systemwide = 1, Island-based reserves = 2)'
   singleReservesReqF(rc)                        'Flag to inidicate if there is a single systemwide reserve requirement'
-  reserveViolationPenalty(ild,rc)               'Reserve violation penalty, $/MWh'
   windCoverPropn(rc)                            'Proportion of wind to be covered by reserves, (0-1)'
   bigM(ild,ild1)                                'A large positive number'
 * Hydrology output data
@@ -528,9 +529,9 @@ Positive Variables
   RESVREQINT(rc,ild,y,t,lb,outcomes)            'Internally determined energy reserve requirement, MWh'
 * Penalty variables
   RENNRGPENALTY(y)                              'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  PEAK_NZ_PENALTY(y,outcomes)                   'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  PEAK_NI_PENALTY(y,outcomes)                   'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
-  NOWINDPEAK_NI_PENALTY(y,outcomes)             'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  PEAK_NZ_PENALTY(y,outcomes)                   'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
+  PEAK_NI_PENALTY(y,outcomes)                   'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
+  NOWINDPEAK_NI_PENALTY(y,outcomes)             'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
 * Slack variables
   ANNMWSLACK(y)                                 'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
   RENCAPSLACK(y)                                'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
@@ -600,11 +601,11 @@ Equations
 objectivefn..
   TOTALCOST =e=
 * Add in slacks at arbitrarily high cost.
-  9999 * sum(y, ANNMWSLACK(y) ) +
-  9998 * sum(y$i_renewCapShare(y), RENCAPSLACK(y) ) +
-  9997 * sum(y, HYDROSLACK(y) ) +
-  9996 * sum(y, MINUTILSLACK(y) ) +
-  9995 * sum(y, FUELSLACK(y) ) +
+  slackCost * ( sum(y, ANNMWSLACK(y) ) +
+                sum(y$i_renewCapShare(y), RENCAPSLACK(y) ) +
+                sum(y, HYDROSLACK(y) ) +
+                sum(y, MINUTILSLACK(y) ) +
+                sum(y, FUELSLACK(y) )  ) +
 * Add in penalties at user-defined high, but not necessarily arbitrarily high, cost.
   penaltyViolateRenNrg * sum(y$renNrgShrOn, RENNRGPENALTY(y) ) +
 * Fixed, variable and HVDC costs - discounted and adjusted for tax
@@ -628,9 +629,9 @@ objectivefn..
 calc_outcomeCosts(oc)..
   OUTCOME_COSTS(oc) =e=
 * Reserve violation costs, $m
-  1e-6 * sum((rc,ild,y,t,lb), RESVVIOL(rc,ild,y,t,lb,oc) * reserveViolationPenalty(ild,rc) ) +
+  1e-6 * sum((rc,ild,y,t,lb), RESVVIOL(rc,ild,y,t,lb,oc) * penaltyViolateReserves(ild,rc) ) +
 * Lost peak load penalties - why aren't they discounted and adjusted for tax?
-  penaltyLostPeak * sum(y, PEAK_NZ_PENALTY(y,oc) + PEAK_NI_PENALTY(y,oc) + NOWINDPEAK_NI_PENALTY(y,oc) ) +
+  penaltyViolatePeakLoad * sum(y, PEAK_NZ_PENALTY(y,oc) + PEAK_NI_PENALTY(y,oc) + NOWINDPEAK_NI_PENALTY(y,oc) ) +
 * Various costs, discounted and adjusted for tax
   1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(y,t) * (
 * Lost load
@@ -940,9 +941,9 @@ Parameters
   s_RESVREQINT(steps,outcomeSets,rc,ild,y,t,lb,outcomes)        'Internally determined energy reserve requirement, MWh'
 * Penalty variables
   s_RENNRGPENALTY(steps,outcomeSets,y)                          'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s_PEAK_NZ_PENALTY(steps,outcomeSets,y,outcomes)               'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s_PEAK_NI_PENALTY(steps,outcomeSets,y,outcomes)               'Penalty with cost of penaltyLostPeak - used to make NI security constraint feasible, MW'
-  s_NOWINDPEAK_NI_PENALTY(steps,outcomeSets,y,outcomes)         'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  s_PEAK_NZ_PENALTY(steps,outcomeSets,y,outcomes)               'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
+  s_PEAK_NI_PENALTY(steps,outcomeSets,y,outcomes)               'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
+  s_NOWINDPEAK_NI_PENALTY(steps,outcomeSets,y,outcomes)         'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
 * Slack variables
   s_ANNMWSLACK(steps,outcomeSets,y)                             'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
   s_RENCAPSLACK(steps,outcomeSets,y)                            'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'

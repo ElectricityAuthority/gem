@@ -43,7 +43,9 @@ Scalar cGenYr / 2025 / ;
 Scalar AnnualMWlimit / 1000 / ;
 Scalar noRetire / 2 / ;
 Scalar renNrgShrOn / 1 / ;
+Scalar penaltyViolatePeakLoad / 400 / ;
 Scalar penaltyViolateRenNrg / 0.4 / ;
+Scalar slackCost / 9999 / ;
 Scalar noVOLLblks / 3 / ;
 Scalar DCloadFlow / 0 / ;
 Scalar useReserves / 0 / ;
@@ -52,13 +54,13 @@ $setglobal NumVertices 4
 
 
 *+++ Load +++
-$setglobal AClossesNI 0.0368
+*$setglobal AClossesNI 0.0368
 *$setglobal AClossesNI 0.0120
-*$setglobal AClossesNI 0.0
+$setglobal AClossesNI 0.0
 * Upwards adjustment to load to account for NI AC (or intraregional) losses - .0368 for 2-region and .0120 for 18-region
-$setglobal AClossesSI 0.0534
+*$setglobal AClossesSI 0.0534
 *$setglobal AClossesSI 0.0180
-*$setglobal AClossesSI 0.0
+$setglobal AClossesSI 0.0
 * Upwards adjustment to load to account for SI AC (or intraregional) losses - .0534 for 2-region and .0180 for 18-region
 
 
