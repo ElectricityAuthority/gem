@@ -8,6 +8,7 @@ $setglobal GEMdemandGDX    "NRG_2Region9LB_Standard.gdx"
 
 $setglobal GEMoverrideGDX  "mds1_Override.gdx"
 
+$setglobal useOverrides     0
 $setglobal Mode             0
 
 $inlinecom { }
