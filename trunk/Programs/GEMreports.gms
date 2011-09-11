@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -22,7 +22,7 @@ $offtext
 
 option seed = 101 ;
 $include GEMsettings.inc
-$include GEMpaths.inc
+$include GEMpathsAndFiles.inc
 $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolcom !
 
 

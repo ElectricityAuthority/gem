@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -15,7 +15,7 @@ $ontext
  performs integrity checks. It finishes by writing out some input data summary tables.
 
  The GEMdata invocation requires GEMdata to be restarted from the GEMdeclarations work file. The files
- called GEMpaths.inc, GEMsettings.inc and GEMstochastic.inc are included into GEMdata. The GEMdata work
+ called GEMpathsAndFiles.inc, GEMsettings.inc and GEMstochastic.inc are included into GEMdata. The GEMdata work
  file is saved and used to restart GEMsolve. GEMsolve is invoked immediately after GEMdata.
 
  Code sections:
@@ -45,7 +45,7 @@ $offtext
 *option profile = 3 ;
 
 option seed = 101 ;
-$include GEMpaths.inc
+$include GEMpathsAndFiles.inc
 $include GEMsettings.inc
 
 * Turn the following stuff on/off as desired.
@@ -58,12 +58,12 @@ $offsymxref offsymlist
 * Create and execute a batch file to archive/save selected files.
 File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
 putclose bat
-  'copy "%DataPath%%GEMinputGDX%"       "%OutPath%\%runName%\Archive\"' /
-  'copy "%DataPath%%GEMnetworkGDX%"     "%OutPath%\%runName%\Archive\"' /
-  'copy "%DataPath%%GEMdemandGDX%"      "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMpaths.inc"        "%OutPath%\%runName%\Archive\GEMpaths - %runVersionName%.inc"' /
-  'copy "%ProgPath%GEMsettings.inc"     "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
-  'copy "%ProgPath%GEMstochastic.inc"   "%OutPath%\%runName%\Archive\GEMstochastic.inc"' / ;
+  'copy "%DataPath%%GEMinputGDX%"        "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%%GEMnetworkGDX%"      "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%%GEMdemandGDX%"       "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%GEMpathsAndFiles.inc" "%OutPath%\%runName%\Archive\GEMGEMpathsAndFiles - %runVersionName%.inc"' /
+  'copy "%ProgPath%GEMsettings.inc"      "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
+  'copy "%ProgPath%GEMstochastic.inc"    "%OutPath%\%runName%\Archive\GEMstochastic.inc"' / ;
 execute 'temp.bat' ;
 
 
@@ -117,11 +117,11 @@ $load   i_NrgDemand
 * Initialise set 'n' - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
-
-$ontext
-** Data overrides:
+* Install data overrides.
+$if %useOverrides%==0 $goto noOverrides
 ** mds1, mds2 and mds5 override 3 params: i_fuelPrices, i_fuelQuantities and i_co2tax.
 ** mds4 overrides 1 params: i_co2tax.
+
 Parameters
   i_fuelPricesOvrd(f,y)           'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantitiesOvrd(f,y)       'Quantitative limit on availability of various fuels by year, PJ'
@@ -134,7 +134,8 @@ $load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
 if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
 if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
 if(sum(y, i_co2taxOvrd(y)), i_co2tax(y) = 0 ) ;                         i_co2tax(y) = i_co2taxOvrd(y) ;
-$offtext
+
+$label noOverrides
 
 
 

@@ -1,4 +1,4 @@
-$include GEMpaths.inc
+$include GEMpathsAndFiles.inc
 
 
 File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;

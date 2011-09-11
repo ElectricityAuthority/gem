@@ -1,4 +1,4 @@
-$include GEMpaths.inc
+$include GEMpathsAndFiles.inc
 
 * Invoke GEMdeclarations - only if license type is developer (i.e. mode=0).
 $if %Mode%==0    $call gams GEMdeclarations.gms rf=GEMdeclarations s=GEMdeclarations %ide%
@@ -45,8 +45,8 @@ putclose rep "runGEMsetup has now finished..." / "Time: " system.time / "Date: "
 
 
 $ontext
-Some notes for future development of GUI:
-  - If GEMdeclarations was invoked, the GUI needs to know if it was successful. If it returned errorlevel = 1
+Some notes for future development of emi (the EA models GUI):
+  - If GEMdeclarations was invoked, emi needs to know if it was successful. If it returned errorlevel = 1
     and aborted, then do not proceed with the rest of the job and inform the user that the job is terminating.
   - If GEMdeclarations is not invoked, i.e. because the user has a runtime license (mode=1), then check for the
     presence of GEMdeclarations.g00 and CollectResults.txt in the current directory. These two files should have
