@@ -1,0 +1,9 @@
+* 5 GEM regions.dat
+* List prepared on 10 May, 20 by Dr Phil Bishop.
+* Source: Bishop at Electricity Commission - as used in GEMlite beginning May 2010.
+
+uni    "Upper North Island"
+hly    "Huntly"
+cni    "Central North Island"
+lni    "Lower North Island"
+si     "South Island"
