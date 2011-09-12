@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 13/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -94,42 +94,42 @@ REFURBCOST.fx(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 
 * Restrict generation:
 * Don't allow generation unless the unit is in validYrOperate; validYrOperate embodies the appropriate date for existing, committed, and new units.
-GEN.fx(g,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
+GEN.fx(g,y,t,lb,scenarios)$( not validYrOperate(g,y,t) ) = 0 ;
 * Force generation from the must-run plant, i.e base load (convert MW capacity to GWh for each load block).
-GEN.fx(g,y,t,lb,outcomes)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y,t) ) =
+GEN.fx(g,y,t,lb,scenarios)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y,t) ) =
 1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
 
 * Place restrictions on VOLL plants:
-VOLLGEN.up(s,y,t,lb,outcomes) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;  ! Respect the capacity of VOLL plants
-VOLLGEN.fx(s,y,t,lb,outcomes)$( ord(lb) <= noVOLLblks ) = 0 ;                ! Don't allow VOLL in user-specified top load blocks 
+VOLLGEN.up(s,y,t,lb,scenarios) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;  ! Respect the capacity of VOLL plants
+VOLLGEN.fx(s,y,t,lb,scenarios)$( ord(lb) <= noVOLLblks ) = 0 ;                ! Don't allow VOLL in user-specified top load blocks 
 
 * Fix bounds on TX according to the largest capacity allowed in any state. Lower bound must be zero if transportation formulation is being used.
-TX.lo(paths,y,t,lb,outcomes) = -smax(ps, i_txCapacity(paths,ps)) ;
-TX.lo(paths,y,t,lb,outcomes)$(DCloadFlow = 0) = 0 ;
-TX.up(paths,y,t,lb,outcomes) = +smax(ps, i_txCapacity(paths,ps)) ;
+TX.lo(paths,y,t,lb,scenarios) = -smax(ps, i_txCapacity(paths,ps)) ;
+TX.lo(paths,y,t,lb,scenarios)$(DCloadFlow = 0) = 0 ;
+TX.up(paths,y,t,lb,scenarios) = +smax(ps, i_txCapacity(paths,ps)) ;
 
 * Fix the reference bus angle to zero (only used in case of DC load flow formulation).
-THETA.fx(slackBus(r),y,t,lb,outcomes) = 0 ;
+THETA.fx(slackBus(r),y,t,lb,scenarios) = 0 ;
 
 * Fix various reserves variables to zero if they are not needed.
-RESV.fx(g,rc,y,t,lb,outcomes)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
-RESVVIOL.fx(rc,ild,y,t,lb,outcomes)$(        not useReserves ) = 0 ;
-RESVTRFR.fx(rc,ild,ild1,y,t,lb,outcomes)$( ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
-RESVREQINT.fx(rc,ild,y,t,lb,outcomes)$(      not useReserves ) = 0 ;
-NORESVTRFR.fx(ild,ild1,y,t,lb,outcomes)$(    not useReserves ) = 0 ;
+RESV.fx(g,rc,y,t,lb,scenarios)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
+RESVVIOL.fx(rc,ild,y,t,lb,scenarios)$(        not useReserves ) = 0 ;
+RESVTRFR.fx(rc,ild,ild1,y,t,lb,scenarios)$( ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
+RESVREQINT.fx(rc,ild,y,t,lb,scenarios)$(      not useReserves ) = 0 ;
+NORESVTRFR.fx(ild,ild1,y,t,lb,scenarios)$(    not useReserves ) = 0 ;
 
 * Fix to zero the intra-island reserve variables.
-RESVTRFR.fx(rc,ild,ild,y,t,lb,outcomes) = 0 ;
-NORESVTRFR.fx(ild,ild,y,t,lb,outcomes)  = 0 ;
+RESVTRFR.fx(rc,ild,ild,y,t,lb,scenarios) = 0 ;
+NORESVTRFR.fx(ild,ild,y,t,lb,scenarios)  = 0 ;
 
 * Set the lower bound on the reserve requirement if there is an external requirement specified.
-RESVREQINT.lo(rc,ild,y,t,lb,outcomes)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
+RESVREQINT.lo(rc,ild,y,t,lb,scenarios)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
 
 * Reserve contribution cannot exceed the specified capability during peak or other periods.
-RESV.up(g,rc,y,t,lb,outcomes)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
+RESV.up(g,rc,y,t,lb,scenarios)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
 
 * Don't allow reserves from units prior to committed date or earliest allowable operation or if plant is retired.
-RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
+RESV.fx(g,rc,y,t,lb,scenarios)$( not validYrOperate(g,y,t) ) = 0 ;
 
 
 
@@ -137,7 +137,7 @@ RESV.fx(g,rc,y,t,lb,outcomes)$( not validYrOperate(g,y,t) ) = 0 ;
 * 3. Loop through all the solves
 
 $set AddUpSlacks    "sum(y, ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
-$set AddUpPenalties "sum((y,oc), PEAK_NZ_PENALTY.l(y,oc) + PEAK_NI_PENALTY.l(y,oc) + NOWINDPEAK_NI_PENALTY.l(y,oc) )"
+$set AddUpPenalties "sum((y,sc), PEAK_NZ_PENALTY.l(y,sc) + PEAK_NI_PENALTY.l(y,sc) + NOWINDPEAK_NI_PENALTY.l(y,sc) )"
 
 * First, loop through all the experiments
 loop(experiments,
@@ -215,40 +215,40 @@ loop(experiments,
 *   End of step-type if
     ) ;
 
-*   Third, loop over each outcomeSet for this step of the experiment.
-    loop(allSolves(experiments,steps,outcomeSets),
+*   Third, loop over each scenarioSet for this step of the experiment.
+    loop(allSolves(experiments,steps,scenarioSets),
 
-*     Initialise the desired outcomes for this solve
-      oc(outcomes) = no ;
-      oc(outcomes)$mapOutcomes(outcomeSets,outcomes) = yes ;
+*     Initialise the desired scenarios for this solve
+      sc(scenarios) = no ;
+      sc(scenarios)$mapScenarios(scenarioSets,scenarios) = yes ;
 
-*     Select the appropriate outcome weight.
-      outcomeWeight(oc) = 0 ;
-      outcomeWeight(oc) = weightOutcomesBySet(outcomeSets,oc) ;
-      display 'Outcome and weight for this solve:', oc, outcomeWeight ;
+*     Select the appropriate scenario weight.
+      scenarioWeight(sc) = 0 ;
+      scenarioWeight(sc) = weightScenariosBySet(scenarioSets,sc) ;
+      display 'Scenario and weight for this solve:', sc, scenarioWeight ;
 
-*     Compute the hydro output values to use for the selected outcomes (NB: only works for hydroSeqTypes={same,sequential}).
-      modelledHydroOutput(g,y,t,outcomes) = 0 ;
-      loop(oc(outcomes),
-        if(mapOC_hydroSeqTypes(outcomes,'same'),
-          modelledHydroOutput(g,y,t,outcomes) = hydroOutputScalar *
-            sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapOC_hY(outcomes,hY)), historicalHydroOutput(v,hY,m)) / sum(mapOC_hY(outcomes,hY1), 1) ;
-          mapHydroYearsToModelledYears(experiments,steps,outcomeSets,oc,y,hY)$( ord(hY) = sum(mapOC_hY(outcomes,hY1), 1) ) = yes ;
+*     Compute the hydro output values to use for the selected scenarios (NB: only works for hydroSeqTypes={same,sequential}).
+      modelledHydroOutput(g,y,t,scenarios) = 0 ;
+      loop(sc(scenarios),
+        if(mapSC_hydroSeqTypes(scenarios,'same'),
+          modelledHydroOutput(g,y,t,scenarios) = hydroOutputScalar *
+            sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapSC_hY(scenarios,hY)), historicalHydroOutput(v,hY,m)) / sum(mapSC_hY(scenarios,hY1), 1) ;
+          mapHydroYearsToModelledYears(experiments,steps,scenarioSets,sc,y,hY)$( ord(hY) = sum(mapSC_hY(scenarios,hY1), 1) ) = yes ;
           else
           loop(y,
             chooseHydroYears(hY) = no ;
-            chooseHydroYears(hY)$(sum(hY1$(mapOC_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
-            chooseHydroYears(hY)$(sum(hY1$(mapOC_hY(outcomes, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
-            modelledHydroOutput(g,y,t,oc) =
+            chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scenarios, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+            chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scenarios, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+            modelledHydroOutput(g,y,t,sc) =
               sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
-            mapHydroYearsToModelledYears(experiments,steps,outcomeSets,oc,y,chooseHydroYears) = yes ;
+            mapHydroYearsToModelledYears(experiments,steps,scenarioSets,sc,y,chooseHydroYears) = yes ;
           ) ;
         ) ;
       ) ;
       display 'Hydro output:', modelledHydroOutput ;
 
 *     Collect modelledHydroOutput for posterity.
-      allModelledHydroOutput(experiments,steps,outcomeSets,g,y,t,oc) = modelledHydroOutput(g,y,t,oc) ;
+      allModelledHydroOutput(experiments,steps,scenarioSets,g,y,t,sc) = modelledHydroOutput(g,y,t,sc) ;
 
 *     Solve either GEM or DISP, depending on what step we're at.
       if(sameas(steps,'dispatch'),
@@ -270,12 +270,12 @@ loop(experiments,
 
 *     Post a progress message to report for use by GUI and to the console.
       if(counter = 1,
-        putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve finished with some sort of problem and the job is now going to abort.' /
+        putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve finished with some sort of problem and the job is now going to abort.' /
                         'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
         else
-        putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
+        putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
       ) ;
-      putclose con // '    The ' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl ' solve for "%runName% -- %runVersionName% has just finished' /
+      putclose con // '    The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve for "%runName% -- %runVersionName% has just finished' /
                       '    Objective function value: ' TOTALCOST.l:<12:1 // ;
 
       if(sameas(steps,'dispatch'),
@@ -287,12 +287,12 @@ loop(experiments,
 
 *     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
 $     if not %PlotMIPtrace%==1 $goto NoTrace3
-      putclose bat 'copy MIPtrace.txt "%runName%-%runVersionName%-MIPtrace-' experiments.tl ' - ' steps.tl ' - ' outcomeSets.tl '.txt"' ;
+      putclose bat 'copy MIPtrace.txt "%runName%-%runVersionName%-MIPtrace-' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl '.txt"' ;
       execute 'temp.bat';
 $     label NoTrace3
 
 *     Collect information for solve summary report
-      solveReport(allSolves,'ObjFnValue') = TOTALCOST.l ;    solveReport(allSolves,'OCcosts') = sum(oc(outcomes), OUTCOME_COSTS.l(oc) ) ;
+      solveReport(allSolves,'ObjFnValue') = TOTALCOST.l ;    solveReport(allSolves,'SCcosts') = sum(sc(scenarios), SCENARIO_COSTS.l(sc) ) ;
       solveReport(allSolves,'OptFile')    = gem.optfile ;    solveReport(allSolves,'OptCr')   = gem.optcr ;
       solveReport(allSolves,'ModStat')    = gem.modelstat ;  solveReport(allSolves,'SolStat') = gem.solvestat ;
       solveReport(allSolves,'Vars')       = gem.numvar ;     solveReport(allSolves,'DVars')   = gem.numdvar ;
@@ -303,10 +303,10 @@ $     label NoTrace3
       if(penalties > 0, solveReport(allSolves,'Penalties') = 1 else solveReport(allSolves,'Penalties') = -99 ) ;
       display 'solve report:', slacks, penalties, solveReport ;
 
-*     Collect up solution values - by experiment, step and outcomeSet.
+*     Collect up solution values - by experiment, step and scenarioSet.
 $     include CollectResults.txt
 
-*   End of OutcomeSet loop.
+*   End of scenarioSet loop.
     ) ;
 
 * End of steps loop.
@@ -321,7 +321,7 @@ $     include CollectResults.txt
   s_RESVCOMPONENTS, s_calc_nfreserves, s_resv_capacity
 *+++++++++++++++++++++++++
 * Free Variables
-  s_TOTALCOST, s_OUTCOME_COSTS, s_TX, s_THETA
+  s_TOTALCOST, s_SCENARIO_COSTS, s_TX, s_THETA
 * Binary Variables
   s_BGEN, s_BRET, s_ISRETIRED, s_BTX, s_NORESVTRFR
 * Positive Variables
@@ -333,7 +333,7 @@ $     include CollectResults.txt
 * Slack variables
   s_ANNMWSLACK, s_RENCAPSLACK, s_HYDROSLACK, s_MINUTILSLACK, s_FUELSLACK
 * Equations (ignore the objective function)
-  s_calc_outcomeCosts, s_calc_refurbcost, s_calc_txcapcharges, s_bldgenonce, s_buildcapint, s_buildcapcont, s_annnewmwcap, s_endogpltretire, s_endogretonce
+  s_calc_scenarioCosts, s_calc_refurbcost, s_calc_txcapcharges, s_bldgenonce, s_buildcapint, s_buildcapcont, s_annnewmwcap, s_endogpltretire, s_endogretonce
   s_balance_capacity, s_bal_supdem, s_peak_nz, s_peak_ni, s_noWindPeak_ni, s_limit_maxgen, s_limit_mingen, s_minutil, s_limit_fueluse, s_limit_nrg
   s_minreq_rennrg, s_minreq_rencap, s_limit_hydro, s_limit_pumpgen1, s_limit_pumpgen2, s_limit_pumpgen3, s_boundtxloss, s_tx_capacity, s_tx_projectdef
   s_tx_onestate, s_tx_upgrade, s_tx_oneupgrade, s_tx_dcflow, s_tx_dcflow0, s_equatetxloss, s_txGrpConstraint, s_resvsinglereq1, s_genmaxresv1, s_resvtrfr1
@@ -374,10 +374,10 @@ execute 'gdxmerge "%OutPath%\%runName%\GDX\Report output\"*.gdx output="%OutPath
 * x) Dump selected input data into a GDX file (as imported, or from intermediate steps in GEMdata, or what's actually used to solve the model).
 Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
-  y t f k g s o lb i r e ild ps outcomes rc n tgc hY
+  y t f k g s o lb i r e ild ps scenarios rc n tgc hY
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r paths nwd swd interIsland firstPeriod firstYr lastYr allButFirstYr pumpedHydroPlant wind gas diesel
   thermalFuel i_fuelQuantities renew schedHydroPlant nsegment demandGen 
-  allSolves weightOutcomesBySet
+  allSolves weightScenariosBySet
 * Financial, capex and cost related sets and parameters
   taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
   capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost capexPlant refurbCapexPlant
@@ -391,7 +391,7 @@ Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx"
   i_minUtilisation i_minUtilByTech i_maxNrgByFuel renNrgShrOn i_renewNrgShare i_renewCapShare i_VOLLcap i_VOLLcost i_fof
   i_distdGenRenew i_distdGenFossil i_pumpedHydroEffic i_PumpedHydroMonth i_UnitLargestProp
 * Load and peak
-  hoursPerBlock AClossFactors outcomeNRGfactor i_NrgDemand NrgDemand ldcMW outcomePeakLoadFactor peakLoadNZ peakLoadNI
+  hoursPerBlock AClossFactors scenarioNRGfactor i_NrgDemand NrgDemand ldcMW scenarioPeakLoadFactor peakLoadNZ peakLoadNI
 * Transmission and grid
   DCloadFlow transitions validTransitions allowedStates upgradedStates i_txCapacity
   slope intercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS

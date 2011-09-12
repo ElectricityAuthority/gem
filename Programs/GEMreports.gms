@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 12/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 13/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -89,30 +89,30 @@ $include GEMstochastic.inc
 
 * Declare and load the parameters (variable levels and marginals) to be found in the merged 'all_ReportOutput' GDX file.
 Parameters
-  s_TOTALCOST(runVersions,experiments,steps,outcomeSets)                        'Discounted total system costs over all modelled years, $m (objective function value)'
-  s_TX(runVersions,experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes)          'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
-  s_REFURBCOST(runVersions,experiments,steps,outcomeSets,g,y)                   'Annualised generation plant refurbishment expenditure charge, $'
-  s_BUILD(runVersions,experiments,steps,outcomeSets,g,y)                        'New capacity installed by generating plant and year, MW'
-  s_CAPACITY(runVersions,experiments,steps,outcomeSets,g,y)                     'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s_TXCAPCHARGES(runVersions,experiments,steps,outcomeSets,r,rr,y)              'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s_GEN(runVersions,experiments,steps,outcomeSets,g,y,t,lb,outcomes)            'Generation by generating plant and block, GWh'
-  s_VOLLGEN(runVersions,experiments,steps,outcomeSets,s,y,t,lb,outcomes)        'Generation by VOLL plant and block, GWh'
-  s_RESV(runVersions,experiments,steps,outcomeSets,g,rc,y,t,lb,outcomes)        'Reserve energy supplied, MWh'
-  s_RESVVIOL(runVersions,experiments,steps,outcomeSets,rc,ild,y,t,lb,outcomes)  'Reserve energy supply violations, MWh'
-  s_RESVCOMPONENTS(runVersions,experiments,steps,outcomeSets,r,rr,y,t,lb,outcomes,stp) 'Non-free reserve components, MW'
-  s_RENNRGPENALTY(runVersions,experiments,steps,outcomeSets,y)                  'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s_PEAK_NZ_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes)       'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
-  s_PEAK_NI_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes)       'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
-  s_NOWINDPEAK_NI_PENALTY(runVersions,experiments,steps,outcomeSets,y,outcomes) 'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
-  s_ANNMWSLACK(runVersions,experiments,steps,outcomeSets,y)                     'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s_RENCAPSLACK(runVersions,experiments,steps,outcomeSets,y)                    'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s_HYDROSLACK(runVersions,experiments,steps,outcomeSets,y)                     'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s_MINUTILSLACK(runVersions,experiments,steps,outcomeSets,y)                   'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s_FUELSLACK(runVersions,experiments,steps,outcomeSets,y)                      'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
-  s_bal_supdem(runVersions,experiments,steps,outcomeSets,r,y,t,lb,outcomes)     'Balance supply and demand in each region, year, time period and load block'
-  s_peak_nz(runVersions,experiments,steps,outcomeSets,y,outcomes)               'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
-  s_peak_ni(runVersions,experiments,steps,outcomeSets,y,outcomes)               'Ensure enough capacity to meet peak demand in NI subject to contingencies'
-  s_noWindPeak_ni(runVersions,experiments,steps,outcomeSets,y,outcomes)         'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
+  s_TOTALCOST(runVersions,experiments,steps,scenarioSets)                         'Discounted total system costs over all modelled years, $m (objective function value)'
+  s_TX(runVersions,experiments,steps,scenarioSets,r,rr,y,t,lb,scenarios)          'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s_REFURBCOST(runVersions,experiments,steps,scenarioSets,g,y)                    'Annualised generation plant refurbishment expenditure charge, $'
+  s_BUILD(runVersions,experiments,steps,scenarioSets,g,y)                         'New capacity installed by generating plant and year, MW'
+  s_CAPACITY(runVersions,experiments,steps,scenarioSets,g,y)                      'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s_TXCAPCHARGES(runVersions,experiments,steps,scenarioSets,r,rr,y)               'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s_GEN(runVersions,experiments,steps,scenarioSets,g,y,t,lb,scenarios)            'Generation by generating plant and block, GWh'
+  s_VOLLGEN(runVersions,experiments,steps,scenarioSets,s,y,t,lb,scenarios)        'Generation by VOLL plant and block, GWh'
+  s_RESV(runVersions,experiments,steps,scenarioSets,g,rc,y,t,lb,scenarios)        'Reserve energy supplied, MWh'
+  s_RESVVIOL(runVersions,experiments,steps,scenarioSets,rc,ild,y,t,lb,scenarios)  'Reserve energy supply violations, MWh'
+  s_RESVCOMPONENTS(runVersions,experiments,steps,scenarioSets,r,rr,y,t,lb,scenarios,stp) 'Non-free reserve components, MW'
+  s_RENNRGPENALTY(runVersions,experiments,steps,scenarioSets,y)                   'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s_PEAK_NZ_PENALTY(runVersions,experiments,steps,scenarioSets,y,scenarios)       'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
+  s_PEAK_NI_PENALTY(runVersions,experiments,steps,scenarioSets,y,scenarios)       'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
+  s_NOWINDPEAK_NI_PENALTY(runVersions,experiments,steps,scenarioSets,y,scenarios) 'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
+  s_ANNMWSLACK(runVersions,experiments,steps,scenarioSets,y)                      'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s_RENCAPSLACK(runVersions,experiments,steps,scenarioSets,y)                     'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s_HYDROSLACK(runVersions,experiments,steps,scenarioSets,y)                      'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s_MINUTILSLACK(runVersions,experiments,steps,scenarioSets,y)                    'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s_FUELSLACK(runVersions,experiments,steps,scenarioSets,y)                       'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s_bal_supdem(runVersions,experiments,steps,scenarioSets,r,y,t,lb,scenarios)     'Balance supply and demand in each region, year, time period and load block'
+  s_peak_nz(runVersions,experiments,steps,scenarioSets,y,scenarios)               'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
+  s_peak_ni(runVersions,experiments,steps,scenarioSets,y,scenarios)               'Ensure enough capacity to meet peak demand in NI subject to contingencies'
+  s_noWindPeak_ni(runVersions,experiments,steps,scenarioSets,y,scenarios)         'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
   ;
 
 $gdxin "%OutPath%\%runName%\GDX\all_ReportOutput.gdx"
@@ -134,12 +134,12 @@ Parameters
   i_HVDClevy(runVersions,y)                                 'HVDC charge levied on new South Island plant by year, $/kW'
   i_plantReservesCost(runVersions,g,rc)                     'Plant-specific cost per reserve class, $/MWh'
   hoursPerBlock(runVersions,t,lb)                           'Hours per load block by time period'
-  NrgDemand(runVersions,r,y,t,lb,outcomes)                  'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
+  NrgDemand(runVersions,r,y,t,lb,scenarios)                 'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
   PVfacG(runVersions,y,t)                                   "Generation investor's present value factor by period"
   PVfacT(runVersions,y,t)                                   "Transmission investor's present value factor by period"
   capCharge(runVersions,g,y)                                'Annualised or levelised capital charge for new generation plant, $/MW/yr'
   refurbCapCharge(runVersions,g,y)                          'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
-  SRMC(runVersions,g,y,outcomes)                            'Short run marginal cost of each generation project by year and outcome, $/MWh'
+  SRMC(runVersions,g,y,scenarios)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
   locFac_Recip(runVersions,e)                               'Reciprocal of zonally-based location factors'
   penaltyViolateReserves(runVersions,ild,rc)                'Penalty for failing to meet certain reserve classes, $/MW'
   pNFresvCost(runVersions,r,rr,stp)                         'Constant cost of each non-free piece (or step) of function, $/MWh' ;
@@ -156,9 +156,9 @@ $loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge SRMC loc
 * 2. Perform the calculations to be reported.
 
 Sets
-  oc(outcomes)                                     '(Dynamically) selected elements of outcomes'
+  sc(scenarios)                                    '(Dynamically) selected elements of scenarios'
   rv(runVersions)                                  'runVersions loaded into GEMreports'
-  reportDomain(experiments,steps,outcomeSets)      'The experiment-steps-outcomeSets tuples to be reported on'
+  reportDomain(experiments,steps,scenarioSets)     'The experiment-steps-scenarioSets tuples to be reported on'
                                                   / standardExp.timing.standardAvg /
   objc                                             'Objective function components'
                                                   / obj_Check       'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'
@@ -178,7 +178,7 @@ Sets
 
 Parameters
   objComponents(*,*,*,*,objc)                      'Components of objective function value'
-  outcomeWeight(outcomes)                          'Individual outcome weights'
+  scenarioWeight(scenarios)                        'Individual scenario weights'
   loadByRegionAndYear(*,*,*,*,r,y)                 'Load by region and year, GWh'
   builtByTechRegion(*,*,*,*,k,r)                   'MW built by technology and region/island'
   builtByTech(*,*,*,*,k)                           'MW built by technology'
@@ -194,33 +194,33 @@ Parameters
 
 rv(runVersions)$sum(reportDomain, s_TOTALCOST(runVersions,reportDomain)) = yes ;
 
-loop((rv,reportDomain(experiments,steps,outcomeSets)),
+loop((rv,reportDomain(experiments,steps,scenarioSets)),
 
-* Initialise the desired outcomes for this solve
-  oc(outcomes) = no ;
-  oc(outcomes)$mapOutcomes(outcomeSets,outcomes) = yes ;
+* Initialise the desired scenarios for this solve
+  sc(scenarios) = no ;
+  sc(scenarios)$mapScenarios(scenarioSets,scenarios) = yes ;
 
-* Select the appropriate outcome weight.
-  outcomeWeight(oc) = 0 ;
-  outcomeWeight(oc) = weightOutcomesBySet(outcomeSets,oc) ;
+* Select the appropriate scenario weight.
+  scenarioWeight(sc) = 0 ;
+  scenarioWeight(sc) = weightScenariosBySet(scenarioSets,sc) ;
 
   objComponents(rv,reportDomain,'obj_total')     = s_TOTALCOST(rv,reportDomain) ;
   objComponents(rv,reportDomain,'obj_gencapex')  = 1e-6 * sum((y,firstPeriod(t),possibleToBuild(rv,g)), PVfacG(rv,y,t) * capCharge(rv,g,y) * s_CAPACITY(rv,reportDomain,g,y) ) ;
   objComponents(rv,reportDomain,'obj_refurb')    = 1e-6 * sum((y,firstPeriod(t),possibleToRefurbish(rv,g))$refurbCapCharge(rv,g,y), PVfacG(rv,y,t) * s_REFURBCOST(rv,reportDomain,g,y) ) ;
   objComponents(rv,reportDomain,'obj_txcapex')   = sum((paths,y,firstPeriod(t)), PVfacT(rv,y,t) * s_TXCAPCHARGES(rv,reportDomain,paths,y) ) ;
   objComponents(rv,reportDomain,'obj_fixOM')     = 1e-3 * (1 - taxRate) * sum((g,y,t), PVfacG(rv,y,t) * ( 1/card(t) ) * i_fixedOM(rv,g) * s_CAPACITY(rv,reportDomain,g,y) ) ;
-  objComponents(rv,reportDomain,'obj_varOM')     = 1e-3 * (1 - taxRate) * sum((validYrOperate(rv,g,y,t),lb,oc), outcomeWeight(oc) * PVfacG(rv,y,t) * s_GEN(rv,reportDomain,g,y,t,lb,oc) * srmc(rv,g,y,oc) * sum(mapg_e(g,e), locFac_Recip(rv,e)) ) ;
+  objComponents(rv,reportDomain,'obj_varOM')     = 1e-3 * (1 - taxRate) * sum((validYrOperate(rv,g,y,t),lb,sc), scenarioWeight(sc) * PVfacG(rv,y,t) * s_GEN(rv,reportDomain,g,y,t,lb,sc) * srmc(rv,g,y,sc) * sum(mapg_e(g,e), locFac_Recip(rv,e)) ) ;
   objComponents(rv,reportDomain,'obj_hvdc')      = 1e-3 * (1 - taxRate) * sum((y,t), PVfacG(rv,y,t) * ( 1/card(t) ) * (
                                                    sum((g,k,o)$((not demandGen(k)) * sigen(g) * possibleToBuild(rv,g) * mapg_k(g,k) * mapg_o(g,o)), i_HVDCshr(rv,o) * i_HVDClevy(rv,y) * s_CAPACITY(rv,reportDomain,g,y)) ) ) ;
-  objComponents(rv,reportDomain,'VOLLcost')      = 1e-3 * (1 - taxRate) * sum((s,y,t,lb,oc), outcomeWeight(oc) * PVfacG(rv,y,t) * s_VOLLGEN(rv,reportDomain,s,y,t,lb,oc) * i_VOLLcost(rv,s) ) ;
-  objComponents(rv,reportDomain,'obj_rescosts')  = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,oc), PVfacG(rv,y,t) * outcomeWeight(oc) * s_RESV(rv,reportDomain,g,rc,y,t,lb,oc) * i_plantReservesCost(rv,g,rc) ) ;
+  objComponents(rv,reportDomain,'VOLLcost')      = 1e-3 * (1 - taxRate) * sum((s,y,t,lb,sc), scenarioWeight(sc) * PVfacG(rv,y,t) * s_VOLLGEN(rv,reportDomain,s,y,t,lb,sc) * i_VOLLcost(rv,s) ) ;
+  objComponents(rv,reportDomain,'obj_rescosts')  = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,sc), PVfacG(rv,y,t) * scenarioWeight(sc) * s_RESV(rv,reportDomain,g,rc,y,t,lb,sc) * i_plantReservesCost(rv,g,rc) ) ;
 
-  objComponents(rv,reportDomain,'obj_resvviol')  = 1e-6 * sum((rc,ild,y,t,lb,oc), outcomeWeight(oc) * s_RESVVIOL(rv,reportDomain,rc,ild,y,t,lb,oc) * penaltyViolateReserves(rv,ild,rc) ) ;
+  objComponents(rv,reportDomain,'obj_resvviol')  = 1e-6 * sum((rc,ild,y,t,lb,sc), scenarioWeight(sc) * s_RESVVIOL(rv,reportDomain,rc,ild,y,t,lb,sc) * penaltyViolateReserves(rv,ild,rc) ) ;
   objComponents(rv,reportDomain,'obj_nfrcosts')  = 1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(rv,y,t) * (
-                                                   sum((paths,stp,oc)$( nwd(paths) or swd(paths) ), hoursPerBlock(rv,t,lb) * outcomeWeight(oc) * s_RESVCOMPONENTS(rv,reportDomain,paths,y,t,lb,oc,stp) * pNFresvcost(rv,paths,stp) ) ) ) ;
-  objComponents(rv,reportDomain,'obj_Penalties') = sum((y,oc), outcomeWeight(oc) * (
+                                                   sum((paths,stp,sc)$( nwd(paths) or swd(paths) ), hoursPerBlock(rv,t,lb) * scenarioWeight(sc) * s_RESVCOMPONENTS(rv,reportDomain,paths,y,t,lb,sc,stp) * pNFresvcost(rv,paths,stp) ) ) ) ;
+  objComponents(rv,reportDomain,'obj_Penalties') = sum((y,sc), scenarioWeight(sc) * (
                                                      1e-3 * penaltyViolateRenNrg * s_RENNRGPENALTY(rv,reportDomain,y) +
-                                                     1e-6 * penaltyViolatePeakLoad * ( s_PEAK_NZ_PENALTY(rv,reportDomain,y,oc) + s_PEAK_NI_PENALTY(rv,reportDomain,y,oc) + s_NOWINDPEAK_NI_PENALTY(rv,reportDomain,y,oc) ) )
+                                                     1e-6 * penaltyViolatePeakLoad * ( s_PEAK_NZ_PENALTY(rv,reportDomain,y,sc) + s_PEAK_NI_PENALTY(rv,reportDomain,y,sc) + s_NOWINDPEAK_NI_PENALTY(rv,reportDomain,y,sc) ) )
                                                    ) ;
   objComponents(rv,reportDomain,'obj_Slacks')    = slackCost * sum(y, s_ANNMWSLACK(rv,reportDomain,y) + s_RENCAPSLACK(rv,reportDomain,y) + s_HYDROSLACK(rv,reportDomain,y) + s_MINUTILSLACK(rv,reportDomain,y) + s_FUELSLACK(rv,reportDomain,y) ) ;
 
@@ -228,23 +228,23 @@ loop((rv,reportDomain(experiments,steps,outcomeSets)),
 
   capacityByTechRegionYear(rv,reportDomain,k,r,y)  = sum(g$( mapg_k(g,k) * mapg_r(g,r) ), s_CAPACITY(rv,reportDomain,g,y)) ;
 
-  genByTechRegionYear(rv,reportDomain,k,r,y) = sum((g,t,lb,oc)$( mapg_k(g,k) * mapg_r(g,r) ), outcomeWeight(oc) * s_GEN(rv,reportDomain,g,y,t,lb,oc)) ;
+  genByTechRegionYear(rv,reportDomain,k,r,y) = sum((g,t,lb,sc)$( mapg_k(g,k) * mapg_r(g,r) ), scenarioWeight(sc) * s_GEN(rv,reportDomain,g,y,t,lb,sc)) ;
 
-  txByRegionYear(rv,reportDomain,paths,y) = sum((t,lb,oc), 1e-3 * outcomeWeight(oc) * hoursPerBlock(rv,t,lb) * s_TX(rv,reportDomain,paths,y,t,lb,oc)) ;
+  txByRegionYear(rv,reportDomain,paths,y) = sum((t,lb,sc), 1e-3 * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_TX(rv,reportDomain,paths,y,t,lb,sc)) ;
 
-  energyPrice(rv,reportDomain,r,y) = 1e3 * sum((t,lb,oc), outcomeWeight(oc) * hoursPerBlock(rv,t,lb) * s_bal_supdem(rv,reportDomain,r,y,t,lb,oc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
+  energyPrice(rv,reportDomain,r,y) = 1e3 * sum((t,lb,sc), scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_bal_supdem(rv,reportDomain,r,y,t,lb,sc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
 
-  peakNZPrice(rv,reportDomain,y) = 1e3 * sum(oc, outcomeWeight(oc) * s_peak_nz(rv,reportDomain,y,oc) ) ;
+  peakNZPrice(rv,reportDomain,y) = 1e3 * sum(sc, scenarioWeight(sc) * s_peak_nz(rv,reportDomain,y,sc) ) ;
 
-  peakNIPrice(rv,reportDomain,y) = 1e3 * sum(oc, outcomeWeight(oc) * s_peak_ni(rv,reportDomain,y,oc) ) ;
+  peakNIPrice(rv,reportDomain,y) = 1e3 * sum(sc, scenarioWeight(sc) * s_peak_ni(rv,reportDomain,y,sc) ) ;
 
-  peaknoWindNIPrice(rv,reportDomain,y) = 1e3 * sum(oc, outcomeWeight(oc) * s_noWindPeak_ni(rv,reportDomain,y,oc) ) ;
+  peaknoWindNIPrice(rv,reportDomain,y) = 1e3 * sum(sc, scenarioWeight(sc) * s_noWindPeak_ni(rv,reportDomain,y,sc) ) ;
 
 ) ;
 
 objComponents(rv,reportDomain,'obj_Check') = sum(objc, objComponents(rv,reportDomain,objc)) - objComponents(rv,reportDomain,'obj_total') ;
 
-loadByRegionAndYear(rv,reportDomain,r,y) = sum((t,lb,oc), outcomeWeight(oc) * NrgDemand(rv,r,y,t,lb,oc)) ;
+loadByRegionAndYear(rv,reportDomain,r,y) = sum((t,lb,sc), scenarioWeight(sc) * NrgDemand(rv,r,y,t,lb,sc)) ;
 
 Display rv, objComponents, builtByTechRegion ;
 
@@ -330,24 +330,24 @@ put PeakResults '1. Peak NZ' / @6 'Capacity' '  RestLHS', '      RHS', '  MargVa
 loop(y,
   put / y.tl:<4:0, (sum((activeExpSteps,g), peakConPlant(g,y) * s2_CAPACITY(activeExpSteps,g,y))):>9:1,
     ( -i_winterCapacityMargin(y)):>9:1,
-    ( sum(oc, outcomeWeight(oc) * peakLoadNZ(y,oc)) ):>9:1
-    ( sum(oc, 1000 * outcomeWeight(oc) * peak_NZ.m(y,oc)) ):>9:1
+    ( sum(sc, scenarioWeight(sc) * peakLoadNZ(y,sc)) ):>9:1
+    ( sum(sc, 1000 * scenarioWeight(sc) * peak_NZ.m(y,sc)) ):>9:1
 ) ;
 
 put /// '2. Peak NI' / @6 'Capacity' '  RestLHS', '      RHS', '  MargVal' ;
 loop(y,
   put / y.tl:<4:0, (sum((activeExpSteps,nigen(g)), peakConPlant(g,y) * s2_CAPACITY(activeExpSteps,g,y))):>9:1,
     ( i_largestGenerator(y) + i_smallestPole(y) - i_winterCapacityMargin(y) ):>9:1,
-    ( sum(oc, outcomeWeight(oc) * peakLoadNI(y,oc)) ):>9:1
-    ( sum(oc, 1000 * outcomeWeight(oc) * peak_NI.m(y,oc)) ):>9:1
+    ( sum(sc, scenarioWeight(sc) * peakLoadNI(y,sc)) ):>9:1
+    ( sum(sc, 1000 * scenarioWeight(sc) * peak_NI.m(y,sc)) ):>9:1
 ) ;
 
 put /// '3. Low wind peak NI' / @6 'Capacity' '  RestLHS', '      RHS', '  MargVal' ;
 loop(y,
   put / y.tl:<4:0, (sum((activeExpSteps,mapg_k(g,k))$( nigen(g) and (not wind(k)) ), NWpeakConPlant(g,y) * s2_CAPACITY(activeExpSteps,g,y))):>9:1,
     ( -i_fkNI(y) + i_smallestPole(y) ):>9:1,
-    ( sum(oc, outcomeWeight(oc) * peakLoadNI(y,oc)) ):>9:1
-    ( sum(oc, 1000 * outcomeWeight(oc) * noWindPeak_NI.m(y,oc)) ):>9:1
+    ( sum(sc, scenarioWeight(sc) * peakLoadNI(y,sc)) ):>9:1
+    ( sum(sc, 1000 * scenarioWeight(sc) * noWindPeak_NI.m(y,sc)) ):>9:1
 ) ;
 $offtext
 
@@ -381,7 +381,7 @@ Sets
   rc           'Reserve classes'
   hY           'Hydrology output years'
   v            'Hydro reservoirs or river systems'
-  outcomes     'Stochastic outcomes or uncertainty states'
+  scenarios     'Stochastic scenarios or uncertainty states'
   m            '12 months'
   geo          'Geographic co-ordinate types'
   col          'RGB color codes'
@@ -394,7 +394,7 @@ Set y / %firstYear% * %lastYear% / ;
 
 * Get the other 25 of the 26 fundamental sets from the first scenario's input GDX file.
 $gdxin "%DataPath%%firstScenario%"
-$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v outcomes m geo col
+$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v scenarios m geo col
 
 * Re-declare and initialise a few miscellaneous sets with fixed membership.
 Sets
@@ -444,14 +444,14 @@ Parameters
   i_VOLLcost(sc,s)                              'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
   i_HVDCshr(sc,o)                               'Share of HVDC charge to be incurred by plant owner'
   i_HVDClevy(sc,y)                              'HVDC charge levied on new South Island plant by year, $/kW'
-  i_outcomeWeight(sc,outcomes)                  'Weights on outcomes when multiple outcomes are used'
+  i_scenarioWeight(sc,scenarios)                  'Weights on scenarios when multiple scenarios are used'
   i_txCapacity(sc,r,rr,ps)                      'Transmission path capacities (bi-directional), MW'
   i_substnCoordinates(sc,i,geo)                 'Geographic coordinates for substations'
   ;
 
 $gdxin 'all_input.gdx'
 $loaddc mapf_fg techColor fuelColor fuelGrpcolor peaker demandGen regionCentroid
-$load   i_nameplate i_fixedOM i_refurbDecisionYear i_plantReservesCost i_VOLLcost i_HVDCshr i_HVDClevy i_outcomeWeight i_txCapacity
+$load   i_nameplate i_fixedOM i_refurbDecisionYear i_plantReservesCost i_VOLLcost i_HVDCshr i_HVDClevy i_scenarioWeight i_txCapacity
 $loaddc i_substnCoordinates
 * Make sure intraregional transmission capacities are zero.
 i_txCapacity(sc,r,r,ps) = 0 ;
@@ -517,9 +517,9 @@ $loaddc reserveViolationPenalty pNFresvCost
 
 * c) Sets and parameters from prepared output GDX file - now with an extra dimension, i.e. set sc.
 Sets
-  oc(sc,outcomes)                               'Selected elements of outcomes'
+  oc(sc,scenarios)                               'Selected elements of scenarios'
   activeSolve(sc,mt,hY)                         'Collect the mt-hY index used for each solve' 
-*  activeOC(sc,mt,hY,outcomes)                   'Collect the mt-hY-outcomes index used for each solve'
+*  activeOC(sc,mt,hY,scenarios)                   'Collect the mt-hY-scenarios index used for each solve'
   activeMT(sc,mt)                               'Identify the run types actually employed in this model run'
   solveGoal(sc,goal)                            'User-selected solve goal'
 Parameters
@@ -527,7 +527,7 @@ Parameters
   solveReport(sc,mt,hY,*,*)                     'Collect various details about each solve of the models (both GEM and DISP)'
 * Free variables
   s2_TOTALCOST(sc,mt)                           'Discounted total system costs over all modelled years, $m (objective function value)'
-  s2_TX(sc,mt,r,rr,y,t,lb,outcomes)             'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s2_TX(sc,mt,r,rr,y,t,lb,scenarios)             'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
 * Binary Variables
   s2_BRET(sc,mt,g,y)                            'Binary variable to identify endogenous retirement year for the eligble generation plant'
   s2_ISRETIRED(sc,mt,g)                         'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
@@ -538,22 +538,22 @@ Parameters
   s2_RETIRE(sc,mt,g,y)                          'Capacity endogenously retired by generating plant and year, MW'
   s2_CAPACITY(sc,mt,g,y)                        'Cumulative nameplate capacity at each generating plant in each year, MW'
   s2_TXCAPCHARGES(sc,mt,r,rr,y)                 'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s2_GEN(sc,mt,g,y,t,lb,outcomes)               'Generation by generating plant and block, GWh'
-  s2_VOLLGEN(sc,mt,s,y,t,lb,outcomes)           'Generation by VOLL plant and block, GWh'
-  s2_PUMPEDGEN(sc,mt,g,y,t,lb,outcomes)         'Energy from pumped hydro (treated like demand), GWh'
-  s2_LOSS(sc,mt,r,rr,y,t,lb,outcomes)           'Transmission losses along each path, MW'
+  s2_GEN(sc,mt,g,y,t,lb,scenarios)               'Generation by generating plant and block, GWh'
+  s2_VOLLGEN(sc,mt,s,y,t,lb,scenarios)           'Generation by VOLL plant and block, GWh'
+  s2_PUMPEDGEN(sc,mt,g,y,t,lb,scenarios)         'Energy from pumped hydro (treated like demand), GWh'
+  s2_LOSS(sc,mt,r,rr,y,t,lb,scenarios)           'Transmission losses along each path, MW'
   s2_TXPROJVAR(sc,mt,tupg,y)                    'Continuous 0-1 variable indicating whether an upgrade project is applied'
   s2_TXUPGRADE(sc,mt,r,rr,ps,pss,y)             'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
-  s2_RESV(sc,mt,g,rc,y,t,lb,outcomes)           'Reserve energy supplied, MWh'
-  s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,outcomes)     'Reserve energy supply violations, MWh'
-  s2_RESVTRFR(sc,mt,rc,ild,ild1,y,t,lb,outcomes)'Reserve energy transferred from one island to another, MWh'
+  s2_RESV(sc,mt,g,rc,y,t,lb,scenarios)           'Reserve energy supplied, MWh'
+  s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,scenarios)     'Reserve energy supply violations, MWh'
+  s2_RESVTRFR(sc,mt,rc,ild,ild1,y,t,lb,scenarios)'Reserve energy transferred from one island to another, MWh'
 * Penalty variables
   s2_RENNRGPENALTY(sc,mt,y)                     'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s2_SEC_NZ_PENALTY(sc,mt,outcomes,y)           'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI1_PENALTY(sc,mt,outcomes,y)          'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
-  s2_SEC_NI2_PENALTY(sc,mt,outcomes,y)          'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
-  s2_NOWIND_NZ_PENALTY(sc,mt,outcomes,y)        'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NI_PENALTY(sc,mt,outcomes,y)        'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
+  s2_SEC_NZ_PENALTY(sc,mt,scenarios,y)           'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
+  s2_SEC_NI1_PENALTY(sc,mt,scenarios,y)          'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
+  s2_SEC_NI2_PENALTY(sc,mt,scenarios,y)          'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
+  s2_NOWIND_NZ_PENALTY(sc,mt,scenarios,y)        'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
+  s2_NOWIND_NI_PENALTY(sc,mt,scenarios,y)        'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
 * Slack variables
   s2_ANNMWSLACK(sc,mt,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
   s2_RENCAPSLACK(sc,mt,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
@@ -561,10 +561,10 @@ Parameters
   s2_MINUTILSLACK(sc,mt,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
   s2_FUELSLACK(sc,mt,y)                         'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations, i.e. marginal values. (ignore the objective function)
-  s2_bal_supdem(sc,mt,r,y,t,lb,outcomes)        'Balance supply and demand in each region, year, time period and load block'
+  s2_bal_supdem(sc,mt,r,y,t,lb,scenarios)        'Balance supply and demand in each region, year, time period and load block'
 *++++++++++
 * More non-free reserves code.
-  s2_RESVCOMPONENTS(sc,mt,r,rr,y,t,lb,outcomes,stp) 'Non-free reserve components, MW'
+  s2_RESVCOMPONENTS(sc,mt,r,rr,y,t,lb,scenarios,stp) 'Non-free reserve components, MW'
 *++++++++++
   ;
 
@@ -583,10 +583,10 @@ $loaddc s2_RESVCOMPONENTS
 *++++++++++
 
 *  declared but not loaded yet - follows s2_VOLLGEN
-*  s2_PUMPEDGEN(sc,mt,g,y,t,lb,outcomes)        'Energy from pumped hydro (treated like demand), GWh'
-*  s2_RESV(sc,mt,g,rc,y,t,lb,outcomes)          'Reserve energy supplied, MWh'
-*  s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,outcomes)    'Reserve energy supply violations, MWh'
-*  s2_RESVTRFR(sc,mt,rc,ild,ild1,y,t,lb,outcomes)   'Reserve energy transferred from one island to another, MWh'
+*  s2_PUMPEDGEN(sc,mt,g,y,t,lb,scenarios)        'Energy from pumped hydro (treated like demand), GWh'
+*  s2_RESV(sc,mt,g,rc,y,t,lb,scenarios)          'Reserve energy supplied, MWh'
+*  s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,scenarios)    'Reserve energy supply violations, MWh'
+*  s2_RESVTRFR(sc,mt,rc,ild,ild1,y,t,lb,scenarios)   'Reserve energy transferred from one island to another, MWh'
 
 
 
@@ -597,7 +597,7 @@ Sets
                                                     rfb   'Potential and actual refurbished capacity by technology'
                                                     rtd   'Potential and actual retired capacity by technology'   /
   buildSoln(mt)                                 'Determine which run type element to use for reporting results related to building generation or transmission'
-  activeMTOC(sc,mt,outcomes)                    'Determine the sc-mt-outcome index used for each solve'
+  activeMTOC(sc,mt,scenarios)                    'Determine the sc-mt-scenario index used for each solve'
   activeCapacity(sc,g,y)                        'Identify all plant that are active in any given year, i.e. existing or built but never retired'
 * Components of objective function
   objc                                          'Objective function components'
@@ -661,20 +661,20 @@ Parameters
   totalBuiltMW(sc)                              'Total new generating capacity installed, MW'
   totalBuiltDSM(sc)                             'Total new DSM and IL capacity installed, MW'
   totalRetiredMW(sc)                            'Total retired capacity, MW'
-  genYr(sc,mt,outcomes,g,y)                     'Generation by plant and year, GWh'
-  genGWh(sc,mt,outcomes)                        'Generation - includes DSM, IL and shortage (deficit) generation, GWh'
-  genTWh(sc,mt,outcomes)                        'Generation - includes DSM, IL and shortage (deficit) generation, TWh'
-  genDSM(sc,mt,outcomes)                        'DSM and IL dispatched, GWh'
-  genPeaker(sc,mt,outcomes)                     'Generation by peakers, GWh'
-  deficitGen(sc,mt,outcomes,y,t,lb)             'Aggregate deficit generation (i.e. sum over all shortage generators), GWh'
-  xsDeficitGen(sc,mt,outcomes,y,t,lb)           'Excessive deficit generation in any load block, period or year (excessive means it exceeds 3% of total generation), GWh'
+  genYr(sc,mt,scenarios,g,y)                     'Generation by plant and year, GWh'
+  genGWh(sc,mt,scenarios)                        'Generation - includes DSM, IL and shortage (deficit) generation, GWh'
+  genTWh(sc,mt,scenarios)                        'Generation - includes DSM, IL and shortage (deficit) generation, TWh'
+  genDSM(sc,mt,scenarios)                        'DSM and IL dispatched, GWh'
+  genPeaker(sc,mt,scenarios)                     'Generation by peakers, GWh'
+  deficitGen(sc,mt,scenarios,y,t,lb)             'Aggregate deficit generation (i.e. sum over all shortage generators), GWh'
+  xsDeficitGen(sc,mt,scenarios,y,t,lb)           'Excessive deficit generation in any load block, period or year (excessive means it exceeds 3% of total generation), GWh'
 * Transmission
   actualTxCap(sc,mt,r,rr,y)                     'Actual transmission capacity for each path in each modelled year (may depend on endogenous decisions)'
   priorTxCap(sc,r,rr,ps)                        'Transmission capacity prior to a state change for all states (silent, though, on when state changes), MW'
   postTxCap(sc,r,rr,ps)                         'Transmission capacity after a state change for all states (silent, though, on when state changes), MW'
   numYrsToBuildTx(sc,tupg,y)                    'Identify the number of years taken to build a particular upgrade of a transmission investment'
-  interTxLossYrGWh(sc,mt,outcomes,y)            'Interregional transmission losses by year, GWh'
-  interTxLossGWh(sc,mt,outcomes)                'Total interregional transmission losses, GWh'
+  interTxLossYrGWh(sc,mt,scenarios,y)            'Interregional transmission losses by year, GWh'
+  interTxLossGWh(sc,mt,scenarios)                'Total interregional transmission losses, GWh'
   intraTxLossYrGWh(sc,y)                        'Intraregional transmission losses by year, GWh'
   intraTxLossGWh(sc)                            'Total intraregional transmission losses, GWh'
   ;
@@ -727,7 +727,7 @@ loop(fg, put / fg.tl, fg.te(fg) loop(fuelGrpColor(sc,fg,red,green,blue)$(ord(sc)
 *===============================================================================================
 * 4. Perform the various calculations/assignments necessary to generate reports.
 
-activeMTOC(sc,mt,outcomes) $sum(hY, activeOC(sc,mt,hY,outcomes) ) = yes ;
+activeMTOC(sc,mt,scenarios) $sum(hY, activeOC(sc,mt,hY,scenarios) ) = yes ;
 
 * a) Objective function components - value by year and total value
 * Objective function components - value by year (Note that for run type 'dis', it's the average that gets computed).
@@ -741,22 +741,22 @@ objComponentsYr(activeMT(sc,mt),y,'obj_fixOM')    = 1e-6 / card(t) * (1 - taxRat
 objComponentsYr(activeMT(sc,mt),y,'obj_hvdc')     = 1e-6 / card(t) * (1 - taxRate) *
                                                       sum((g,k,o,t)$( (not demandGen(sc,k)) * sigen(sc,g) * possibleToBuild(sc,g) * mapg_k(sc,g,k) * mapg_o(sc,g,o) ),
                                                         PVfacG(sc,y,t) * i_HVDCshr(sc,o) * i_HVDClevy(sc,y) * s2_CAPACITY(sc,mt,g,y) ) ;
-objComponentsYr(activeMT(sc,mt),y,'obj_varOM')    = 1e-6 * (1 - taxRate) * sum((t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_outcomeWeight(sc,outcomes)  *
-                                                      sum((g,lb), s2_GEN(sc,mt,g,y,t,lb,outcomes)  * SRMC(sc,g,y) * sum(mapg_e(sc,g,e), locFac_Recip(sc,e)) ) ) ;
-objComponentsYr(activeMT(sc,mt),y,'VoLLcost')     = 1e-6 * (1 - taxRate) * sum((t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_outcomeWeight(sc,outcomes)  *
-                                                      sum((s,lb), s2_VOLLGEN(sc,mt,s,y,t,lb,outcomes)  * i_VOLLcost(sc,s) ) ) ;
-objComponentsYr(activeMT(sc,mt),y,'obj_rescosts') = 1e-6 * (1 - taxRate) * sum((g,rc,t,lb,outcomes) , PVfacG(sc,y,t) * i_outcomeWeight(sc,outcomes)  * s2_RESV(sc,mt,g,rc,y,t,lb,outcomes)  * i_plantReservesCost(sc,g,rc) ) ;
-objComponentsYr(activeMT(sc,mt),y,'obj_nfrcosts') = 1e-6 * (1 - taxRate) * sum((r,rr,t,lb,outcomes, stp)$( nwd(sc,r,rr) or swd(sc,r,rr) ),
-                                                      PVfacG(sc,y,t) * i_outcomeWeight(sc,outcomes)  * (hoursPerBlock(sc,t,lb) * s2_RESVCOMPONENTS(sc,mt,r,rr,y,t,lb,outcomes, stp)) * pNFresvCost(sc,r,rr,stp) ) ;
+objComponentsYr(activeMT(sc,mt),y,'obj_varOM')    = 1e-6 * (1 - taxRate) * sum((t,scenarios) , PVfacG(sc,y,t) * 1e3 * i_scenarioWeight(sc,scenarios)  *
+                                                      sum((g,lb), s2_GEN(sc,mt,g,y,t,lb,scenarios)  * SRMC(sc,g,y) * sum(mapg_e(sc,g,e), locFac_Recip(sc,e)) ) ) ;
+objComponentsYr(activeMT(sc,mt),y,'VoLLcost')     = 1e-6 * (1 - taxRate) * sum((t,scenarios) , PVfacG(sc,y,t) * 1e3 * i_scenarioWeight(sc,scenarios)  *
+                                                      sum((s,lb), s2_VOLLGEN(sc,mt,s,y,t,lb,scenarios)  * i_VOLLcost(sc,s) ) ) ;
+objComponentsYr(activeMT(sc,mt),y,'obj_rescosts') = 1e-6 * (1 - taxRate) * sum((g,rc,t,lb,scenarios) , PVfacG(sc,y,t) * i_scenarioWeight(sc,scenarios)  * s2_RESV(sc,mt,g,rc,y,t,lb,scenarios)  * i_plantReservesCost(sc,g,rc) ) ;
+objComponentsYr(activeMT(sc,mt),y,'obj_nfrcosts') = 1e-6 * (1 - taxRate) * sum((r,rr,t,lb,scenarios, stp)$( nwd(sc,r,rr) or swd(sc,r,rr) ),
+                                                      PVfacG(sc,y,t) * i_scenarioWeight(sc,scenarios)  * (hoursPerBlock(sc,t,lb) * s2_RESVCOMPONENTS(sc,mt,r,rr,y,t,lb,scenarios, stp)) * pNFresvCost(sc,r,rr,stp) ) ;
 objComponentsYr(activeMT(sc,mt),y,'obj_renNrg')   = penaltyViolateRenNrg * s2_RENNRGPENALTY(sc,mt,y) ;
-objComponentsYr(activeMT(sc,mt),y,'obj_resvviol') = 1e-6 * sum((rc,ild,t,lb,outcomes) , i_outcomeWeight(sc,outcomes)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,outcomes)  ) ;
+objComponentsYr(activeMT(sc,mt),y,'obj_resvviol') = 1e-6 * sum((rc,ild,t,lb,scenarios) , i_scenarioWeight(sc,scenarios)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,scenarios)  ) ;
 objComponentsYr(activeMT(sc,mt),y,'slk_rstrctMW') = 9999 * s2_ANNMWSLACK(sc,mt,y) ;
 objComponentsYr(activeMT(sc,mt),y,'slk_rencap')   = 9998 * s2_RENCAPSLACK(sc,mt,y) ;
 objComponentsYr(activeMT(sc,mt),y,'slk_limhyd')   = 9997 * s2_HYDROSLACK(sc,mt,y) ;
 objComponentsYr(activeMT(sc,mt),y,'slk_minutil')  = 9996 * s2_MINUTILSLACK(sc,mt,y) ;
 objComponentsYr(activeMT(sc,mt),y,'slk_limfuel')  = 9995 * s2_FUELSLACK(sc,mt,y) ;
 
-* +++ The 's2' penalty params need the domain to be defined on outcomes or oc, i.e. between the mt and the y
+* +++ The 's2' penalty params need the domain to be defined on scenarios or oc, i.e. between the mt and the y
 * +++ Also, penaltyLostPeak has yet to be passed along to the GDX that GEMreports grabs it data from.
 * +++ ditto the bunch of lines about 30 lines down from here. 
 *objComponentsYr(activeMT(sc,mt),y,'penalty_nzsec')    = penaltyLostPeak * s2_SEC_NZ_PENALTY(sc,mt,y) ;
@@ -774,15 +774,15 @@ objComponents(activeMT(sc,mt),'obj_fixOM')    = 1e-6 / card(t) * (1 - taxRate) *
 objComponents(activeMT(sc,mt),'obj_hvdc')     = 1e-6 / card(t) * (1 - taxRate) *
                                                   sum((g,k,o,y,t)$( (not demandGen(sc,k)) * sigen(sc,g) * possibleToBuild(sc,g) * mapg_k(sc,g,k) * mapg_o(sc,g,o) ),
                                                     PVfacG(sc,y,t) * i_HVDCshr(sc,o) * i_HVDClevy(sc,y) * s2_CAPACITY(sc,mt,g,y) ) ;
-objComponents(activeMT(sc,mt),'obj_varOM')    = 1e-6 * (1 - taxRate) * sum((y,t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_outcomeWeight(sc,outcomes)  *
-                                                  sum((g,lb), s2_GEN(sc,mt,g,y,t,lb,outcomes)  * SRMC(sc,g,y) * sum(mapg_e(sc,g,e), locFac_Recip(sc,e)) ) ) ;
-objComponents(activeMT(sc,mt),'VoLLcost')     = 1e-6 * (1 - taxRate) * sum((y,t,outcomes) , PVfacG(sc,y,t) * 1e3 * i_outcomeWeight(sc,outcomes)  *
-                                                  sum((s,lb), s2_VOLLGEN(sc,mt,s,y,t,lb,outcomes)  * i_VOLLcost(sc,s) ) ) ;
-objComponents(activeMT(sc,mt),'obj_rescosts') = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,outcomes) , PVfacG(sc,y,t) * i_outcomeWeight(sc,outcomes)  * s2_RESV(sc,mt,g,rc,y,t,lb,outcomes)  * i_plantReservesCost(sc,g,rc) ) ;
-objComponents(activeMT(sc,mt),'obj_nfrcosts') = 1e-6 * (1 - taxRate) * sum((r,rr,y,t,lb,outcomes, stp)$( nwd(sc,r,rr) or swd(sc,r,rr) ),
-                                                  PVfacG(sc,y,t) * i_outcomeWeight(sc,outcomes)  * (hoursPerBlock(sc,t,lb) * s2_RESVCOMPONENTS(sc,mt,r,rr,y,t,lb,outcomes, stp)) * pNFresvCost(sc,r,rr,stp) ) ;
+objComponents(activeMT(sc,mt),'obj_varOM')    = 1e-6 * (1 - taxRate) * sum((y,t,scenarios) , PVfacG(sc,y,t) * 1e3 * i_scenarioWeight(sc,scenarios)  *
+                                                  sum((g,lb), s2_GEN(sc,mt,g,y,t,lb,scenarios)  * SRMC(sc,g,y) * sum(mapg_e(sc,g,e), locFac_Recip(sc,e)) ) ) ;
+objComponents(activeMT(sc,mt),'VoLLcost')     = 1e-6 * (1 - taxRate) * sum((y,t,scenarios) , PVfacG(sc,y,t) * 1e3 * i_scenarioWeight(sc,scenarios)  *
+                                                  sum((s,lb), s2_VOLLGEN(sc,mt,s,y,t,lb,scenarios)  * i_VOLLcost(sc,s) ) ) ;
+objComponents(activeMT(sc,mt),'obj_rescosts') = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,scenarios) , PVfacG(sc,y,t) * i_scenarioWeight(sc,scenarios)  * s2_RESV(sc,mt,g,rc,y,t,lb,scenarios)  * i_plantReservesCost(sc,g,rc) ) ;
+objComponents(activeMT(sc,mt),'obj_nfrcosts') = 1e-6 * (1 - taxRate) * sum((r,rr,y,t,lb,scenarios, stp)$( nwd(sc,r,rr) or swd(sc,r,rr) ),
+                                                  PVfacG(sc,y,t) * i_scenarioWeight(sc,scenarios)  * (hoursPerBlock(sc,t,lb) * s2_RESVCOMPONENTS(sc,mt,r,rr,y,t,lb,scenarios, stp)) * pNFresvCost(sc,r,rr,stp) ) ;
 objComponents(activeMT(sc,mt),'obj_renNrg')   = sum(y, penaltyViolateRenNrg * s2_RENNRGPENALTY(sc,mt,y)) ;
-objComponents(activeMT(sc,mt),'obj_resvviol') = 1e-6 * sum((rc,ild,y,t,lb,outcomes) , i_outcomeWeight(sc,outcomes)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,outcomes)  ) ;
+objComponents(activeMT(sc,mt),'obj_resvviol') = 1e-6 * sum((rc,ild,y,t,lb,scenarios) , i_scenarioWeight(sc,scenarios)  * reserveViolationPenalty(sc,ild,rc) * s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,scenarios)  ) ;
 objComponents(activeMT(sc,mt),'slk_rstrctMW') = 9999 * sum(y, s2_ANNMWSLACK(sc,mt,y)) ;
 objComponents(activeMT(sc,mt),'slk_rencap')   = 9998 * sum(y, s2_RENCAPSLACK(sc,mt,y)) ;
 objComponents(activeMT(sc,mt),'slk_limhyd')   = 9997 * sum(y, s2_HYDROSLACK(sc,mt,y)) ;
@@ -881,15 +881,15 @@ loop(activeMT(sc,mt),
 * End of capacity expansion/contraction calculations.
   ) ;
 
-  genYr(activeMTOC(sc,mt,outcomes) ,g,y) = sum((t,lb), s2_GEN(sc,mt,g,y,t,lb,outcomes) ) ;
+  genYr(activeMTOC(sc,mt,scenarios) ,g,y) = sum((t,lb), s2_GEN(sc,mt,g,y,t,lb,scenarios) ) ;
 
-  genGWh(activeMTOC(sc,mt,outcomes) ) = sum((g,y), genYr(sc,mt,outcomes, g,y)) ;
-  genTWh(activeMTOC(sc,mt,outcomes) ) = 1e-3 * genGWh(sc,mt,outcomes)  ;
-  genDSM(activeMTOC(sc,mt,outcomes) ) = sum((g,y,k)$( mapg_k(sc,g,k) * demandGen(sc,k) ), genYr(sc,mt,outcomes, g,y)) ;
-  genPeaker(activeMTOC(sc,mt,outcomes) ) = sum((g,y,k)$( mapg_k(sc,g,k) * peaker(sc,k) ), genYr(sc,mt,outcomes, g,y)) ;
+  genGWh(activeMTOC(sc,mt,scenarios) ) = sum((g,y), genYr(sc,mt,scenarios, g,y)) ;
+  genTWh(activeMTOC(sc,mt,scenarios) ) = 1e-3 * genGWh(sc,mt,scenarios)  ;
+  genDSM(activeMTOC(sc,mt,scenarios) ) = sum((g,y,k)$( mapg_k(sc,g,k) * demandGen(sc,k) ), genYr(sc,mt,scenarios, g,y)) ;
+  genPeaker(activeMTOC(sc,mt,scenarios) ) = sum((g,y,k)$( mapg_k(sc,g,k) * peaker(sc,k) ), genYr(sc,mt,scenarios, g,y)) ;
 
-  deficitGen(activeMTOC(sc,mt,outcomes) ,y,t,lb) = sum(s, s2_VOLLGEN(sc,mt,s,y,t,lb,outcomes) ) ;
-  xsDeficitGen(activeMTOC(sc,mt,outcomes) ,y,t,lb)$( deficitGen(sc,mt,outcomes, y,t,lb) > ( .03 * sum(g, s2_GEN(sc,mt,g,y,t,lb,outcomes) ) ) ) = deficitGen(sc,mt,outcomes, y,t,lb) ;
+  deficitGen(activeMTOC(sc,mt,scenarios) ,y,t,lb) = sum(s, s2_VOLLGEN(sc,mt,s,y,t,lb,scenarios) ) ;
+  xsDeficitGen(activeMTOC(sc,mt,scenarios) ,y,t,lb)$( deficitGen(sc,mt,scenarios, y,t,lb) > ( .03 * sum(g, s2_GEN(sc,mt,g,y,t,lb,scenarios) ) ) ) = deficitGen(sc,mt,scenarios, y,t,lb) ;
 
 * Transmission
   actualTxCap(sc,mt,r,rr,y)$paths(sc,r,rr) = sum(ps, i_txCapacity(sc,r,rr,ps) * s2_BTX(sc,mt,r,rr,ps,y)) ; 
@@ -908,8 +908,8 @@ loop(activeMT(sc,mt),
     counter = 0 ;
   ) ;
 
-  interTxLossYrGWh(activeMTOC(sc,mt,outcomes) ,y) = 1e-3 * sum((r,rr,t,lb), s2_LOSS(sc,mt,r,rr,y,t,lb,outcomes)  * hoursPerBlock(sc,t,lb) ) ;
-  interTxLossGWh(activeMTOC(sc,mt,outcomes) ) = sum(y, interTxLossYrGWh(sc,mt,outcomes, y)) ; 
+  interTxLossYrGWh(activeMTOC(sc,mt,scenarios) ,y) = 1e-3 * sum((r,rr,t,lb), s2_LOSS(sc,mt,r,rr,y,t,lb,scenarios)  * hoursPerBlock(sc,t,lb) ) ;
+  interTxLossGWh(activeMTOC(sc,mt,scenarios) ) = sum(y, interTxLossYrGWh(sc,mt,scenarios, y)) ; 
 
   intraTxLossYrGWh(sc,y) = sum((ild,r,t,lb)$mapild_r(sc,ild,r), NrgDemand(sc,r,y,t,lb) * AClossFactors(sc,ild) / ( 1 + AClossFactors(sc,ild) ) ) ;
   intraTxLossGWh(sc) = sum(y, intraTxLossYrGWh(sc,y)) ;
@@ -929,7 +929,7 @@ Display
 *===============================================================================================
 * 5. Write out the generation and transmission investment schedules in various formats.
 
-* a) Build, refurbishment and retirement data and outcomes in .csv format suitable for importing into Excel.
+* a) Build, refurbishment and retirement data and scenarios in .csv format suitable for importing into Excel.
 put bld 'Scenario', 'Plant', 'Plant name', 'Zone', 'Region', 'Island', 'Technology', 'Fuel', 'RetireType', 'NameplateMW'
         'BuildYr', 'BuildMW', 'RefurbYr', 'RetireYr', 'RetireMW' ;
 loop((sc,mt,g,e,r,ild,k,f,y)$( buildSoln(mt) * mapg_e(sc,g,e) * mapg_r(sc,g,r) * mapg_ild(sc,g,ild) * mapg_k(sc,g,k) * mapg_f(sc,g,f) * buildOrRetireMW(sc,g,y) ),
@@ -1203,8 +1203,8 @@ $ontext
   @3 'Hydro year for timing:'          @37 loop(tmnghydyr(hYr),  put hYr.tl:<8:0
                                              if((not sameas(tmnghydyr,'Multiple')), put '- scaled by ', scaleInflows:4:2 ) ;
                                              if(sameas(tmnghydyr,'Multiple'),
-                                               put @47 '- ' loop(outcomes$ ( not sameas(outcomes, 'dum')),  put outcomes.tl, ' ' ) ;
-                                               put '- weighted by, respectively,' loop(outcomes$ ( not sameas(outcomes, 'dum')), put outcomeWeight(outcomes) :6:3 ) ) ;
+                                               put @47 '- ' loop(scenarios$ ( not sameas(scenarios, 'dum')),  put scenarios.tl, ' ' ) ;
+                                               put '- weighted by, respectively,' loop(scenarios$ ( not sameas(scenarios, 'dum')), put scenarioWeight(scenarios) :6:3 ) ) ;
                                            ) ; put /
   @3 'Timing re-optimised?'            @37 if(%RunType%<2 and %SuppressReopt%=0, put 'Yes' else put 'No') ; put /
 $                                      if %SuppressReopt%==1 $goto SkipLine
@@ -1371,15 +1371,15 @@ loop(buildSoln(mt),
   if(sameas(mt,'tmg'), put '%TmgHeader%' else if(sameas(mt,'reo'), put '%ReoHeader%' else put '%DisHeader%' ) ) ;
   loop(sc,
     put // @3 sc.te(sc), ' (', sc.tl, ')' ;
-    put  / @5 'Generation:'           @28 loop(activeMTOC(sc,mt,outcomes) , put genGWh(sc,mt,outcomes) :10:1 ) ;
-    put  / @5 'Intraregional losses:' @28 put intraTxLossGWh(sc):10:1 ; loop(activeMTOC(sc,mt,outcomes) ,  put ( 100 * intraTxLossGWh(sc) / genGWh(sc,mt,outcomes)  ):>7:2, '%  ' ) ;
-    put  / @5 'Interregional losses:' @28 loop(activeMTOC(sc,mt,outcomes) , put interTxLossGWh(sc,mt,outcomes) :10:1, ( 100 * interTxLossGWh(sc,mt,outcomes)  / genGWh(sc,mt,outcomes)  ):>7:2, '%  ' ) ;
+    put  / @5 'Generation:'           @28 loop(activeMTOC(sc,mt,scenarios) , put genGWh(sc,mt,scenarios) :10:1 ) ;
+    put  / @5 'Intraregional losses:' @28 put intraTxLossGWh(sc):10:1 ; loop(activeMTOC(sc,mt,scenarios) ,  put ( 100 * intraTxLossGWh(sc) / genGWh(sc,mt,scenarios)  ):>7:2, '%  ' ) ;
+    put  / @5 'Interregional losses:' @28 loop(activeMTOC(sc,mt,scenarios) , put interTxLossGWh(sc,mt,scenarios) :10:1, ( 100 * interTxLossGWh(sc,mt,scenarios)  / genGWh(sc,mt,scenarios)  ):>7:2, '%  ' ) ;
   ) ;
 ) ;
 
 
 * Indicate whether or not there is excessive shortage generation (excessive is assumed to be 3% of generation).
-if(sum((activeMTOC(sc,mt,outcomes) ,y,t,lb), xsDeficitGen(sc,mt,outcomes, y,t,lb)) = 0,
+if(sum((activeMTOC(sc,mt,scenarios) ,y,t,lb), xsDeficitGen(sc,mt,scenarios, y,t,lb)) = 0,
   put //// 'There is no excessive use of unserved energy, where excessive is defined to be 3% or more of generation.' ;
   else
   put //// 'Examine "Objective value components and shortage generation.gdx" in the GDX output folder to see' /
@@ -1463,7 +1463,7 @@ From this point forward is stuff from the old GEMreports.
   3. Perform the various calculations required to generate reports.
   4. Write out the summary results report.
   5. Write out the generation and transmission investment schedules in various formats.
-     a) Build, refurbishment and retirement data and outcomes in easy to read format suitable for importing into Excel.
+     a) Build, refurbishment and retirement data and scenarios in easy to read format suitable for importing into Excel.
      b) Write out generation and transmission investment schedules in a formatted text file (i.e. human-readable)
      c) Write out the build and retirement schedule - in SOO-ready format.
      d) Write out the forced builds by SC - in SOO-ready format (in the same file as SOO build schedules).
@@ -1485,8 +1485,8 @@ $offtext
 
 Sets
 * Capacity
-  pkrs_plus20(sc,mt,outcomes,g)                 'Identify peakers that produce 20% or more energy in a year than they are theoretically capable of'
-  noPkr_minus20(sc,mt,outcomes,g)               'Identify non-peakers that produce less than 20% of the energy in a year than they are theoretically capable of'
+  pkrs_plus20(sc,mt,scenarios,g)                 'Identify peakers that produce 20% or more energy in a year than they are theoretically capable of'
+  noPkr_minus20(sc,mt,scenarios,g)               'Identify non-peakers that produce less than 20% of the energy in a year than they are theoretically capable of'
 
 * GIT analysis
   cy        'Class of years'
@@ -1530,13 +1530,13 @@ Parameters
 * Items common to all SCs (where more than one SC is solved)
   numSC_fact                                    '(NumSC)!'
   numSC_fact2                                   '(NumSC - 2)!'
-  numCombos                                     'numSC_fact / 2 * numSC_fact2, i.e. the number of ways of picking k unordered outcomes from n possibilities'
+  numCombos                                     'numSC_fact / 2 * numSC_fact2, i.e. the number of ways of picking k unordered scenarios from n possibilities'
   retiresame(sc,g,y)                            'MW retired and year retired is the same across all SCs'
   refurbsame(sc,g)                              'Refurbishment year is the same across all SCs'
   txupgradesame(sc,tupg,y)                      'Transmission upgrade and upgrade year is the same across all SCs'
 
 * Reserves
-  totalresvviol(sc,mt,rc,outcomes)               'Total energy reserves violation, MW (to be written into results summary report)'
+  totalresvviol(sc,mt,rc,scenarios)               'Total energy reserves violation, MW (to be written into results summary report)'
 
 * Generation capex
   capchrg_r(sc,mt,g,y)                           'Capex charges (net of depreciation tax credit effects) by built plant by year, $m (real)'
@@ -1578,23 +1578,23 @@ Parameters
   hvdcnettot_pv(sc,mt,d)                         'Total HVDC charges (after tax benefit), $m (present value)'
 
 * Generation plant total SRMCs
-  vopexgross_r(sc,mt,g,y,t,outcomes)             'Variable O&M expenses with LF adjustment (before tax benefit) by built plant by year by period, $m (real)'
-  vopexgross_pv(sc,mt,g,y,t,outcomes,d)          'Variable O&M expenses with LF adjustment (before tax benefit) by built plant by year by period, $m (present value)'
-  vopexnet_r(sc,mt,g,y,t,outcomes)               'Variable O&M expenses with LF adjustment (after tax benefit) by built plant by year by period, $m (real)'
-  vopexnet_pv(sc,mt,g,y,t,outcomes,d)            'Variable O&M expenses with LF adjustment (after tax benefit) by built plant by year by period, $m (present value)'
-  vopexgrosstot_r(sc,mt,outcomes)                'Total variable O&M expenses with LF adjustment (before tax benefit), $m (real)'
-  vopexgrosstot_pv(sc,mt,outcomes,d)             'Total variable O&M expenses with LF adjustment (before tax benefit), $m (present value)'
-  vopexnettot_r(sc,mt,outcomes)                  'Total variable O&M expenses with LF adjustment (after tax benefit), $m (real)'
-  vopexnettot_pv(sc,mt,outcomes,d)               'Total variable O&M expenses with LF adjustment (after tax benefit), $m (present value)'
+  vopexgross_r(sc,mt,g,y,t,scenarios)             'Variable O&M expenses with LF adjustment (before tax benefit) by built plant by year by period, $m (real)'
+  vopexgross_pv(sc,mt,g,y,t,scenarios,d)          'Variable O&M expenses with LF adjustment (before tax benefit) by built plant by year by period, $m (present value)'
+  vopexnet_r(sc,mt,g,y,t,scenarios)               'Variable O&M expenses with LF adjustment (after tax benefit) by built plant by year by period, $m (real)'
+  vopexnet_pv(sc,mt,g,y,t,scenarios,d)            'Variable O&M expenses with LF adjustment (after tax benefit) by built plant by year by period, $m (present value)'
+  vopexgrosstot_r(sc,mt,scenarios)                'Total variable O&M expenses with LF adjustment (before tax benefit), $m (real)'
+  vopexgrosstot_pv(sc,mt,scenarios,d)             'Total variable O&M expenses with LF adjustment (before tax benefit), $m (present value)'
+  vopexnettot_r(sc,mt,scenarios)                  'Total variable O&M expenses with LF adjustment (after tax benefit), $m (real)'
+  vopexnettot_pv(sc,mt,scenarios,d)               'Total variable O&M expenses with LF adjustment (after tax benefit), $m (present value)'
 
-  vopexgrossnolf_r(sc,mt,g,y,t,outcomes)         'Variable O&M expenses without LF adjustment (before tax benefit) by built plant by year by period, $m (real)'
-  vopexgrossnolf_pv(sc,mt,g,y,t,outcomes,d)      'Variable O&M expenses without LF adjustment (before tax benefit) by built plant by year by period, $m (present value)'
-  vopexnetnolf_r(sc,mt,g,y,t,outcomes)           'Variable O&M expenses without LF adjustment (after tax benefit) by built plant by year by period, $m (real)'
-  vopexnetnolf_pv(sc,mt,g,y,t,outcomes,d)        'Variable O&M expenses without LF adjustment (after tax benefit) by built plant by year by period, $m (present value)'
-  vopexgrosstotnolf_r(sc,mt,outcomes)            'Total variable O&M expenses without LF adjustment (before tax benefit), $m (real)'
-  vopexgrosstotnolf_pv(sc,mt,outcomes,d)         'Total variable O&M expenses without LF adjustment (before tax benefit), $m (present value)'
-  vopexnettotnolf_r(sc,mt,outcomes)              'Total variable O&M expenses without LF adjustment (after tax benefit), $m (real)'
-  vopexnettotnolf_pv(sc,mt,outcomes,d)           'Total variable O&M expenses without LF adjustment (after tax benefit), $m (present value)'
+  vopexgrossnolf_r(sc,mt,g,y,t,scenarios)         'Variable O&M expenses without LF adjustment (before tax benefit) by built plant by year by period, $m (real)'
+  vopexgrossnolf_pv(sc,mt,g,y,t,scenarios,d)      'Variable O&M expenses without LF adjustment (before tax benefit) by built plant by year by period, $m (present value)'
+  vopexnetnolf_r(sc,mt,g,y,t,scenarios)           'Variable O&M expenses without LF adjustment (after tax benefit) by built plant by year by period, $m (real)'
+  vopexnetnolf_pv(sc,mt,g,y,t,scenarios,d)        'Variable O&M expenses without LF adjustment (after tax benefit) by built plant by year by period, $m (present value)'
+  vopexgrosstotnolf_r(sc,mt,scenarios)            'Total variable O&M expenses without LF adjustment (before tax benefit), $m (real)'
+  vopexgrosstotnolf_pv(sc,mt,scenarios,d)         'Total variable O&M expenses without LF adjustment (before tax benefit), $m (present value)'
+  vopexnettotnolf_r(sc,mt,scenarios)              'Total variable O&M expenses without LF adjustment (after tax benefit), $m (real)'
+  vopexnettotnolf_pv(sc,mt,scenarios,d)           'Total variable O&M expenses without LF adjustment (after tax benefit), $m (present value)'
 
 * Transmission equipment capex
   txcapchrg_r(sc,mt,r,rr,ps,y)                   'Transmission capex charges (net of depreciation tax credit effects) by built equipment by year, $m (real)'
@@ -1635,7 +1635,7 @@ loop(activeMT(sc,mt),
   blah blah blah
 
 * Reserves
-  totalresvviol(sc,mt,rc,outcomes) $activeMTOC(sc,mt,outcomes)  = sum((ild,y,t,lb), s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,outcomes)  ) ;
+  totalresvviol(sc,mt,rc,scenarios) $activeMTOC(sc,mt,scenarios)  = sum((ild,y,t,lb), s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,scenarios)  ) ;
 
 * Generation capex
   capchrg_r(sc,mt,g,y)    = 1e-6 * capchargem(g,y,sc) * s2_capacity(sc,mt,g,y) ;
@@ -1686,25 +1686,25 @@ loop(activeMT(sc,mt),
   hvdcnettot_pv(sc,mt,d)   = sum((g,y,t), hvdcnet_pv(sc,mt,g,y,t,d)) ;
 
 * Generation plant total SRMCs
-  vopexgross_r(sc,mt,g,y,t,outcomes)$activeMTOC(sc,mt,outcomes)   = 1e-3 * sum((mapg_e(g,e),lb), SRMC(g,y) * s2_gen(sc,mt,g,y,t,lb,outcomes)  * locFac_Recip(e) ) ;
-  vopexgross_pv(sc,mt,g,y,t,outcomes,d)$activeMTOC(sc,mt,outcomes)       = PVfacsM(y,t,d) * vopexgross_r(sc,mt,g,y,t,outcomes)  ;
-  vopexnet_r(sc,mt,g,y,t,outcomes)$activeMTOC(sc,mt,outcomes)     = (1 - i_taxRate)  * vopexgross_r(sc,mt,g,y,t,outcomes)  ;
-  vopexnet_pv(sc,mt,g,y,t,outcomes,d)$activeMTOC(sc,mt,outcomes)  = PVfacsM(y,t,d) * vopexnet_r(sc,mt,g,y,t,outcomes)  ;
+  vopexgross_r(sc,mt,g,y,t,scenarios)$activeMTOC(sc,mt,scenarios)   = 1e-3 * sum((mapg_e(g,e),lb), SRMC(g,y) * s2_gen(sc,mt,g,y,t,lb,scenarios)  * locFac_Recip(e) ) ;
+  vopexgross_pv(sc,mt,g,y,t,scenarios,d)$activeMTOC(sc,mt,scenarios)       = PVfacsM(y,t,d) * vopexgross_r(sc,mt,g,y,t,scenarios)  ;
+  vopexnet_r(sc,mt,g,y,t,scenarios)$activeMTOC(sc,mt,scenarios)     = (1 - i_taxRate)  * vopexgross_r(sc,mt,g,y,t,scenarios)  ;
+  vopexnet_pv(sc,mt,g,y,t,scenarios,d)$activeMTOC(sc,mt,scenarios)  = PVfacsM(y,t,d) * vopexnet_r(sc,mt,g,y,t,scenarios)  ;
 
-  vopexgrosstot_r(sc,mt,outcomes)$activeMTOC(sc,mt,outcomes)      = sum((g,y,t), vopexgross_r(sc,mt,g,y,t,outcomes) ) ;
-  vopexgrosstot_pv(sc,mt,outcomes,d)$activeMTOC(sc,mt,outcomes)   = sum((g,y,t), vopexgross_pv(sc,mt,g,y,t,outcomes, d)) ;
-  vopexnettot_r(sc,mt,outcomes)$activeMTOC(sc,mt,outcomes)        = sum((g,y,t), vopexnet_r(sc,mt,g,y,t,outcomes) ) ;
-  vopexnettot_pv(sc,mt,outcomes,d)$activeMTOC(sc,mt,outcomes)     = sum((g,y,t), vopexnet_pv(sc,mt,g,y,t,outcomes, d)) ;
+  vopexgrosstot_r(sc,mt,scenarios)$activeMTOC(sc,mt,scenarios)      = sum((g,y,t), vopexgross_r(sc,mt,g,y,t,scenarios) ) ;
+  vopexgrosstot_pv(sc,mt,scenarios,d)$activeMTOC(sc,mt,scenarios)   = sum((g,y,t), vopexgross_pv(sc,mt,g,y,t,scenarios, d)) ;
+  vopexnettot_r(sc,mt,scenarios)$activeMTOC(sc,mt,scenarios)        = sum((g,y,t), vopexnet_r(sc,mt,g,y,t,scenarios) ) ;
+  vopexnettot_pv(sc,mt,scenarios,d)$activeMTOC(sc,mt,scenarios)     = sum((g,y,t), vopexnet_pv(sc,mt,g,y,t,scenarios, d)) ;
 
-  vopexgrossNoLF_r(sc,mt,g,y,t,outcomes)$activeMTOC(sc,mt,outcomes)      = 1e-3 * SRMC(g,y) * sum(lb, s2_gen(sc,mt,g,y,t,lb,outcomes) ) ;
-  vopexgrossNoLF_pv(sc,mt,g,y,t,outcomes,d)$activeMTOC(sc,mt,outcomes)   = PVfacsM(y,t,d) * vopexgrossNoLF_r(sc,mt,g,y,t,outcomes)  ;
-  vopexnetNoLF_r(sc,mt,g,y,t,outcomes)$activeMTOC(sc,mt,outcomes) = (1 - i_taxRate)  * vopexgrossNoLF_r(sc,mt,g,y,t,outcomes)  ;
-  vopexnetNoLF_pv(sc,mt,g,y,t,outcomes,d)$activeMTOC(sc,mt,outcomes)     = PVfacsM(y,t,d) * vopexnetNoLF_r(sc,mt,g,y,t,outcomes)  ;
+  vopexgrossNoLF_r(sc,mt,g,y,t,scenarios)$activeMTOC(sc,mt,scenarios)      = 1e-3 * SRMC(g,y) * sum(lb, s2_gen(sc,mt,g,y,t,lb,scenarios) ) ;
+  vopexgrossNoLF_pv(sc,mt,g,y,t,scenarios,d)$activeMTOC(sc,mt,scenarios)   = PVfacsM(y,t,d) * vopexgrossNoLF_r(sc,mt,g,y,t,scenarios)  ;
+  vopexnetNoLF_r(sc,mt,g,y,t,scenarios)$activeMTOC(sc,mt,scenarios) = (1 - i_taxRate)  * vopexgrossNoLF_r(sc,mt,g,y,t,scenarios)  ;
+  vopexnetNoLF_pv(sc,mt,g,y,t,scenarios,d)$activeMTOC(sc,mt,scenarios)     = PVfacsM(y,t,d) * vopexnetNoLF_r(sc,mt,g,y,t,scenarios)  ;
 
-  vopexgrosstotNoLF_r(sc,mt,outcomes)$activeMTOC(sc,mt,outcomes)  = sum((g,y,t), vopexgrossNoLF_r(sc,mt,g,y,t,outcomes) ) ;
-  vopexgrosstotNoLF_pv(sc,mt,outcomes,d)$activeMTOC(sc,mt,outcomes)      = sum((g,y,t), vopexgrossNoLF_pv(sc,mt,g,y,t,outcomes, d)) ;
-  vopexnettotNoLF_r(sc,mt,outcomes)$activeMTOC(sc,mt,outcomes)    = sum((g,y,t), vopexnetNoLF_r(sc,mt,g,y,t,outcomes) ) ;
-  vopexnettotNoLF_pv(sc,mt,outcomes,d)$activeMTOC(sc,mt,outcomes) = sum((g,y,t), vopexnetNoLF_pv(sc,mt,g,y,t,outcomes, d)) ;
+  vopexgrosstotNoLF_r(sc,mt,scenarios)$activeMTOC(sc,mt,scenarios)  = sum((g,y,t), vopexgrossNoLF_r(sc,mt,g,y,t,scenarios) ) ;
+  vopexgrosstotNoLF_pv(sc,mt,scenarios,d)$activeMTOC(sc,mt,scenarios)      = sum((g,y,t), vopexgrossNoLF_pv(sc,mt,g,y,t,scenarios, d)) ;
+  vopexnettotNoLF_r(sc,mt,scenarios)$activeMTOC(sc,mt,scenarios)    = sum((g,y,t), vopexnetNoLF_r(sc,mt,g,y,t,scenarios) ) ;
+  vopexnettotNoLF_pv(sc,mt,scenarios,d)$activeMTOC(sc,mt,scenarios) = sum((g,y,t), vopexnetNoLF_pv(sc,mt,g,y,t,scenarios, d)) ;
 
 * Transmission equipment capex
   txcapchrg_r(sc,mt,allowedStates(sc,r,rr,ps),y) = 0 ;
@@ -1758,33 +1758,33 @@ put /// 'Retired capacity, MW' / @30 loop(sc_sim(sc), put sc.tl:>12 ) put / @30 
 loop(sc_sim(sc), put totalRetiredMW(sc):12:1 ) ;
 
 put /// 'Generation (includes DSM, IL, and Shortage), TWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
-loop((mt,outcomes) $sum(sc, genTWh(sc,mt,outcomes) ),
-  put / mt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
-  loop(sc_sim(sc), put genTWh(sc,mt,outcomes) :12:1 ) ;
+loop((mt,scenarios) $sum(sc, genTWh(sc,mt,scenarios) ),
+  put / mt.tl @18 if(sameas(scenarios, 'dum'), put @30 else put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):8:2, @30 ) ;
+  loop(sc_sim(sc), put genTWh(sc,mt,scenarios) :12:1 ) ;
 ) ;
 
 put /// "'Generation' by DSM and IL, GWh" / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
-loop((mt,outcomes) $sum(sc, genDSM(sc,mt,outcomes) ),
-  put / mt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
-  loop(sc_sim(sc), put genDSM(sc,mt,outcomes) :12:1 ) ;
+loop((mt,scenarios) $sum(sc, genDSM(sc,mt,scenarios) ),
+  put / mt.tl @18 if(sameas(scenarios, 'dum'), put @30 else put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):8:2, @30 ) ;
+  loop(sc_sim(sc), put genDSM(sc,mt,scenarios) :12:1 ) ;
 ) ;
 
 put /// 'Unserved energy (shortage generation), GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
-loop((mt,outcomes) $sum((sc,y), defgenYr(sc,mt,outcomes, y)),
-  put / mt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
-  loop(sc_sim(sc), put (sum(y, defgenYr(sc,mt,outcomes, y))):12:1 ) ;
+loop((mt,scenarios) $sum((sc,y), defgenYr(sc,mt,scenarios, y)),
+  put / mt.tl @18 if(sameas(scenarios, 'dum'), put @30 else put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):8:2, @30 ) ;
+  loop(sc_sim(sc), put (sum(y, defgenYr(sc,mt,scenarios, y))):12:1 ) ;
 ) ;
 
 put /// 'Generation by peakers, GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
-loop((mt,outcomes) $sum(sc, genPeaker(sc,mt,outcomes) ),
-  put / mt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
-  loop(sc_sim(sc), put  genPeaker(sc,mt,outcomes) :12:1 ) ;
+loop((mt,scenarios) $sum(sc, genPeaker(sc,mt,scenarios) ),
+  put / mt.tl @18 if(sameas(scenarios, 'dum'), put @30 else put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):8:2, @30 ) ;
+  loop(sc_sim(sc), put  genPeaker(sc,mt,scenarios) :12:1 ) ;
 ) ;
 
 put /// 'Transmission losses, GWh' / @30 loop(sc_sim(sc), put sc.tl:>12 ) ;
-loop((mt,outcomes) $sum(sc, interTxLossGWh(sc,mt,outcomes) ),
-  put / mt.tl @18 if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
-  loop(sc_sim(sc), put  interTxLossGWh(sc,mt,outcomes) :12:1 ) ;
+loop((mt,scenarios) $sum(sc, interTxLossGWh(sc,mt,scenarios) ),
+  put / mt.tl @18 if(sameas(scenarios, 'dum'), put @30 else put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):8:2, @30 ) ;
+  loop(sc_sim(sc), put  interTxLossGWh(sc,mt,scenarios) :12:1 ) ;
 ) ;
 
 put /// 'Total energy reserve violation, MWh' / @30 ; loop(sc_sim(sc), put sc.tl:>12 ) ;
@@ -1792,9 +1792,9 @@ loop(mt$sum(sc, sc_rt(sc,mt)),
   put / ;
   if(tmg(mt), put 'Timing' else if(reo(mt), put 'Re-optimised' else put 'Dispatch' ) ) ;
   put @17 'Reserve class' ;
-  loop((rc,outcomes) $(sum(sc, sc_rt(sc,mt)) and sum(sc, totalresvviol(sc,mt,rc,outcomes) )),
-    put / @27 rc.tl if(sameas(outcomes, 'dum'), put @30 else put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):8:2, @30 ) ;
-    loop(sc_sim(sc), put totalresvviol(sc,mt,rc,outcomes) :12:1 ) ;
+  loop((rc,scenarios) $(sum(sc, sc_rt(sc,mt)) and sum(sc, totalresvviol(sc,mt,rc,scenarios) )),
+    put / @27 rc.tl if(sameas(scenarios, 'dum'), put @30 else put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):8:2, @30 ) ;
+    loop(sc_sim(sc), put totalresvviol(sc,mt,rc,scenarios) :12:1 ) ;
   ) ;
 ) ;
 
@@ -1872,14 +1872,14 @@ loop(mt$sum(sc, sc_rt(sc,mt)),
   put / ;
   if(tmg(mt), put 'Timing' else if(reo(mt), put 'Re-optimised' else put 'Dispatch' ) ) ;
   put @27 'PV%' ;
-  loop((outcomes, d)$sum(sc, vopexgrosstot_pv(sc,mt,outcomes, d)),
+  loop((scenarios, d)$sum(sc, vopexgrosstot_pv(sc,mt,scenarios, d)),
     put / @14
-    if(sameas(outcomes, 'dum'),
+    if(sameas(scenarios, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
-    loop(sc_sim(sc), put vopexgrosstot_pv(sc,mt,outcomes, d):12:1 ) ;
+    loop(sc_sim(sc), put vopexgrosstot_pv(sc,mt,scenarios, d):12:1 ) ;
   ) ;
 ) ;
 
@@ -1889,14 +1889,14 @@ loop(mt$sum(sc, sc_rt(sc,mt)),
   put / ;
   if(tmg(mt), put 'Timing' else if(reo(mt), put 'Re-optimised' else put 'Dispatch' ) ) ;
   put @27 'PV%' ;
-  loop((outcomes, d)$sum(sc, vopexgrosstot_pv(sc,mt,outcomes, d)),
+  loop((scenarios, d)$sum(sc, vopexgrosstot_pv(sc,mt,scenarios, d)),
     put / @14
-    if(sameas(outcomes, 'dum'),
+    if(sameas(scenarios, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
-    loop(sc_sim(sc), put vopexnettot_pv(sc,mt,outcomes, d):12:1 ) ;
+    loop(sc_sim(sc), put vopexnettot_pv(sc,mt,scenarios, d):12:1 ) ;
   ) ;
 ) ;
 
@@ -1906,14 +1906,14 @@ loop(mt$sum(sc, sc_rt(sc,mt)),
   put / ;
   if(tmg(mt), put 'Timing' else if(reo(mt), put 'Re-optimised' else put 'Dispatch' ) ) ;
   put @27 'PV%' ;
-  loop((outcomes, d)$sum(sc, vopexgrosstot_pv(sc,mt,outcomes, d)),
+  loop((scenarios, d)$sum(sc, vopexgrosstot_pv(sc,mt,scenarios, d)),
     put / @14
-    if(sameas(outcomes, 'dum'),
+    if(sameas(scenarios, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
-    loop(sc_sim(sc), put vopexgrosstotNoLF_pv(sc,mt,outcomes, d):12:1 ) ;
+    loop(sc_sim(sc), put vopexgrosstotNoLF_pv(sc,mt,scenarios, d):12:1 ) ;
   ) ;
 ) ;
 
@@ -1923,14 +1923,14 @@ loop(mt$sum(sc, sc_rt(sc,mt)),
   put / ;
   if(tmg(mt), put 'Timing' else if(reo(mt), put 'Re-optimised' else put 'Dispatch' ) ) ;
   put @27 'PV%' ;
-  loop((outcomes, d)$sum(sc, vopexgrosstot_pv(sc,mt,outcomes, d)),
+  loop((scenarios, d)$sum(sc, vopexgrosstot_pv(sc,mt,scenarios, d)),
     put / @14
-    if(sameas(outcomes, 'dum'),
+    if(sameas(scenarios, 'dum'),
       put @26 (100 * GITdisc(d)):4:1 @30 ;
       else
-      put outcomes.tl, (100 * i_outcomeWeight(sc,outcomes) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
+      put scenarios.tl, (100 * i_scenarioWeight(sc,scenarios) ):6:2, (100 * GITdisc(d)):6:1 @30 ;
     ) ;
-    loop(sc_sim(sc), put vopexnettotNoLF_pv(sc,mt,outcomes, d):12:1 ) ;
+    loop(sc_sim(sc), put vopexnettotNoLF_pv(sc,mt,scenarios, d):12:1 ) ;
   ) ;
 ) ;
 
@@ -2053,21 +2053,21 @@ loop(sc_sim(sc), put / sc.tl @15 sc.te(sc) ) ;
 
 * Figure out which peakers produce more than 20% energy in any year.
 counter = 0 ;
-loop((activeMTOC(sc,mt,outcomes) ,mapg_k(g,k))$( peaker(k) * sum(y$activeCapacity(sc,g,y), 1) ),
+loop((activeMTOC(sc,mt,scenarios) ,mapg_k(g,k))$( peaker(k) * sum(y$activeCapacity(sc,g,y), 1) ),
   loop(y$( counter < 0.2 ),
-    counter = genYr(sc,mt,outcomes, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) ;
-    pkrs_plus20(sc,mt,outcomes, g)$( counter >= 0.2 ) = yes ;
+    counter = genYr(sc,mt,scenarios, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) ;
+    pkrs_plus20(sc,mt,scenarios, g)$( counter >= 0.2 ) = yes ;
   ) ;
   counter = 0 ;
 ) ;
 
 * Figure out which non-peakers produce less than 20% energy in any year.
 counter = 1 ;
-loop((activeMTOC(sc,mt,outcomes) ,mapg_k(g,k))$( not peaker(k) ),
+loop((activeMTOC(sc,mt,scenarios) ,mapg_k(g,k))$( not peaker(k) ),
   loop(y$( counter > 0.2 ),
     counter$( i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) =
-      genYr(sc,mt,outcomes, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) ;
-    nopkr_minus20(sc,mt,outcomes, g)$( counter > 0 and counter <= 0.2 ) = yes ;
+      genYr(sc,mt,scenarios, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) ;
+    nopkr_minus20(sc,mt,scenarios, g)$( counter > 0 and counter <= 0.2 ) = yes ;
   ) ;
   counter = 1 ;
 ) ;
@@ -2095,46 +2095,46 @@ loop(e,
   put / e.te(e) ; loop(sc_sim(sc), put sum((g,k)$( peaker(k) * mapg_k(g,k) * mapg_e(g,e) ), buildMW(sc,g)) ) ;
 ) ;
 
-put /// 'Peakers exceeding 20% utilisation in any year' / 'Plant' 'Run type' 'Outcome' loop(sc_sim(sc), put sc.tl ) ;
-loop((g,mt,outcomes) $sum(sc, pkrs_plus20(sc,mt,outcomes, g)),
-  put / g.te(g), mt.tl, outcomes.tl ;
+put /// 'Peakers exceeding 20% utilisation in any year' / 'Plant' 'Run type' 'Scenario' loop(sc_sim(sc), put sc.tl ) ;
+loop((g,mt,scenarios) $sum(sc, pkrs_plus20(sc,mt,scenarios, g)),
+  put / g.te(g), mt.tl, scenarios.tl ;
   loop(sc_sim(sc),
-    if(pkrs_plus20(sc,mt,outcomes, g), put 'y' else put '' ) ;
+    if(pkrs_plus20(sc,mt,scenarios, g), put 'y' else put '' ) ;
   ) ;
 ) ;
 
-put /// 'Non-peakers at less than 20% utilisation in any year' / 'Plant' 'Run type' 'Outcome' loop(sc_sim(sc), put sc.tl ) ;
-loop((g,mt,outcomes) $sum(sc, nopkr_minus20(sc,mt,outcomes, g)),
-  put / g.te(g), mt.tl, outcomes.tl ;
+put /// 'Non-peakers at less than 20% utilisation in any year' / 'Plant' 'Run type' 'Scenario' loop(sc_sim(sc), put sc.tl ) ;
+loop((g,mt,scenarios) $sum(sc, nopkr_minus20(sc,mt,scenarios, g)),
+  put / g.te(g), mt.tl, scenarios.tl ;
   loop(sc_sim(sc),
-    if(nopkr_minus20(sc,mt,outcomes, g), put 'y' else put '' ) ;
+    if(nopkr_minus20(sc,mt,scenarios, g), put 'y' else put '' ) ;
   ) ;
 ) ;
 
-put /// 'Energy produced by peakers, GWh' / 'SC' 'Run type' 'Outcome' 'Plant' 'Tech' 'Substn' 'MaxPotGWh' loop(y, put y.tl ) ; put '' 'Technology' ;
-loop((activeMTOC(sc,mt,outcomes) ,g,peaker(k),i)$( mapg_k(g,k) * mapg_i(g,i) * sum(y$activeCapacity(sc,g,y), 1) ),
-  put / sc.tl, mt.tl, outcomes.tl, g.te(g), k.tl, i.tl, (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) )
-  loop(y, put genYr(sc,mt,outcomes, g,y) ) ;
+put /// 'Energy produced by peakers, GWh' / 'SC' 'Run type' 'Scenario' 'Plant' 'Tech' 'Substn' 'MaxPotGWh' loop(y, put y.tl ) ; put '' 'Technology' ;
+loop((activeMTOC(sc,mt,scenarios) ,g,peaker(k),i)$( mapg_k(g,k) * mapg_i(g,i) * sum(y$activeCapacity(sc,g,y), 1) ),
+  put / sc.tl, mt.tl, scenarios.tl, g.te(g), k.tl, i.tl, (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) )
+  loop(y, put genYr(sc,mt,scenarios, g,y) ) ;
   put k.te(k) ;
 ) ;
 
-put /// 'Energy produced by peakers as a proportion of potential' / 'SC' 'Run type' 'Outcome' 'Plant' 'Tech' 'Substn' 'MaxPotGWh' loop(y, put y.tl ) ; put '' 'Technology' ;
-loop((activeMTOC(sc,mt,outcomes) ,g,peaker(k),i)$( mapg_k(g,k) * mapg_i(g,i) * sum(y$activeCapacity(sc,g,y), 1) ),
-  put / sc.tl, mt.tl, outcomes.tl, g.te(g), k.tl, i.tl, (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) )
-  loop(y, put ( genYr(sc,mt,outcomes, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) )  ) ;
+put /// 'Energy produced by peakers as a proportion of potential' / 'SC' 'Run type' 'Scenario' 'Plant' 'Tech' 'Substn' 'MaxPotGWh' loop(y, put y.tl ) ; put '' 'Technology' ;
+loop((activeMTOC(sc,mt,scenarios) ,g,peaker(k),i)$( mapg_k(g,k) * mapg_i(g,i) * sum(y$activeCapacity(sc,g,y), 1) ),
+  put / sc.tl, mt.tl, scenarios.tl, g.te(g), k.tl, i.tl, (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) )
+  loop(y, put ( genYr(sc,mt,scenarios, g,y) / (1e-3 * i_nameplate(sc,g) * sum((t,lb), maxcapfact(g,t,lb) * hoursPerBlock(t,lb)) ) )  ) ;
   put k.te(k) ;
 ) ;
 
-put /// 'VOLL by load block, period and year, GWh' / 'SC' 'Run type' 'Outcome' 'Plant' 'Period' 'Load block' loop(y, put y.tl ) ;
-loop((activeMTOC(sc,mt,outcomes) ,s,t,lb)$sum(y$s2_vollgen(sc,mt,s,y,t,lb,outcomes) , 1),
-  put / sc.tl, mt.tl, outcomes.tl, s.te(s), t.tl, lb.tl ;
-  loop(y, put s2_vollgen(sc,mt,s,y,t,lb,outcomes)  ) ;
+put /// 'VOLL by load block, period and year, GWh' / 'SC' 'Run type' 'Scenario' 'Plant' 'Period' 'Load block' loop(y, put y.tl ) ;
+loop((activeMTOC(sc,mt,scenarios) ,s,t,lb)$sum(y$s2_vollgen(sc,mt,s,y,t,lb,scenarios) , 1),
+  put / sc.tl, mt.tl, scenarios.tl, s.te(s), t.tl, lb.tl ;
+  loop(y, put s2_vollgen(sc,mt,s,y,t,lb,scenarios)  ) ;
 ) ;
 
-put /// 'Energy produced by peakers by load block, period and year, GWh' / 'SC' 'Run type' 'Outcome' 'Plant' 'Period' 'Load block' loop(y, put y.tl ) ;
-loop((activeMTOC(sc,mt,outcomes) ,g,peaker(k),t,lb)$( mapg_k(g,k) * sum(y$s2_gen(sc,mt,g,y,t,lb,outcomes) , 1) ),
-  put / sc.tl, mt.tl, outcomes.tl, g.te(g), t.tl, lb.tl ;
-  loop(y, put s2_gen(sc,mt,g,y,t,lb,outcomes)  ) ;
+put /// 'Energy produced by peakers by load block, period and year, GWh' / 'SC' 'Run type' 'Scenario' 'Plant' 'Period' 'Load block' loop(y, put y.tl ) ;
+loop((activeMTOC(sc,mt,scenarios) ,g,peaker(k),t,lb)$( mapg_k(g,k) * sum(y$s2_gen(sc,mt,g,y,t,lb,scenarios) , 1) ),
+  put / sc.tl, mt.tl, scenarios.tl, g.te(g), t.tl, lb.tl ;
+  loop(y, put s2_gen(sc,mt,g,y,t,lb,scenarios)  ) ;
 ) ;
 
 *Display pkrs_plus20, nopkr_minus20 ;
@@ -2155,7 +2155,7 @@ GITresults('itm2',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),t), PVfa
 
 GITresults('itm3',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),t), PVfacs(y,t,gitd,dt) * hvdcgross_r(sc,mt,g,y,t) ) ;
 
-GITresults('itm4',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),t,outcomes) , PVfacs(y,t,gitd,dt) * ( 1 / numhd ) * vopexgrossnolf_r(sc,mt,g,y,t,outcomes)  ) ;
+GITresults('itm4',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),t,scenarios) , PVfacs(y,t,gitd,dt) * ( 1 / numhd ) * vopexgrossnolf_r(sc,mt,g,y,t,scenarios)  ) ;
 
 GITresults('itm5',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),firstPeriod(t)), PVfacs(y,t,gitd,dt) * capchrg_r(sc,mt,g,y) ) ;
 
@@ -2163,7 +2163,7 @@ GITresults('itm6',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),t), PVfa
 
 GITresults('itm7',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),t), PVfacs(y,t,gitd,dt) * ( 1 - i_taxRate ) * hvdcgross_r(sc,mt,g,y,t) ) ;
 
-GITresults('itm8',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),t,outcomes) , PVfacs(y,t,gitd,dt) * ( 1 / numhd ) * ( 1 - i_taxRate ) * vopexgrossnolf_r(sc,mt,g,y,t,outcomes)  ) ;
+GITresults('itm8',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),g,mapcy_y(cy,y),t,scenarios) , PVfacs(y,t,gitd,dt) * ( 1 / numhd ) * ( 1 - i_taxRate ) * vopexgrossnolf_r(sc,mt,g,y,t,scenarios)  ) ;
 
 GITresults('itm9',gitd,sc_sim(sc),dt,cy) = sum((dis(mt),allowedStates(sc,r,rr,ps),mapcy_y(cy,y),firstPeriod(t)), PVfacs(y,t,gitd,dt) * ( txcapchrg_r(sc,mt,allowedStates(sc,r,rr,ps),y) + txtaxcred_r(sc,mt,allowedStates(sc,r,rr,ps),y)) ) ;
 
@@ -2445,11 +2445,11 @@ loop((sc,mt,hY)$( sum(y, s_inflowyr(sc,mt,hY,y)) ),
 *===============================================================================================
 * 13. Collect national generation, transmission, losses and load (GWh) into a single parameter.
 
-chktotals(sc_rt(sc,mt),'Gen')  = sum((r,g,y,t,lb,outcomes) $( activeMTOC(sc,mt,outcomes)  and mapg_r(g,r) ), s2_gen(sc,mt,g,y,t,lb,outcomes) ) ;
-chktotals(sc_rt(sc,mt),'Tx')   = sum((r,rr,y,t,lb,outcomes) $activeMTOC(sc,mt,outcomes) , hoursPerBlock(t,lb) * 1e-3 * s2_tx(sc,mt,r,rr,y,t,lb,outcomes) ) ;
-chktotals(sc_rt(sc,mt),'Loss') = sum((r,rr,y,t,lb,outcomes) $activeMTOC(sc,mt,outcomes) , hoursPerBlock(t,lb) * 1e-3 * s2_loss(sc,mt,r,rr,y,t,lb,outcomes) ) ;
+chktotals(sc_rt(sc,mt),'Gen')  = sum((r,g,y,t,lb,scenarios) $( activeMTOC(sc,mt,scenarios)  and mapg_r(g,r) ), s2_gen(sc,mt,g,y,t,lb,scenarios) ) ;
+chktotals(sc_rt(sc,mt),'Tx')   = sum((r,rr,y,t,lb,scenarios) $activeMTOC(sc,mt,scenarios) , hoursPerBlock(t,lb) * 1e-3 * s2_tx(sc,mt,r,rr,y,t,lb,scenarios) ) ;
+chktotals(sc_rt(sc,mt),'Loss') = sum((r,rr,y,t,lb,scenarios) $activeMTOC(sc,mt,scenarios) , hoursPerBlock(t,lb) * 1e-3 * s2_loss(sc,mt,r,rr,y,t,lb,scenarios) ) ;
 chktotals(sc_rt(sc,mt),'Dem')  =
-  sum((r,t,lb,y,outcomes) $activeMTOC(sc,mt,outcomes) , ldcMWm(sc,r,t,lb,y) * hoursPerBlock(t,lb) * 1e-3 + sum(g$( mapg_r(g,r) * pdhydro(g) ), s2_pumpedgen(sc,mt,g,y,t,lb,outcomes) ) ) ;
+  sum((r,t,lb,y,scenarios) $activeMTOC(sc,mt,scenarios) , ldcMWm(sc,r,t,lb,y) * hoursPerBlock(t,lb) * 1e-3 + sum(g$( mapg_r(g,r) * pdhydro(g) ), s2_pumpedgen(sc,mt,g,y,t,lb,scenarios) ) ) ;
 
 chktotals(sc,mt,'Bal')$sc_rt(sc,mt) = chktotals(sc,mt,'Gen') - chktotals(sc,mt,'Dem') - chktotals(sc,mt,'Loss') ;
 
@@ -2519,7 +2519,7 @@ Parameter
   ;
 
 * h is dum only for mt=dis - need to do mwh for tmg and/or reo too 
-*mwh(sc,noexist(sc,g),y)$numdisyrs(sc) = 1e3 * sum((dis(mt),hY,outcomes) $( s_hdindex(sc,mt,hY,outcomes)  * ( not (ahy(hY) or mhy(hY)) ) ), s2_genYr(sc,mt,hY,g,y,outcomes) ) / numdisyrs(sc) ;
+*mwh(sc,noexist(sc,g),y)$numdisyrs(sc) = 1e3 * sum((dis(mt),hY,scenarios) $( s_hdindex(sc,mt,hY,scenarios)  * ( not (ahy(hY) or mhy(hY)) ) ), s2_genYr(sc,mt,hY,g,y,scenarios) ) / numdisyrs(sc) ;
 mwh(sc,noexist(sc,g)) = i_nameplate(sc,g) * 8760 * (1 - fof(g)) ;
 
 
@@ -2654,7 +2654,7 @@ $ if %SuppressReopt%==1 $goto NoReOpt
 *   Capture the elements of the run type - SC - hydro year tuple, i.e. the 3 looping sets:
     activeSolve(sc,mt,hY) = yes ;
 
-*   Capture the Outcome index.
+*   Capture the Scenario index.
      = yes ;
 
 * Compute depreciation and undepreciated capital by sequential year. 
