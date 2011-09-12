@@ -1,6 +1,6 @@
 * GEMgdx.gms
 
-* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/09/2011 (imm@ea.govt.nz)
 
 * NB: This program requires editing each time it is used - read the notes below.
 
@@ -43,7 +43,7 @@ $ontext
      e) Make scenario specific adjustments to load.
           i) Phase out Tiwai by 1/6 per year for 6 years in mds3 beginning in 2022.
          ii) Adjust mds1 and mds4 for added load from electric vehicles.
-        iii) Pro-rate load according to an externally provided set of adjusters by year and scenario.
+        iii) Pro-rate load according to an externally provided set of adjusters by year.
      f) Aggregate load by GXPs and months to regions and time periods.
      g) Perform a few final integrity checks on load calculations.
   7. Unload data to GDX file.
@@ -69,7 +69,7 @@ $setglobal GXPgeography	    "216 GXPs geography.csv"
 $setglobal RawHydroData	    "Hydro sequences by 36 reservoirs and months, 1932-2007, GWh.csv"
 $setglobal RawEnergy        "Annual energy forecasts for 180 GXPs, 2012-50, GWh (Dec 2009).csv"
 $setglobal ReferenceLDC     "LDC output (%NumBlks% blocks).gdx"
-$setglobal Load_Prorata     "Load pro rata.csv"
+$setglobal Load_ProRata     "Load pro rata.csv"
 
 * Output file name - the resulting GDX file will be placed in the programs directory; move it to data directory if it's a keeper.
 $setglobal miscGDXfilename  "CheckGEM_GDXstuff%NumBlks%LB.gdx"
@@ -378,37 +378,33 @@ chkload('QtyScenAdj') = chkload('QtyTYadj') + chkload('QtyEVadj') ;
 
 
 $ontext
-* iii) Pro-rate load according to an externally provided set of adjusters by year and scenarios.
-*      This adjustment was motivated by MED who use GEM in conjunction with their energy sector model (SADEM),
-*      and need to iterate GEM and SADEM until convergence is obtained. An external file of adjustment factors
-*      is required. Load, i.e. load_GXP(sc,gxp,y,m,lb), is then adjusted by the year and scenario specific
-*      scalars read into load_prorata (see below).
+* iii) Pro-rate load according to an externally provided set of adjusters defined on year. This adjustment was motivated
+*      by MED who use GEM in conjunction with their energy sector model (SADEM), and need to iterate GEM and SADEM until
+*      convergence is obtained. An external file of adjustment factors is required. Load, i.e. load_GXP(sc,gxp,y,m,lb), is
+*      then adjusted by the year-specific scalars read into proRata (see below).
 
-Parameter chkProload(sc,y,*) 'Check the arithmetic associated with pro-rating load' ;
-Set       scenario_pro(sc)   'Scenario to pro-rate, i.e. pro-rate all scenarios for which adjusters are defined' ;
-
-Table load_prorata(y,sc) 'Adjustment factors to scale load by year and scenario'
-$ondelim offlisting include %DataPath%%Load_Prorata%
+Parameters
+  chkProload(y,*)  'Check the arithmetic associated with pro-rating load'
+  load_proRata(y)  'Adjustment factors to scale load by year' /
+$ondelim offlisting include "%DataPath%\%Load_Prorata%"
 $offdelim onlisting
-  ;
+  / ;
 
-* Identify the scenarios for which load data is to be pro-rated.
-scenario_pro(sc)$sum(y, load_prorata(y,sc)) = yes ;
+* Make sure the scalars default to 1 for all years for which they are not sensibly defined. 
+load_proRata(y)$( abs(load_proRata(y)) < 0.5 ) = 1 ;
+load_proRata(y)$( abs(load_proRata(y)) > 2.0 ) = 1 ;
 
-* For all scenarios to be pro-rated, make sure the scalars default to 1 for all years for which they are not already sensibly defined. 
-load_prorata(y,scenario_pro)$( abs(load_prorata(y,scenario_pro)) < 0.5 ) = 1 ;
+* Compute check sums on energy data before pro-rating.
+chkProload(y,'Before') = sum((gxp,m,lb), load_GXP("%ThisScenario%",gxp,y,m,lb)) ;
 
 * Adjust load using pro rating factors.
-chkProload(sc,y,'Before') = sum((gxp,m,lb), load_GXP(sc,gxp,y,m,lb)) ;
-loop(sc$scenario_pro(sc),
-  load_GXP(sc,gxp,y,m,lb) = load_prorata(y,sc) * load_GXP(sc,gxp,y,m,lb) ;
-) ;
+load_GXP("%ThisScenario%",gxp,y,m,lb) = load_prorata(y) * load_GXP("%ThisScenario%",gxp,y,m,lb) ;
 
 * Compute check sums on energy data after pro-rating.
-chkProload(sc,y,'After') = sum((gxp,m,lb), load_GXP(sc,gxp,y,m,lb)) ;
-chkProload(sc,y,'Diff')  = chkProload(sc,y,'Before') - chkProload(sc,y,'After') ;
+chkProload(y,'After') = sum((gxp,m,lb), load_GXP("%ThisScenario%",gxp,y,m,lb)) ;
+chkProload(y,'Diff')  = chkProload(y,'Before') - chkProload(y,'After') ;
 
-display load_prorata, scenario_pro, chkProload ;
+display load_proRata, chkProload ;
 $offtext
 
 
