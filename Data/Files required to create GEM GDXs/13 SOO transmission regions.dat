@@ -1,0 +1,18 @@
+* 13 SOO 2008 transmission regions.dat
+* List prepared on 7 November, 2008 by Dr Phil Bishop.
+* Source: Brian Bull's GXP database - http://www.electricitycommission.govt.nz/pdfs/opdev/modelling/pdfsmodelling/pdfscds/Demand-datasheet-Apr2010.zip.
+*         The 13 transmission regions are what Brian Kirtlan uses for his energy demand forecasts.
+
+NthIstmus  "North Isthmus"
+Auckland   "Auckland"
+Waikato    "Waikato"
+BOP        "BOP"
+HwkesBay   "Hawkes Bay"
+Taranaki   "Taranaki"
+Central    "Central"
+Wlngton    "Wellington"
+NlsnMlb    "Nelson Marlborough"
+Cantbury   "Canterbury"
+SthCanty   "South Canterbury"
+WestCoast  "West Coast"
+OtagSthld  "Otago Southland"
