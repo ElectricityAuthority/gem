@@ -854,3 +854,23 @@ $include GEMlrmc.gms
 
 
 * End of file.
+
+Parameters
+  numHYears
+  sumHydro
+  hydroByPlant(g,hY,t)
+  HydroByIsland(ild,hY,t)
+  AvgHydroByIsland(ild,t)
+  ;
+
+numHYears = card(hY) ;
+
+HydroByPlant(g,hY,t) = sum((mapv_g(v,g),mapm_t(m,t)), historicalHydroOutput(v,hY,m)) ;
+
+HydroByIsland(ild,hY,t) = sum(mapg_ild(g,ild), HydroByPlant(g,hY,t) ) ;
+
+AvgHydroByIsland(ild,t) = sum(hY, HydroByIsland(ild,hY,t)) / numHYears ;
+
+sumHydro = numHYears * sum((ild,t), AvgHydroByIsland(ild,t)) ;
+
+Display sumHydro, hydroByPlant, HydroByIsland, AvgHydroByIsland ;
