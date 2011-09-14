@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 13/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 14/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -94,9 +94,9 @@ REFURBCOST.fx(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 
 * Restrict generation:
 * Don't allow generation unless the unit is in validYrOperate; validYrOperate embodies the appropriate date for existing, committed, and new units.
-GEN.fx(g,y,t,lb,scenarios)$( not validYrOperate(g,y,t) ) = 0 ;
+GEN.fx(g,y,t,lb,scenarios)$( not validYrOperate(g,y) ) = 0 ;
 * Force generation from the must-run plant, i.e base load (convert MW capacity to GWh for each load block).
-GEN.fx(g,y,t,lb,scenarios)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y,t) ) =
+GEN.fx(g,y,t,lb,scenarios)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y) ) =
 1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
 
 * Place restrictions on VOLL plants:
@@ -129,7 +129,7 @@ RESVREQINT.lo(rc,ild,y,t,lb,scenarios)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_rese
 RESV.up(g,rc,y,t,lb,scenarios)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
 
 * Don't allow reserves from units prior to committed date or earliest allowable operation or if plant is retired.
-RESV.fx(g,rc,y,t,lb,scenarios)$( not validYrOperate(g,y,t) ) = 0 ;
+RESV.fx(g,rc,y,t,lb,scenarios)$( not validYrOperate(g,y) ) = 0 ;
 
 
 
@@ -375,7 +375,8 @@ execute 'gdxmerge "%OutPath%\%runName%\GDX\Report output\"*.gdx output="%OutPath
 Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
   y t f k g s o lb i r e ild ps scenarios rc n tgc hY
-  mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r paths nwd swd interIsland firstPeriod firstYr lastYr allButFirstYr pumpedHydroPlant wind gas diesel
+  mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r isIldEqReg firstPeriod firstYr lastYr allButFirstYr
+  paths nwd swd interIsland pumpedHydroPlant wind gas diesel
   thermalFuel i_fuelQuantities renew schedHydroPlant nsegment demandGen 
   allSolves weightScenariosBySet
 * Financial, capex and cost related sets and parameters
