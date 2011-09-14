@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 13/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 14/09/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -232,9 +232,9 @@ Sets
                                                                                         Sequential 'Use a sequentially developed mapping of hydro years to modelled years' /
   ild                                           'Islands'                             / ni         'North Island'
                                                                                         si         'South Island' /
-  aggR                                          'Aggregate regional entities'         / nz         'New Zealand'
-                                                                                        ni         'North Island'
-                                                                                        si         'South Island' /
+  aggR                                          'Aggregate regional entities'         / ni         'North Island'
+                                                                                        si         'South Island'
+                                                                                        nz         'New Zealand' /
   m                                             '12 months'                           / Jan        'January'
                                                                                         Feb        'February'
                                                                                         Mar        'March'
@@ -329,9 +329,10 @@ Sets
   mapi_r(i,r)                                   'Map regions to substations'
   mapi_e(i,e)                                   'Map zones to substations'
   mapild_r(ild,r)                               'Map the regions to islands'
-  mapAggR_r(aggR,r)                             'Map the regions to aggregated regional entities (this is primarily to facilitate reporting)'
+  mapAggR_r(aggR,r)                             'Map the regions to the aggregated regional entities (this is primarily to facilitate reporting)'
   mapv_g(v,g)                                   'Map generating plant to reservoirs'
   thermalFuel(f)                                'Thermal fuels'
+  isIldEqReg(ild,r)                             'Figure out if the region labels are identical to the North and South island labels (a reporting facilitation device)' 
 * Financial parameters.
 * Fuel prices and quantity limits.
 * Generation data.
@@ -353,7 +354,7 @@ Sets
   possibleToRetire(g)                           'Generating plant that may possibly be retired (exogenously or endogenously)'
   endogenousRetireDecisnYrs(g,y)                'The years in which generation plant able to be endogenously retired can take the decision to retire'
   endogenousRetireYrs(g,y)                      'The years in which generation plant able to be endogenously retired can actually be retired'
-  validYrOperate(g,y,t)                         'Valid years and periods in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years'
+  validYrOperate(g,y)                           'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years'
 * Load data.
 * Transmission data.
   slackBus(r)                                   'Designate a region to be the slack or reference bus'
@@ -637,7 +638,7 @@ calc_scenarioCosts(sc)..
 * Lost load
     sum(s, 1e3 * VOLLGEN(s,y,t,lb,sc) * i_VOLLcost(s) ) +
 * Generation costs
-    sum(g$validYrOperate(g,y,t), 1e3 * GEN(g,y,t,lb,sc) * srmc(g,y,sc) * sum(mapg_e(g,e), locFac_Recip(e)) ) +
+    sum(g$validYrOperate(g,y), 1e3 * GEN(g,y,t,lb,sc) * srmc(g,y,sc) * sum(mapg_e(g,e), locFac_Recip(e)) ) +
 * Cost of providing reserves ($m)
     sum((g,rc), RESV(g,rc,y,t,lb,sc) * i_plantReservesCost(g,rc) ) +
 *++++++++++++++++++
@@ -694,7 +695,7 @@ balance_capacity(g,y)..
 * VOLL + Supply + net imports = demand in each block + any pumped generation.
 bal_supdem(r,y,t,lb,sc)..
   sum(maps_r(s,r), VOLLGEN(s,y,t,lb,sc)) +
-  sum(mapg_r(g,r)$validYrOperate(g,y,t), GEN(g,y,t,lb,sc)) +
+  sum(mapg_r(g,r)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) +
 * Transmission and losses with transportation formulation
  (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,sc) - LOSS(rr,r,y,t,lb,sc) ) * hoursPerBlock(t,lb) * 0.001 ) ) -
   sum(rr$paths(r,rr),   ( TX(r,rr,y,t,lb,sc) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 0 ) +
@@ -702,7 +703,7 @@ bal_supdem(r,y,t,lb,sc)..
  (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,sc) - 0.5 * LOSS(rr,r,y,t,lb,sc) ) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 1 )
   =g=
   ldcMW(r,y,t,lb,sc) * hoursPerBlock(t,lb) * 0.001 +
-  sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y,t) ), PUMPEDGEN(g,y,t,lb,sc)) ;
+  sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y) ), PUMPEDGEN(g,y,t,lb,sc)) ;
 
 * Ensure enough capacity to meet peak demand and the winter capacity margin in NZ.
 peak_NZ(y,sc)..
@@ -723,29 +724,29 @@ noWindPeak_NI(y,sc)..
   =g= peakLoadNI(y,sc) ;
 
 * Ensure generation is less than capacity times max capacity factor in each block.
-limit_maxgen(validYrOperate(g,y,t),lb,sc)$( ( exist(g) or possibleToBuild(g) ) * ( not useReserves ) )..
+limit_maxgen(validYrOperate(g,y),t,lb,sc)$( ( exist(g) or possibleToBuild(g) ) * ( not useReserves ) )..
   GEN(g,y,t,lb,sc) =l= 1e-3 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Ensure generation is greater than capacity times min capacity factor in each block.
-limit_mingen(validYrOperate(g,y,t),lb,sc)$minCapFactPlant(g,y,t)..
+limit_mingen(validYrOperate(g,y),t,lb,sc)$minCapFactPlant(g,y,t)..
   GEN(g,y,t,lb,sc) =g= 1e-3 * CAPACITY(g,y) * minCapFactPlant(g,y,t) * hoursPerBlock(t,lb) ;
 
 * Minimum ultilisation of plant by technology.
 minutil(g,k,y,sc)$( i_minUtilisation(g) * i_minUtilByTech(y,k) * mapg_k(g,k) )..
-  sum((t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,sc)) + MINUTILSLACK(y) =g= i_minUtilByTech(y,k) * 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ;
+  sum((t,lb)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) + MINUTILSLACK(y) =g= i_minUtilByTech(y,k) * 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ;
 
 * Thermal fuel limits.
 limit_fueluse(thermalfuel(f),y,sc)$( ( gas(f) * (i_fuelQuantities(f,y) > 0) * (i_fuelQuantities(f,y) < 999) ) or ( diesel(f) * (i_fuelQuantities(f,y) > 0) ) )..
-  1e-6 * sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y,t) ), i_heatrate(g) * GEN(g,y,t,lb,sc) ) =l= i_fuelQuantities(f,y) + FUELSLACK(y) ;
+  1e-6 * sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y) ), i_heatrate(g) * GEN(g,y,t,lb,sc) ) =l= i_fuelQuantities(f,y) + FUELSLACK(y) ;
 
 * Impose a limit on total energy generated from any one fuel type.
 limit_Nrg(f,y,sc)$i_maxNrgByFuel(f)..
-  sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y,t) ), GEN(g,y,t,lb,sc)) =l= i_maxNrgByFuel(f) * sum((g,t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,sc)) ;
+  sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y) ), GEN(g,y,t,lb,sc)) =l= i_maxNrgByFuel(f) * sum((g,t,lb)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) ;
 
 * Impose a minimum requirement on total energy generated from all renewable sources.
 minReq_RenNrg(y,sc)$renNrgShrOn..
-  i_renewNrgShare(y) * ( sum((g,t,lb)$validYrOperate(g,y,t), GEN(g,y,t,lb,sc)) + i_distdGenRenew(y) + i_distdGenFossil(y) ) =l=
-  sum((g,k,t,lb)$( mapg_k(g,k) * renew(k) * validYrOperate(g,y,t)), GEN(g,y,t,lb,sc)) + i_distdGenRenew(y) +
+  i_renewNrgShare(y) * ( sum((g,t,lb)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) + i_distdGenRenew(y) + i_distdGenFossil(y) ) =l=
+  sum((g,k,t,lb)$( mapg_k(g,k) * renew(k) * validYrOperate(g,y)), GEN(g,y,t,lb,sc)) + i_distdGenRenew(y) +
   RENNRGPENALTY(y) ;
 
 * Impose a minimum requirement on installed renewable capacity.
@@ -755,19 +756,19 @@ minReq_RenCap(y)$i_renewCapShare(y)..
   RENCAPSLACK(y) ;
 
 * Limit hydro according to energy available in inflows.
-limit_hydro(validYrOperate(g,y,t),sc)$schedHydroPlant(g)..
+limit_hydro(validYrOperate(g,y),t,sc)$schedHydroPlant(g)..
   sum(lb, GEN(g,y,t,lb,sc)) =l= modelledHydroOutput(g,y,t,sc) + HYDROSLACK(y) ;
 
 * Over the period, ensure that generation from pumped hydro is less than the energy pumped.
-limit_pumpgen1(validYrOperate(g,y,t),sc)$pumpedHydroPlant(g)..
+limit_pumpgen1(validYrOperate(g,y),t,sc)$pumpedHydroPlant(g)..
   sum(lb, GEN(g,y,t,lb,sc)) =l= i_PumpedHydroEffic(g) * sum(lb, PUMPEDGEN(g,y,t,lb,sc) ) ;
 
 * Over the period, ensure that the energy pumped is less than the storage capacity.
-limit_pumpgen2(validYrOperate(g,y,t),sc)$pumpedHydroPlant(g)..
+limit_pumpgen2(validYrOperate(g,y),t,sc)$pumpedHydroPlant(g)..
   i_PumpedHydroEffic(g) * sum(lb, PUMPEDGEN(g,y,t,lb,sc) ) =l= sum(mapm_t(m,t), 1) * i_PumpedHydroMonth(g) ;
 
 * The MW pumped can be no greater than the capacity of the project.
-limit_pumpgen3(validYrOperate(g,y,t),lb,sc)$pumpedHydroPlant(g)..
+limit_pumpgen3(validYrOperate(g,y),t,lb,sc)$pumpedHydroPlant(g)..
   PUMPEDGEN(g,y,t,lb,sc) =l= 0.001 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Piecewise linear transmission losses.
@@ -820,7 +821,7 @@ resvsinglereq1(rc,ild,y,t,lb,sc)$( useReserves * singleReservesReqF(rc) )..
   sum(g, RESV(g,rc,y,t,lb,sc)) + RESVVIOL(rc,ild,y,t,lb,sc) =g= RESVREQINT(rc,ild,y,t,lb,sc) ;
 
 * Generator energy constraint - substitute for limit_maxgen when reserves are used.
-genmaxresv1(validYrOperate(g,y,t),lb,sc)$( useReserves * ( exist(g) or possibleToBuild(g) ) )..
+genmaxresv1(validYrOperate(g,y),t,lb,sc)$( useReserves * ( exist(g) or possibleToBuild(g) ) )..
   1000 * GEN(g,y,t,lb,sc) + sum(rc, RESV(g,rc,y,t,lb,sc)) =l= CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Reserve transfers - Constraint 1.
@@ -839,8 +840,8 @@ resvtrfr3(rc,ild1,ild,y,t,lb,sc)$( useReserves * interIsland(ild1,ild) * ( not s
   RESVTRFR(rc,ild1,ild,y,t,lb,sc) =l= sum(mapg_ild(g,ild1), RESV(g,rc,y,t,lb,sc) ) ;
 
 * Internal reserve requirement determined by the largest dispatched unit during each period.
-resvrequnit(g,rc,ild,y,t,lb,sc)$( validYrOperate(g,y,t) * useReserves * ( exist(g) or possibleToBuild(g) ) * mapg_ild(g,ild) *
-                                  ( (i_reserveReqMW(y,ild,rc) = -1) or (i_reserveReqMW(y,ild,rc) = -3) )  )..
+resvrequnit(g,rc,ild,y,t,lb,sc)$( useReserves *
+  validYrOperate(g,y) * ( exist(g) or possibleToBuild(g) ) * mapg_ild(g,ild) * ( (i_reserveReqMW(y,ild,rc) = -1) or (i_reserveReqMW(y,ild,rc) = -3) )  )..
   RESVREQINT(rc,ild,y,t,lb,sc) =g= 1000 * GEN(g,y,t,lb,sc) * i_UnitLargestProp(g) ;
 
 * Internal island reserve requirement.
@@ -866,13 +867,13 @@ resvtrfrdef(interIsland(ild1,ild),y,t,lb,sc)$useReserves..
   =l= NORESVTRFR(ild1,ild,y,t,lb,sc) * bigm(ild1,ild) ;
 
 * Constraint to define the offline reserve capability.
-resvoffcap(validYrOperate(g,y,t),lb,sc)$( useReserves * ( exist(g) or possibleToBuild(g) ) * (sum(rc, reservesCapability(g,rc))) * ( not i_offlineReserve(g) ) )..
+resvoffcap(validYrOperate(g,y),t,lb,sc)$( useReserves * ( exist(g) or possibleToBuild(g) ) * (sum(rc, reservesCapability(g,rc))) * ( not i_offlineReserve(g) ) )..
   sum(rc, RESV(g,rc,y,t,lb,sc)) =l= 1000 * GEN(g,y,t,lb,sc) ;
 
 * Constraint to ensure that reserves cover a certain proportion of wind generation.
 resvreqwind(rc,ild,y,t,lb,sc)$( useReserves * ( (i_reserveReqMW(y,ild,rc) = -2) or (i_reserveReqMW(y,ild,rc) = -3) ) * windCoverPropn(rc) )..
   RESVREQINT(rc,ild,y,t,lb,sc)
-  =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y,t) ), 1000 * GEN(g,y,t,lb,sc) ) ;
+  =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y) ), 1000 * GEN(g,y,t,lb,sc) ) ;
 
 Model DISP Dispatch model with build forced and timing fixed  /
   objectivefn, calc_scenarioCosts, calc_refurbcost, calc_txcapcharges,

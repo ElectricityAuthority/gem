@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 13/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 14/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -179,6 +179,9 @@ loop(maplocations(i,r,e,ild),
 mapAggR_r('nz',r) = yes ;
 mapAggR_r('ni',r) = yes$sum(mapild_r('ni',r), 1) ;
 mapAggR_r('si',r) = yes$sum(mapild_r('si',r), 1) ;
+* Figure out if there are just 2 regions and if their names are identical to the island names.
+loop(mapild_r(ild,r)$( sameas(r,'ni') or sameas(r,'si') ), isIldEqReg(ild,r) = yes ) ;
+isIldEqReg(ild,r)$( card(isIldEqReg) <> 2 ) = no ;
 * Generation plant mappings
 loop(mapgenplant(g,k,i,o),
   mapg_k(g,k) = yes ;
@@ -296,12 +299,12 @@ loop(movers(k), moverExceptions(noExist(g))$( mapg_k(g,k) * ( i_fixComYr(g) >= f
 * with the earliest year in which it may be commissioned; it is not valid to operate any plant that has come to the end of its refurbished life
 * (i.e. can't repeatedly refurbish); it is not valid to operate any plant that has been exogenously retired, or decommissioned; and it is not
 * valid to operate any plant that is never able to be built.
-validYrOperate(exist(g),y,t) = yes ;
-validYrOperate(commit(g),y,t)$( yearNum(y) >= i_fixComYr(g) ) = yes ;
-validYrOperate(new(g),y,t)$( yearNum(y) >= i_EarlyComYr(g) ) = yes ;
-validYrOperate(g,y,t)$( i_refurbDecisionYear(g) * ( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) ) = no ;
-validYrOperate(g,y,t)$( i_ExogenousRetireYr(g) * ( yearNum(y) >= i_ExogenousRetireYr(g) ) ) = no ;
-validYrOperate(neverBuild(g),y,t) = no ;
+validYrOperate(exist(g),y) = yes ;
+validYrOperate(commit(g),y)$( yearNum(y) >= i_fixComYr(g) ) = yes ;
+validYrOperate(new(g),y)$( yearNum(y) >= i_EarlyComYr(g) ) = yes ;
+validYrOperate(g,y)$( i_refurbDecisionYear(g) * ( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i_refurbishmentLife(k)) ) ) = no ;
+validYrOperate(g,y)$( i_ExogenousRetireYr(g) * ( yearNum(y) >= i_ExogenousRetireYr(g) ) ) = no ;
+validYrOperate(neverBuild(g),y) = no ;
 
 * xii) North and South Island plant
 nigen(g)$mapg_ild(g,'ni') = yes ;  nigen(neverBuild(g)) = no ;
@@ -680,7 +683,7 @@ lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
 assumedGWh(g) = sum(mapg_k(g,k), 8.76 * i_capFacTech(k) * i_nameplate(g)) ;
 assumedGWh(pumpedHydroPlant(g)) = i_PumpedHydroEffic(g) * sum(mapm_t(m,t), 1) * i_PumpedHydroMonth(g) ;
 
-MWtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), i_nameplate(g)) ;
+MWtoBuild(k,aggR)  = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), i_nameplate(g)) ;
 GWhtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), assumedGWh(g)) ;
 
 loop(defaultScenario(scenarios),
@@ -724,16 +727,22 @@ loop(allSolves(experiments,steps,scenarioSets),
 
 
 * Write the plant data summaries.
-$set plantDataHdr 'MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover' ;
+$set plantDataHdr 'MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region' ;
 put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
-  'First modelled year:'        @38 firstYear:<4:0 /
-  'Last modelled year:'         @38 lastYear:<4:0 //
+  'First modelled year:'                @38 firstYear:<4:0 /
+  'Last modelled year:'                 @38 lastYear:<4:0 //
   'Summary counts' /
-  'Plant in input file:'        @38 card(g):<4:0 /
-  'Existing plant:'             @38 card(exist):<4:0 /
-  'Committed plant:'            @38 card(commit):<4:0 /
-  'Plant not able to be built:' @38 card(neverBuild):<4:0 /
-  'Plant able to be retired:'   @38 card(possibleToRetire):<4:0 //
+  'Plant in input file:'                @38 card(g):<4:0 /
+  'Existing plant:'                     @38 card(exist):<4:0 /
+  'Existing plant able to be retired:'  @38 card(possibleToRetire):<4:0 /
+  'Committed plant:'                    @38 card(commit):<4:0 /
+  'Plant not able to be built:'         @38 card(neverBuild):<4:0 /
+  'Plant able to be built:' /
+  '  North Island'                      @38 put sum(mapg_ild(g,'ni')$possibleToBuild(g), 1):<4:0 /
+  '  South Island'                      @38 put sum(mapg_ild(g,'si')$possibleToBuild(g), 1):<4:0 /
+  'MW able to be built:' /
+  '  North Island'                      @38 put sum(mapg_ild(g,'ni')$possibleToBuild(g), i_nameplate(g)):<6:0 /
+  '  South Island'                      @38 put sum(mapg_ild(g,'si')$possibleToBuild(g), i_nameplate(g)):<6:0 //
 
   'VoLL plant (note that VoLL plant are not counted with generating plant)' /
   'VoLL plant count:'                   @38 (sum(s$i_VOLLcap(s), 1)):<4:0 /
@@ -773,11 +782,12 @@ loop((k,exist(g))$mapg_k(g,k),
   if(neverBuild(g),   put 'Y' else put '-' ) put @98 ;
   if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @105 ;
   if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @112 ;
-  if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @120 ;
-  if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @126 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @120 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @126 ;
   if(possibleToRetire(g),     put 'Y' else put '-' ) put @132 ;
   if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @139 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @148 '-' @155 g.te(g) ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @148 '-' @152 ;
+  loop(mapg_r(g,r), put r.tl ) put @160 g.te(g) ;
 ) ;
 put // 'Non-existing plant' @34 "%plantDataHdr%" ;
 loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
@@ -788,12 +798,13 @@ loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
   if(neverBuild(g),   put 'Y' else put '-' ) put @98 ;
   if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @105 ;
   if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @112 ;
-  if(sum(y,     validYrBuild(g,y)),     put 'Y' else put '-' ) put @120 ;
-  if(sum((y,t), validYrOperate(g,y,t)), put 'Y' else put '-' ) put @126 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @120 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @126 ;
   if(possibleToRetire(g),     put 'Y' else put '-' ) put @132 ;
   if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @139 ;
   if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @148 ;
-  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @155 g.te(g) ;
+  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @152 ;
+  loop(mapg_r(g,r), put r.tl ) put @160 g.te(g) ;
 ) ;
 
 
@@ -837,10 +848,10 @@ loop(ild, put / @2 ild.tl @14 (100 * AClossFactors(ild)):>10:2 ) ;
 put // 'Scenario-specific energy factors' ;
 loop(scenarios, put / @2 scenarios.tl @14 scenarioNRGfactor(scenarios):>10:2 ) ;
 
-put // 'Energy, GWh' @14 loop(r, put r.tl:>10 ) loop(aggR, put aggR.tl:>10 ) ;
+put // 'Energy, GWh' @14 loop(r$( card(isIldEqReg) <> 2 ), put r.tl:>10 ) loop(aggR, put aggR.tl:>10 ) ;
 loop(y,
   put / @2 y.tl @14
-  loop(r,    put loadByRegionYear(r,y):>10:0 ) ;
+  loop(r$( card(isIldEqReg) <> 2 ), put loadByRegionYear(r,y):>10:0 ) ;
   loop(aggR, put loadByAggRegionYear(aggR,y):>10:0 ) ;
 ) ;
 
@@ -854,23 +865,3 @@ $include GEMlrmc.gms
 
 
 * End of file.
-
-Parameters
-  numHYears
-  sumHydro
-  hydroByPlant(g,hY,t)
-  HydroByIsland(ild,hY,t)
-  AvgHydroByIsland(ild,t)
-  ;
-
-numHYears = card(hY) ;
-
-HydroByPlant(g,hY,t) = sum((mapv_g(v,g),mapm_t(m,t)), historicalHydroOutput(v,hY,m)) ;
-
-HydroByIsland(ild,hY,t) = sum(mapg_ild(g,ild), HydroByPlant(g,hY,t) ) ;
-
-AvgHydroByIsland(ild,t) = sum(hY, HydroByIsland(ild,hY,t)) / numHYears ;
-
-sumHydro = numHYears * sum((ild,t), AvgHydroByIsland(ild,t)) ;
-
-Display sumHydro, hydroByPlant, HydroByIsland, AvgHydroByIsland ;

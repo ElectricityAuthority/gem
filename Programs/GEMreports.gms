@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 13/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 14/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -10,10 +10,10 @@
 
 
 $ontext
- This program generates GEM reports - human-readable files, pictures, or files to be read by other
- applications for further processing.
- This program is to be run after GEMsolve. It does "not" start from GEMdeclarations.g00. All symbols
- required in this program are declared here and/or are imported from GDX files.
+ This program generates GEM reports - human-readable files, files to be read by other applications for further processing,
+ or pictures. It is to be invoked subsequent to GEMsolve. It does "not" start from GEMdeclarations.g00. All symbols required
+ in this program are declared here. Set membership and data values are imported from the default (or base case) run version
+ input GDX file or merged GDX files.
 
  Code sections:
   1. Declare required symbols and load data.
@@ -30,56 +30,58 @@ $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolc
 *===============================================================================================
 * 1. Declare required symbols and load data.
 
+* Declare and initialise hard-coded sets - copied from GEMdeclarations.
+Sets
+  steps             'Steps in an experiment'              / timing     'Solve the timing problem, i.e. timing of new generation/or transmission investment'
+                                                            reopt      'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
+                                                            dispatch   'Solve for the dispatch only with investment timing fixed'  /
+  hydroSeqTypes     'Types of hydro sequences to use'     / Same       'Use the same sequence of hydro years to be used in every modelled year'
+                                                            Sequential 'Use a sequentially developed mapping of hydro years to modelled years' /
+  ild               'Islands'                             / ni         'North Island'
+                                                            si         'South Island' /
+  aggR              'Aggregate regional entities'         / ni         'North Island'
+                                                            si         'South Island'
+                                                            nz         'New Zealand' /
+  ;
+
 * Initialise set y with values from GEMsettings.inc.
 Set y 'Modelled calendar years' / %firstYear% * %lastYear% / ;
 
 * Declare the fundamental sets required for reporting.
 Sets
-  k              'Generation technologies'
-  g              'Generation plant'
-  s              'Shortage or VOLL plants'
-  o              'Owners of generating plant'
-  i              'Substations'
-  r              'Regions'
-  e              'Zones'
-  t              'Time periods (within a year)'
-  lb             'Load blocks'
-  rc             'Reserve classes'
-  hY             'Hydrology output years' ;
+  k                 'Generation technologies'
+  g                 'Generation plant'
+  s                 'Shortage or VOLL plants'
+  o                 'Owners of generating plant'
+  i                 'Substations'
+  r                 'Regions'
+  e                 'Zones'
+  t                 'Time periods (within a year)'
+  lb                'Load blocks'
+  rc                'Reserve classes'
+  hY                'Hydrology output years' ;
 
 Alias (i,ii), (r,rr) ;
 
 * Declare the selected subsets and mapping sets required for reporting.
 Sets
-  firstPeriod(t) 'First time period (i.e. period within the modelled year)'
-  nwd(r,rr)      'Northward direction of flow on Benmore-Haywards HVDC'
-  swd(r,rr)      'Southward direction of flow on Benmore-Haywards HVDC'
-  paths(r,rr)    'All valid transmission paths'
-  mapg_k(g,k)    'Map technology types to generating plant'
-  mapg_o(g,o)    'Map plant owners to generating plant'
-  mapg_r(g,r)    'Map regions to generating plant'
-  mapg_e(g,e)    'Map zones to generating plant'
-  demandGen(k)   'Demand side technologies modelled as generation'
-  sigen(g)       'South Island generation plant'  ;
+  firstPeriod(t)    'First time period (i.e. period within the modelled year)'
+  nwd(r,rr)         'Northward direction of flow on Benmore-Haywards HVDC'
+  swd(r,rr)         'Southward direction of flow on Benmore-Haywards HVDC'
+  paths(r,rr)       'All valid transmission paths'
+  mapg_k(g,k)       'Map technology types to generating plant'
+  mapg_o(g,o)       'Map plant owners to generating plant'
+  mapg_r(g,r)       'Map regions to generating plant'
+  mapg_e(g,e)       'Map zones to generating plant'
+  mapAggR_r(aggR,r) 'Map the regions to the aggregated regional entities (this is primarily to facilitate reporting)'
+  isIldEqReg(ild,r) 'Figure out if the region labels are identical to the North and South island labels (a reporting facilitation device)' 
+  demandGen(k)      'Demand side technologies modelled as generation'
+  sigen(g)          'South Island generation plant' ;
 
-* Load set membership from the GDX file containing the base case run version.
+* Load set membership from the GDX file containing the default or base case run version.
 $gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName% - %baseRunVersion%.gdx"
 $loaddc k g s o i r e t lb rc hY
-$loaddc firstPeriod nwd swd paths mapg_k mapg_o mapg_r mapg_e demandGen sigen
-
-* Declare and initialise hard-coded sets - copied from GEMdeclarations.
-Sets
-  steps          'Steps in an experiment'              / timing     'Solve the timing problem, i.e. timing of new generation/or transmission investment'
-                                                         reopt      'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
-                                                         dispatch   'Solve for the dispatch only with investment timing fixed'  /
-  hydroSeqTypes  'Types of hydro sequences to use'     / Same       'Use the same sequence of hydro years to be used in every modelled year'
-                                                         Sequential 'Use a sequentially developed mapping of hydro years to modelled years' /
-  ild            'Islands'                             / ni         'North Island'
-                                                         si         'South Island' /
-  aggR           'Aggregate regional entities'         / nz         'New Zealand'
-                                                         ni         'North Island'
-                                                         si         'South Island' /
-  ;
+$loaddc firstPeriod nwd swd paths mapg_k mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen sigen
 
 * Need steps for the non-free reserves stuff - this may yet get deleted!
 Set stp 'Steps'  / stp1 * stp5 / ;
@@ -125,7 +127,7 @@ $loaddc s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni
 Sets
   possibleToBuild(runVersions,g)                            'Generating plant that may possibly be built in any valid build year'
   possibleToRefurbish(runVersions,g)                        'Generating plant that may possibly be refurbished in any valid modelled year'
-  validYrOperate(runVersions,g,y,t)                         'Valid years and periods in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years' ;
+  validYrOperate(runVersions,g,y)                           'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years' ;
 
 Parameters
   i_fixedOM(runVersions,g)                                  'Fixed O&M costs by plant, $/kW/year'
@@ -177,6 +179,7 @@ Sets
                                                     obj_Slacks      'Value of all slacks' / ;
 
 Parameters
+  cntr                                             'A counter'
   objComponents(*,*,*,*,objc)                      'Components of objective function value'
   scenarioWeight(scenarios)                        'Individual scenario weights'
   loadByRegionAndYear(*,*,*,*,r,y)                 'Load by region and year, GWh'
@@ -209,7 +212,7 @@ loop((rv,reportDomain(experiments,steps,scenarioSets)),
   objComponents(rv,reportDomain,'obj_refurb')    = 1e-6 * sum((y,firstPeriod(t),possibleToRefurbish(rv,g))$refurbCapCharge(rv,g,y), PVfacG(rv,y,t) * s_REFURBCOST(rv,reportDomain,g,y) ) ;
   objComponents(rv,reportDomain,'obj_txcapex')   = sum((paths,y,firstPeriod(t)), PVfacT(rv,y,t) * s_TXCAPCHARGES(rv,reportDomain,paths,y) ) ;
   objComponents(rv,reportDomain,'obj_fixOM')     = 1e-3 * (1 - taxRate) * sum((g,y,t), PVfacG(rv,y,t) * ( 1/card(t) ) * i_fixedOM(rv,g) * s_CAPACITY(rv,reportDomain,g,y) ) ;
-  objComponents(rv,reportDomain,'obj_varOM')     = 1e-3 * (1 - taxRate) * sum((validYrOperate(rv,g,y,t),lb,sc), scenarioWeight(sc) * PVfacG(rv,y,t) * s_GEN(rv,reportDomain,g,y,t,lb,sc) * srmc(rv,g,y,sc) * sum(mapg_e(g,e), locFac_Recip(rv,e)) ) ;
+  objComponents(rv,reportDomain,'obj_varOM')     = 1e-3 * (1 - taxRate) * sum((validYrOperate(rv,g,y),t,lb,sc), scenarioWeight(sc) * PVfacG(rv,y,t) * s_GEN(rv,reportDomain,g,y,t,lb,sc) * srmc(rv,g,y,sc) * sum(mapg_e(g,e), locFac_Recip(rv,e)) ) ;
   objComponents(rv,reportDomain,'obj_hvdc')      = 1e-3 * (1 - taxRate) * sum((y,t), PVfacG(rv,y,t) * ( 1/card(t) ) * (
                                                    sum((g,k,o)$((not demandGen(k)) * sigen(g) * possibleToBuild(rv,g) * mapg_k(g,k) * mapg_o(g,o)), i_HVDCshr(rv,o) * i_HVDClevy(rv,y) * s_CAPACITY(rv,reportDomain,g,y)) ) ) ;
   objComponents(rv,reportDomain,'VOLLcost')      = 1e-3 * (1 - taxRate) * sum((s,y,t,lb,sc), scenarioWeight(sc) * PVfacG(rv,y,t) * s_VOLLGEN(rv,reportDomain,s,y,t,lb,sc) * i_VOLLcost(rv,s) ) ;
@@ -263,15 +266,16 @@ loop(objc,
 
 put //// 'MW built by technology and region' ;
 loop(rv,
-  put / rv.tl ; loop(r, put r.tl ) ;
+  put / rv.tl ; loop(r$( card(isIldEqReg) <> 2 ), put r.tl ) loop(aggR, put aggR.tl ) ;
   loop(k, put / k.tl
-    loop(r, put sum(reportDomain, builtByTechRegion(rv,reportDomain,k,r)) ) ;
+    loop(r$( card(isIldEqReg) <> 2 ), put sum(reportDomain, builtByTechRegion(rv,reportDomain,k,r)) ) ;
+    loop(aggR, put sum((reportDomain,r)$mapAggR_r(aggR,r), builtByTechRegion(rv,reportDomain,k,r)) ) ;
     put k.te(k) ;
   ) ;
   put / ;
 ) ;
 
-put /// 'Capacity by technology and region and year, MW' ;
+put /// 'Capacity by technology and region and year, MW (existing plus built less retired)' ;
 loop(rv, put / rv.tl '' ; loop(y, put y.tl ) ;
   loop((k,r),
     put / k.tl, r.tl ;
@@ -280,13 +284,32 @@ loop(rv, put / rv.tl '' ; loop(y, put y.tl ) ;
   put / ;
 ) ;
 
-put /// 'Generation by technology and region and year, GWh' ;
-loop(rv, put / rv.tl '' ; loop(y, put y.tl ) ;
-  loop((k,r),
-    put / k.tl, r.tl ;
-    loop(y, put sum(reportDomain, genByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
+cntr = 0 ;
+put /// 'Generation by technology, region and year, GWh' ;
+loop(rv, put / rv.tl '' ; loop(y, put y.tl ) ; put / ;
+  if(card(isIldEqReg) <> 2,
+    loop(k,
+      put k.tl ;
+      loop(r,
+        put$(cntr = 0) r.tl ; put$(cntr > 0) '' r.tl ; cntr = cntr + 1 ;
+        loop(y, put sum(reportDomain, genByTechRegionYear(rv,reportDomain,k,r,y)) ) put / ;
+      ) ;
+      loop(aggR,
+        put '' aggR.tl ;
+        loop(y, put sum((reportDomain,r)$mapAggR_r(aggR,r), genByTechRegionYear(rv,reportDomain,k,r,y)) ) put / ;
+      ) ;
+    cntr = 0 ;
+    ) ;
+    else
+    loop(k,
+      put k.tl ;
+      loop(aggR,
+        put$(cntr = 0) aggR.tl ; put$(cntr > 0) '' aggR.tl ; cntr = cntr + 1 ;
+        loop(y, put sum((reportDomain,r)$mapAggR_r(aggR,r), genByTechRegionYear(rv,reportDomain,k,r,y)) ) put / ;
+      ) ;
+      cntr = 0 ;
+    ) ;
   ) ;
-  put / ;
 ) ;
 
 put /// 'Interregional transmission by year, GWh' ;
