@@ -30,7 +30,7 @@ putclose bat
 
   'copy "%ProgPath%\GEMdeclarations.gms" "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMdeclarations.g00" "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%\CollectResults.txt"  "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\CollectResults.inc"  "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMdata.gms"         "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMsolve.gms"        "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMreports.gms"      "%OutPath%\%runName%\Archive\"' /
@@ -49,7 +49,7 @@ Some notes for future development of emi (the EA models GUI):
   - If GEMdeclarations was invoked, emi needs to know if it was successful. If it returned errorlevel = 1
     and aborted, then do not proceed with the rest of the job and inform the user that the job is terminating.
   - If GEMdeclarations is not invoked, i.e. because the user has a runtime license (mode=1), then check for the
-    presence of GEMdeclarations.g00 and CollectResults.txt in the current directory. These two files should have
+    presence of GEMdeclarations.g00 and CollectResults.inc in the current directory. These two files should have
     been distributed with GEM. But if they have been removed or deleted by the user, then the job should not and
     cannot proceed. The user should be informed as to why the job is terminating.
 $offtext

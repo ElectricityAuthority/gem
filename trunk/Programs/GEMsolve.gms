@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 14/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -304,7 +304,7 @@ $     label NoTrace3
       display 'solve report:', slacks, penalties, solveReport ;
 
 *     Collect up solution values - by experiment, step and scenarioSet.
-$     include CollectResults.txt
+$     include CollectResults.inc
 
 *   End of scenarioSet loop.
     ) ;
