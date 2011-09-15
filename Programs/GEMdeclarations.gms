@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 14/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/09/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -1001,8 +1001,8 @@ Parameters
   s_resvreqwind(steps,scenarioSets,rc,ild,y,t,lb,scenarios)      'Reserve energy requirement based on a specified proportion of dispatched wind generation'
   ;
 
-* Now push the statements that collect up results into a file called CollectResults.txt. This file gets $include'd into GEMsolve.gms
-$onecho > CollectResults.txt
+* Now push the statements that collect up results into a file called CollectResults.inc. This file gets $include'd into GEMsolve.gms
+$onecho > CollectResults.inc
 *+++++++++++++++++++++++++
 * More non-free reserves code.
 * Positive Variables

@@ -17,8 +17,7 @@ $setglobal SprsRenShrDis 1
 * Select 1 to suppress the renewable energy share constraint when/if solving the simulation (DISP) model; 0 otherwise.  
 $setglobal LimHydYr 4
 * (default = 100) Limit the number of Hydro years to solve the DISP model over, i.e. restrict to 5, say, to get a quick turnaround.
-$setglobal Mode 0
-* Select 0 to run with standard developer license; 1 to run with runtime license.  
+$setglobal calcInputLRMCs 0
 
 
 *+++ Hydrology +++

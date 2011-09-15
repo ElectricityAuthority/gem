@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 14/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -61,7 +61,7 @@ putclose bat
   'copy "%DataPath%%GEMinputGDX%"        "%OutPath%\%runName%\Archive\"' /
   'copy "%DataPath%%GEMnetworkGDX%"      "%OutPath%\%runName%\Archive\"' /
   'copy "%DataPath%%GEMdemandGDX%"       "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMpathsAndFiles.inc" "%OutPath%\%runName%\Archive\GEMGEMpathsAndFiles - %runVersionName%.inc"' /
+  'copy "%ProgPath%GEMpathsAndFiles.inc" "%OutPath%\%runName%\Archive\GEMpathsAndFiles - %runVersionName%.inc"' /
   'copy "%ProgPath%GEMsettings.inc"      "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
   'copy "%ProgPath%GEMstochastic.inc"    "%OutPath%\%runName%\Archive\GEMstochastic.inc"' / ;
 execute 'temp.bat' ;
@@ -860,7 +860,10 @@ loop(y, put / @2 y.tl @14  loop(aggR, put peakLoadByYearAggR(y,aggR):>10:0 ) ) ;
 
 
 * Include code to compute and write out LRMC of all non-existing plant.
+$if %calcInputLRMCs%==0 $goto noLRMC
 $include GEMlrmc.gms
+$label noLRMC
+
 
 
 

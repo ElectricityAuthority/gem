@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 14/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -24,6 +24,10 @@ option seed = 101 ;
 $include GEMsettings.inc
 $include GEMpathsAndFiles.inc
 $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolcom !
+
+* Declare output files to be created by GEMreports.
+File summaryResults / "%OutPath%\%runName%\%runName% - summary results.csv" / ;
+summaryResults.pc = 5 ; summaryResults.pw = 999 ;
 
 
 
@@ -253,9 +257,6 @@ Display rv, objComponents, builtByTechRegion ;
 
 
 * Write results out to a csv file.
-File summaryResults / "%OutPath%\%runName%\%runName% - summary results.csv" / ;
-summaryResults.pc = 5 ; summaryResults.pw = 999 ;
-
 put summaryResults 'Objective function value components, $m' / '' ;
 loop(rv, put rv.tl ) ;
 loop(objc,
