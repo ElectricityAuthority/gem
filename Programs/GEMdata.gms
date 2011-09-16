@@ -382,7 +382,8 @@ loop(randomiseCapex(k),
 refurbCapexPlant(g)$( not possibleToRefurbish(g) ) = 0 ;
 
 * Now add on the 'variablised' connection costs to the adjusted plant capital costs - continue to yield NZ$/MW.
-capexPlant(g)$i_nameplate(g) = capexPlant(g) + ( 1e6 * i_connectionCost(g) / i_nameplate(g) ) ;
+vbleConCostPlant(g)$i_nameplate(g) = 1e6 * i_connectionCost(g) / i_nameplate(g) ;
+capexPlant(g) = capexPlant(g) + vbleConCostPlant(g) ;
 
 * Finally, convert lumpy capital costs to levelised capital charge (units are now NZ$/MW/yr).
 capCharge(g,y)       = capexPlant(g) * sum(mapg_k(g,k), capRecFac(y,k,'genplt')) ;
@@ -680,6 +681,10 @@ lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
 
 
 * Do the calculations.
+avgPeakCon(g) = sum(y, peakConPlant(g,y)) / card(y) ;
+avgMaxCapFact(g) = sum((t,lb), hoursPerBlock(t,lb) * maxCapFactPlant(g,t,lb)) / sum((t,lb), hoursPerBlock(t,lb)) ;
+avgMinCapFact(g) = sum((y,t),  minCapFactPlant(g,y,t)) / ( card(y) * card(t) ) ;
+
 assumedGWh(g) = sum(mapg_k(g,k), 8.76 * i_capFacTech(k) * i_nameplate(g)) ;
 assumedGWh(pumpedHydroPlant(g)) = i_PumpedHydroEffic(g) * sum(mapm_t(m,t), 1) * i_PumpedHydroMonth(g) ;
 
@@ -727,7 +732,7 @@ loop(allSolves(experiments,steps,scenarioSets),
 
 
 * Write the plant data summaries.
-$set plantDataHdr 'MW  Capex     HR  varOM  fixOM  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region' ;
+$set plantDataHdr 'MW  Capex  varCC  varOM  fixOM     HR  PkCon mxCapF mnCapF  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
 put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
   'First modelled year:'                @38 firstYear:<4:0 /
   'Last modelled year:'                 @38 lastYear:<4:0 //
@@ -754,10 +759,14 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
 
   'Notes:' /
   'MW - nameplate MW.' /
-  'Capex - Capital cost of new plant, $/kW. Includes any connection cost and randomisation - as levelised and used in objective function.' / 
-  'HR - Heat rate of generating plant, GJ/GWh' /
-  'varOM - Variable O&M costs by plant, $/MWh' /
-  'fixOM - Fixed O&M costs by plant, $/kW/year' /
+  'Capex - Capital cost of new plant, $/kW (as levelised and used in objective function). Includes any connection cost and randomisation.' / 
+  'varCC - the variablised connection cost component of the aforementioned capex, $/kW.' / 
+  'varOM - variable O&M costs by plant, $/MWh' /
+  'fixOM - fixed O&M costs by plant, $/kW/year' /
+  'HR - heat rate of generating plant, GJ/GWh' /
+  'PkCon - contribution to peak factor - averaged over years.' /
+  'mxCapF - maximum capacity factor averaged over periods and load blocks (hours per block per period are the weights).' /
+  'mnCapF - minimum capacity factor averaged over years and periods.' /
   'Exist - plant already exists.' /
   'noExst - plant does not exist but may be a candidate for building.' /
   'Commit - plant is committed to be built in the single year given in the column entitled FixYr.' /
@@ -776,36 +785,39 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
 counter = 0 ;
 loop((k,exist(g))$mapg_k(g,k),
   counter = counter + 1 ;
-  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @67 'Y' @73 '-' @81 ;
-  if(commit(g),       put 'Y' else put '-' ) put @87 ;
-  if(new(g),          put 'Y' else put '-' ) put @92 ;
-  if(neverBuild(g),   put 'Y' else put '-' ) put @98 ;
-  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @105 ;
-  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @112 ;
-  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @120 ;
-  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @126 ;
-  if(possibleToRetire(g),     put 'Y' else put '-' ) put @132 ;
-  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @139 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @148 '-' @152 ;
-  loop(mapg_r(g,r), put r.tl ) put @160 g.te(g) ;
+  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, i_heatrate(g):7:0
+        avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, @95 '-' @101 'Y' @109 ;
+  if(commit(g),       put 'Y' else put '-' ) put @115 ;
+  if(new(g),          put 'Y' else put '-' ) put @120 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @126 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @133 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @140 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @148 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @154 ;
+  if(possibleToRetire(g),     put 'Y' else put '-' ) put @160 ;
+  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @167 ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @176 '-' @180 ;
+  loop(mapg_r(g,r), put r.tl ) put @187 loop(mapg_o(g,o), put o.tl ) put @194 loop(mapg_i(g,i), put i.tl ) put @202 g.te(g) ;
 ) ;
 put // 'Non-existing plant' @34 "%plantDataHdr%" ;
 loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
   counter = counter + 1 ;
-  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, i_heatrate(g):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, @67 '-' @73 'Y' @81 ;
-  if(commit(g),       put 'Y' else put '-' ) put @87 ;
-  if(new(g),          put 'Y' else put '-' ) put @92 ;
-  if(neverBuild(g),   put 'Y' else put '-' ) put @98 ;
-  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @105 ;
-  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @112 ;
-  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @120 ;
-  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @126 ;
-  if(possibleToRetire(g),     put 'Y' else put '-' ) put @132 ;
-  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @139 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @148 ;
-  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @152 ;
-  loop(mapg_r(g,r), put r.tl ) put @160 g.te(g) ;
+  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, i_heatrate(g):7:0
+        avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, @95 '-' @101 'Y' @109 ;
+  if(commit(g),       put 'Y' else put '-' ) put @115 ;
+  if(new(g),          put 'Y' else put '-' ) put @120 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @126 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @133 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @140 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @148 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @154 ;
+  if(possibleToRetire(g),     put 'Y' else put '-' ) put @160 ;
+  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @167 ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @176 ;
+  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @180 ;
+  loop(mapg_r(g,r), put r.tl ) put @187 loop(mapg_o(g,o), put o.tl ) put @194 loop(mapg_i(g,i), put i.tl ) put @202 g.te(g) ;
 ) ;
+
 
 
 * Write the capex statistics.

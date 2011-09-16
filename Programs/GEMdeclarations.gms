@@ -415,6 +415,7 @@ Parameters
   CO2taxByPlant(g,y,scenarios)                  'CO2 tax by plant, year and scenario, $/MWh'
 * Generation data.
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'
+  vbleConCostPlant(g)                           'Variablised capital cost of connection for new generation plant, $/MW'
   capexPlant(g)                                 'Capital cost for new generation plant, $/MW'
   capCharge(g,y)                                'Annualised or levelised capital charge for new generation plant, $/MW/yr'
   refurbCapexPlant(g)                           'Capital cost for refurbishing existing generation plant, $/MW'
@@ -456,6 +457,9 @@ Parameters
   historicalHydroOutput(v,hY,m)                 'Historical hydro output sequences by reservoir and month, GWh'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
 * Input data summaries
+  avgPeakCon(g)                                 'Contribution to peak factor - averaged over years for each plant'
+  avgMaxCapFact(g)                              'Maximum capacity factor averaged over periods and load blocks for each plant (hours per block per period are the weights)'
+  avgMinCapFact(g)                              'Minimum capacity factor averaged over years and periods for each plant' 
   assumedGWh(g)                                 'Gigawatt hours per plant using assumed technology-specific capacity factors'
   MWtoBuild(k,aggR)                             'MW available for installation by technology, island and NZ'
   GWhtoBuild(k,aggR)                            'Assumed GWh from all plant available for installation by technology, island and NZ'
