@@ -7,6 +7,10 @@
 * This program takes the GEM input data and computes the LRMC by plant.
 * It gets $include'd into GEMdata.
 
+** Could solve for the LRMCs directly without all this looping nonsense if you want to. Just find NPV of
+** all the costs over the timeframe and divide this by the present value of output to get the constant real
+** price for which PV revenues = costs.
+
 
 * Declare required sets and parameters.
 Sets
