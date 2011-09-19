@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 16/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 19/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -135,6 +135,13 @@ RESV.fx(g,rc,y,t,lb,scenarios)$( not validYrOperate(g,y) ) = 0 ;
 
 *===============================================================================================
 * 3. Loop through all the solves
+
+* The solve statement is inside 3 loops
+* Outer loop: Experiments
+*   Middle loop: Steps (i.e. timing, reopt, or dispatch)
+*     Inner loop: scenarioSets
+*
+* If more than one scenario is defined in the current scenarioSet, then they're all solved simultaneously, i.e. in a single solve.
 
 $set AddUpSlacks    "sum(y, ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
 $set AddUpPenalties "sum((y,sc), PEAK_NZ_PENALTY.l(y,sc) + PEAK_NI_PENALTY.l(y,sc) + NOWINDPEAK_NI_PENALTY.l(y,sc) )"
@@ -314,7 +321,7 @@ $     include CollectResults.inc
 
 * Before going around the 'Experiments' loop again, dump all output for the current experiment to a GDX file named after the experiment.
   put dummy ;
-  put_utility 'gdxout' / '%OutPath%\%runName%\GDX\All output\' experiments.tl ;
+  put_utility 'gdxout' / '%OutPath%\%runName%\GDX\temp\AllOut\' experiments.tl ;
   execute_unload
 *+++++++++++++++++++++++++
 * More non-free reserves code.
@@ -340,9 +347,9 @@ $     include CollectResults.inc
   s_resvtrfr2, s_resvtrfr3, s_resvrequnit, s_resvreq2, s_resvreqhvdc, s_resvtrfr4, s_resvtrfrdef, s_resvoffcap, s_resvreqwind
   ;
 
-* Repeat the output dump to a GDX file named after the experiment, but this time only dump the output required for reporting.
+* Repeat the output dump to a GDX file named after the experiment, but this time dump only the output required for reporting.
   put dummy ;
-  put_utility 'gdxout' / '%OutPath%\%runName%\GDX\Report output\' experiments.tl ;
+  put_utility 'gdxout' / '%OutPath%\%runName%\GDX\temp\RepOut\' experiments.tl ;
   execute_unload
 * Variable levels
   s_TOTALCOST, s_TX, s_REFURBCOST, s_BUILD, s_CAPACITY, s_TXCAPCHARGES, s_GEN, s_VOLLGEN
@@ -357,8 +364,8 @@ $     include CollectResults.inc
 
 
 * Merge the GDX files from each experiment into a single GDX file called 'allExperimentsXXX.gdx'.
-execute 'gdxmerge "%OutPath%\%runName%\GDX\All output\"*.gdx    output="%OutPath%\%runName%\GDX\allExperimentsAllOutput - %runVersionName%.gdx" big=100000'
-execute 'gdxmerge "%OutPath%\%runName%\GDX\Report output\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runVersionName%.gdx" big=100000'
+execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\AllOut\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsAllOutput - %runVersionName%.gdx" big=100000'
+execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\RepOut\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runVersionName%.gdx" big=100000'
 
 * NB: The big parameter is used to specify a cutoff for symbols that will be written one at a time. Each symbol
 * that exceeds the size will be processed by reading each gdx file and only process the data for that symbol. This
