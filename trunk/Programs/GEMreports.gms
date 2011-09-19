@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 16/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 19/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -121,7 +121,7 @@ Parameters
   s_noWindPeak_ni(runVersions,experiments,steps,scenarioSets,y,scenarios)         'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
   ;
 
-$gdxin "%OutPath%\%runName%\GDX\all_ReportOutput.gdx"
+$gdxin "%OutPath%\%runName%\GDX\allRV_ReportOutput.gdx"
 $loaddc s_TOTALCOST s_TX s_REFURBCOST s_BUILD s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_RESV s_RESVVIOL s_RESVCOMPONENTS
 $loaddc s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
 $loaddc s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
@@ -151,7 +151,7 @@ Parameters
   pNFresvCost(runVersions,r,rr,stp)                         'Constant cost of each non-free piece (or step) of function, $/MWh' ;
 
 
-$gdxin "%OutPath%\%runName%\Input data checks\all_SelectedInputData.gdx"
+$gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData.gdx"
 $loaddc possibleToBuild possibleToRefurbish validYrOperate
 $loaddc i_fixedOM i_VOLLcost i_HVDCshr i_HVDClevy i_plantReservesCost
 $loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge SRMC locFac_recip penaltyViolateReserves pNFresvCost

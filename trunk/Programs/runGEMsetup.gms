@@ -18,13 +18,13 @@ putclose bat
   'if exist runGEMdataAndSolveProgress.txt erase runGEMdataAndSolveProgress.txt /q' /
   'if exist runMergeGDXsProgress.txt       erase runMergeGDXsProgress.txt /q' /
   'if exist runGEMreportsProgress.txt      erase runGEMreportsProgress.txt /q' /
-  'if exist "%OutPath%%runName%"           rmdir "%OutPath%%runName%" /s /q' /
+  'if exist "%OutPath%\%runName%"          rmdir "%OutPath%\%runName%" /s /q' /
 
   'mkdir "%OutPath%\%runName%"' /
   'mkdir "%OutPath%\%runName%\Archive"' /
   'mkdir "%OutPath%\%runName%\GDX"' /
-  'mkdir "%OutPath%\%runName%\GDX\All output"' /
-  'mkdir "%OutPath%\%runName%\GDX\Report output"' /
+  'mkdir "%OutPath%\%runName%\GDX\temp\AllOut"' /
+  'mkdir "%OutPath%\%runName%\GDX\temp\RepOut"' /
   'mkdir "%OutPath%\%runName%\Processed files"' /
   'mkdir "%OutPath%\%runName%\Input data checks"' /
 

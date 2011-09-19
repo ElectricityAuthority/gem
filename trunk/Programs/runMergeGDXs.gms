@@ -15,7 +15,7 @@ putclose bat
   'copy "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName% - mds3.gdx" mds3.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds3.gdx output=all_SelectedInputData.gdx big=100000'
+execute 'gdxmerge mds1.gdx mds3.gdx output=allRV_SelectedInputData.gdx big=100000'
 
 
 * 2. Create and execute a batch file to:
@@ -29,13 +29,16 @@ putclose bat
   'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds3.gdx" mds3.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds3.gdx output=all_ReportOutput.gdx big=100000'
+execute 'gdxmerge mds1.gdx mds3.gdx output=allRV_ReportOutput.gdx big=100000'
 
 
-* 3. Create and execute a batch file to copy the merged GDX files to their respective locations:
+* 3. Create and execute a batch file to:
+*    - copy the merged GDX files to their respective locations.
+*    - delete the temp directory in the GDX folder, which contained the various 'experiment' GDX files.
 putclose bat
-  'copy all_SelectedInputData.gdx  "%OutPath%\%runName%\Input data checks\"' /
-  'copy all_ReportOutput.gdx       "%OutPath%\%runName%\GDX\"' /
+  'copy allRV_SelectedInputData.gdx  "%OutPath%\%runName%\Input data checks\"' /
+  'copy allRV_ReportOutput.gdx       "%OutPath%\%runName%\GDX\"' /
+  'rmdir "%OutPath%\%runName%\GDX\temp" /s /q'
   ;
 execute 'temp.bat' ;
 
