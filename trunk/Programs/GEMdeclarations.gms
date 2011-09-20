@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 16/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 20/09/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -65,9 +65,9 @@ Sets
 
 Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 36 mapping sets and subsets (grouped as per the navigation pane of emi)
+* 35 mapping sets and subsets (grouped as per the navigation pane of emi)
 Sets
-* 23 technology and fuel
+* 22 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
   mapf_fg(f,fg)                                 'Map fuel groups to fuel types'
   techColor(k,red,green,blue)                   'RGB color mix for technologies - to pass to plotting applications'
@@ -83,7 +83,6 @@ Sets
   wind(k)                                       'Wind technologies'
   renew(k)                                      'Renewable technologies'
   thermalTech(k)                                'Thermal technologies'
-  minUtilTechs(k)                               'Technologies to which minimum utilisation constraints may apply'
   demandGen(k)                                  'Demand side technologies modelled as generation'
   randomiseCapex(k)                             'Specify the technologies able to have their capital costs randomised within some narrow user-defined range'
   linearBuildTech(k)                            'Specify the technologies able to be partially or linearly built'
@@ -112,9 +111,9 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 78 parameters (again, grouped as per the navigation pane of emi).
+* Declare 77 parameters (again, grouped as per the navigation pane of emi).
 Parameters
-* 16 technology and fuel
+* 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
   i_refurbishmentLife(k)                        'Generation plant life following refurbishment, years'
   i_retireOffsetYrs(k)                          'Number of years a technology continues to operate for after the decision to endogenously retire has been made'
@@ -127,7 +126,6 @@ Parameters
   i_FOFmultiplier(k,lb)                         'Forced outage factor multiplier (default = 1)'
   i_maxNrgByFuel(f)                             'Maximum proportion of total energy from any one fuel type (0-1)'
   i_emissionFactors(f)                          'CO2e emissions, tonnes CO2/PJ'
-  i_minUtilByTech(y,k)                          'Minimum utilisation of plant by technology type, proportion (0-1 but define only when > 0)'
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantities(f,y)                         'Quantitative limit on availability of various fuels by year, PJ'
   i_co2tax(y)                                   'CO2 tax by year, $/tonne CO2-equivalent'
@@ -135,7 +133,6 @@ Parameters
   i_nameplate(g)                                'Nameplate capacity of generating plant, MW'
   i_UnitLargestProp(g)                          'Largest proportion of generating plant output carried by a single unit at the plant'
   i_baseload(g)                                 'Force plant to be baseloaded, 0/1 (1 = baseloaded)'
-  i_minUtilisation(g)                           'Switch to turn on the minimum utilisation constraint by plant (0-1, default = 0)'
   i_offlineReserve(g)                           'Plant-specific offline reserve capability, 1 = Yes, 0 = No'
   i_FixComYr(g)                                 'Fixed commissioning year for potentially new generation plant (includes plant fixed never to be built)'
   i_EarlyComYr(g)                               'Earliest possible commissioning year for each potentially new generation plant'
@@ -156,6 +153,7 @@ Parameters
   i_plantReservesCap(g,rc)                      'Plant-specific capability per reserve class (0-1 but define only when > 0)'
   i_plantReservesCost(g,rc)                     'Plant-specific cost per reserve class, $/MWh'
   i_PltCapFact(g,m)                             'Plant-specific capacity factor (default = 1)'
+  i_minUtilisation(g,y)                         'Minimum utilisation of plant by year, proportion (0-1 but only defined when > 0)'
   i_VOLLcap(s)                                  'Nameplate capacity of VOLL plant (1 VOLL plant/region), MW'
   i_VOLLcost(s)                                 'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
   i_HVDCshr(o)                                  'Share of HVDC charge to be incurred by plant owner'
@@ -562,7 +560,7 @@ Equations
   noWindPeak_ni(y,scenarios)                    'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
   limit_maxgen(g,y,t,lb,scenarios)              'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   limit_mingen(g,y,t,lb,scenarios)              'Ensure generation in each block exceeds capacity implied by min capacity factors'
-  minutil(g,k,y,scenarios)                      'Ensure generation by certain technology type meets a minimum utilisation'
+  minutil(g,y,scenarios)                        'Ensure certain generation plant meets a minimum utilisation'
   limit_fueluse(f,y,scenarios)                  'Quantum of each fuel used and possibly constrained, PJ'
   limit_nrg(f,y,scenarios)                      'Impose a limit on total energy generated by any one fuel type'
   minreq_rennrg(y,scenarios)                    'Impose a minimum requirement on total energy generated from all renewable sources'
@@ -735,9 +733,9 @@ limit_maxgen(validYrOperate(g,y),t,lb,sc)$( ( exist(g) or possibleToBuild(g) ) *
 limit_mingen(validYrOperate(g,y),t,lb,sc)$minCapFactPlant(g,y,t)..
   GEN(g,y,t,lb,sc) =g= 1e-3 * CAPACITY(g,y) * minCapFactPlant(g,y,t) * hoursPerBlock(t,lb) ;
 
-* Minimum ultilisation of plant by technology.
-minutil(g,k,y,sc)$( i_minUtilisation(g) * i_minUtilByTech(y,k) * mapg_k(g,k) )..
-  sum((t,lb)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) + MINUTILSLACK(y) =g= i_minUtilByTech(y,k) * 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ;
+* Minimum ultilisation of plant.
+minutil(g,y,sc)$i_minUtilisation(g,y)..
+  sum((t,lb)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) + MINUTILSLACK(y) =g= i_minUtilisation(g,y) * 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ;
 
 * Thermal fuel limits.
 limit_fueluse(thermalfuel(f),y,sc)$( ( gas(f) * (i_fuelQuantities(f,y) > 0) * (i_fuelQuantities(f,y) < 999) ) or ( diesel(f) * (i_fuelQuantities(f,y) > 0) ) )..
@@ -972,7 +970,7 @@ Parameters
   s_noWindPeak_ni(steps,scenarioSets,y,scenarios)                'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
   s_limit_maxgen(steps,scenarioSets,g,y,t,lb,scenarios)          'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   s_limit_mingen(steps,scenarioSets,g,y,t,lb,scenarios)          'Ensure generation in each block exceeds capacity implied by min capacity factors'
-  s_minutil(steps,scenarioSets,g,k,y,scenarios)                  'Ensure generation by certain technology type meets a minimum utilisation'
+  s_minutil(steps,scenarioSets,g,y,scenarios)                    'Ensure certain generation plant meets a minimum utilisation'
   s_limit_fueluse(steps,scenarioSets,f,y,scenarios)              'Quantum of each fuel used and possibly constrained, PJ'
   s_limit_nrg(steps,scenarioSets,f,y,scenarios)                  'Impose a limit on total energy generated by any one fuel type'
   s_minreq_rennrg(steps,scenarioSets,y,scenarios)                'Impose a minimum requirement on total energy generated from all renewable sources'
@@ -1068,7 +1066,7 @@ $onecho > CollectResults.inc
   s_noWindPeak_ni(steps,scenarioSets,y,sc)                   = noWindPeak_NI.m(y,sc) ;
   s_limit_maxgen(steps,scenarioSets,g,y,t,lb,sc)             = limit_maxgen.m(g,y,t,lb,sc) ;
   s_limit_mingen(steps,scenarioSets,g,y,t,lb,sc)             = limit_mingen.m(g,y,t,lb,sc) ;
-  s_minutil(steps,scenarioSets,g,k,y,sc)                     = minutil.m(g,k,y,sc) ;
+  s_minutil(steps,scenarioSets,g,y,sc)                       = minutil.m(g,y,sc) ;
   s_limit_fueluse(steps,scenarioSets,f,y,sc)                 = limit_fueluse.m(f,y,sc) ;
   s_limit_nrg(steps,scenarioSets,f,y,sc)                     = limit_nrg.m(f,y,sc) ;
   s_minreq_rennrg(steps,scenarioSets,y,sc)                   = minReq_renNrg.m(y,sc) ;

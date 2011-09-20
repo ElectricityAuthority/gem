@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 19/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 20/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -145,6 +145,7 @@ Parameters
   PVfacT(runVersions,y,t)                                   "Transmission investor's present value factor by period"
   capCharge(runVersions,g,y)                                'Annualised or levelised capital charge for new generation plant, $/MW/yr'
   refurbCapCharge(runVersions,g,y)                          'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
+  MWtoBuild(runVersions,k,aggR)                             'MW available for installation by technology, island and NZ'
   SRMC(runVersions,g,y,scenarios)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
   locFac_Recip(runVersions,e)                               'Reciprocal of zonally-based location factors'
   penaltyViolateReserves(runVersions,ild,rc)                'Penalty for failing to meet certain reserve classes, $/MW'
@@ -154,7 +155,7 @@ Parameters
 $gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData.gdx"
 $loaddc possibleToBuild possibleToRefurbish validYrOperate
 $loaddc i_fixedOM i_VOLLcost i_HVDCshr i_HVDClevy i_plantReservesCost
-$loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge SRMC locFac_recip penaltyViolateReserves pNFresvCost
+$loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge MWtoBuild SRMC locFac_recip penaltyViolateReserves pNFresvCost
 
 
 
@@ -265,13 +266,18 @@ loop(objc,
   put objc.te(objc) ;
 ) ;
 
-put //// 'MW built by technology and region' ;
+put //// 'MW built by technology and region (MW built as percent of MW able to be built shown in 3 columns to the right) ' ;
 loop(rv,
-  put / rv.tl ; loop(r$( card(isIldEqReg) <> 2 ), put r.tl ) loop(aggR, put aggR.tl ) ;
+  put / rv.tl ; loop(r$( card(isIldEqReg) <> 2 ), put r.tl ) loop(aggR, put aggR.tl ) put '' loop(aggR, put aggR.tl ) ;
   loop(k, put / k.tl
     loop(r$( card(isIldEqReg) <> 2 ), put sum(reportDomain, builtByTechRegion(rv,reportDomain,k,r)) ) ;
     loop(aggR, put sum((reportDomain,r)$mapAggR_r(aggR,r), builtByTechRegion(rv,reportDomain,k,r)) ) ;
-    put k.te(k) ;
+    put '' ;
+    loop(aggR,
+    if(MWtoBuild(rv,k,aggR) = 0, put '' else
+      put (100 * sum((reportDomain,r)$mapAggR_r(aggR,r), builtByTechRegion(rv,reportDomain,k,r)) / MWtoBuild(rv,k,aggR)) ) ;
+    ) ;
+    put '' k.te(k) ;
   ) ;
   put / ;
 ) ;
