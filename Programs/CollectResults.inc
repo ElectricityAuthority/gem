@@ -59,7 +59,7 @@
   s_noWindPeak_ni(steps,scenarioSets,y,sc)                   = noWindPeak_NI.m(y,sc) ;
   s_limit_maxgen(steps,scenarioSets,g,y,t,lb,sc)             = limit_maxgen.m(g,y,t,lb,sc) ;
   s_limit_mingen(steps,scenarioSets,g,y,t,lb,sc)             = limit_mingen.m(g,y,t,lb,sc) ;
-  s_minutil(steps,scenarioSets,g,k,y,sc)                     = minutil.m(g,k,y,sc) ;
+  s_minutil(steps,scenarioSets,g,y,sc)                       = minutil.m(g,y,sc) ;
   s_limit_fueluse(steps,scenarioSets,f,y,sc)                 = limit_fueluse.m(f,y,sc) ;
   s_limit_nrg(steps,scenarioSets,f,y,sc)                     = limit_nrg.m(f,y,sc) ;
   s_minreq_rennrg(steps,scenarioSets,y,sc)                   = minReq_renNrg.m(y,sc) ;

@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 19/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 20/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -75,12 +75,12 @@ execute 'temp.bat' ;
 
 Set y  / %firstYear% * %lastYear% / ;
 
-* Load the 109 network invariant symbols from GEMinputGDX.
+* Load the 107 network invariant symbols from GEMinputGDX.
 $gdxin "%DataPath%%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
-$loaddc wind renew thermalTech minUtilTechs demandGen randomiseCapex linearBuildTech coal lignite gas diesel
+$loaddc wind renew thermalTech demandGen randomiseCapex linearBuildTech coal lignite gas diesel
 $loaddc mapGenPlant exist
 $loaddc Haywards Benmore zoneCentroid islandCentroid
 $loaddc mapm_t
@@ -88,8 +88,8 @@ $loaddc mapReservoirs
 * Parameters 
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
-$load   i_minUtilByTech i_fuelPrices i_fuelQuantities i_co2tax
-$loaddc i_nameplate i_UnitLargestProp i_baseload i_minUtilisation i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear
+$load   i_fuelPrices i_fuelQuantities i_co2tax i_minUtilisation
+$loaddc i_nameplate i_UnitLargestProp i_baseload i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear
 $loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_FuelDeliveryCost
 $loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_plantReservesCap i_plantReservesCost i_PltCapFact
 $loaddc i_HVDCshr
