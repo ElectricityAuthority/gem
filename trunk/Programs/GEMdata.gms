@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 20/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -75,13 +75,13 @@ execute 'temp.bat' ;
 
 Set y  / %firstYear% * %lastYear% / ;
 
-* Load the 107 network invariant symbols from GEMinputGDX.
+* Load the 109 network invariant symbols from GEMinputGDX.
 $gdxin "%DataPath%%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
 $loaddc wind renew thermalTech demandGen randomiseCapex linearBuildTech coal lignite gas diesel
-$loaddc mapGenPlant exist
+$loaddc mapGenPlant exist schedHydroUpg mapSH_Upg
 $loaddc Haywards Benmore zoneCentroid islandCentroid
 $loaddc mapm_t
 $loaddc mapReservoirs
@@ -326,8 +326,6 @@ possibleToRetire(g)$( possibleToEndogRetire(g) or i_ExogenousRetireYr(g) ) = yes
 * Define contribution to peak capacity by plant
 peakConPlant(g,y)   = sum(mapg_k(g,k), i_peakContribution(k) ) ;
 NWpeakConPlant(g,y) = sum(mapg_k(g,k), i_NWpeakContribution(k) ) ;
-peakConPlant(g,y)$schedHydroPlant(g)   = sum(mapg_k(g,k), i_peakContribution(k) ) ;
-NWpeakConPlant(g,y)$schedHydroPlant(g) = sum(mapg_k(g,k), i_NWpeakContribution(k) ) ;
 
 * Initialise the FOF multiplier - compute a weighted average using annual hours per load block as the weights.
 WtdAvgFOFmultiplier(k,lb) = sum(t, hoursPerBlock(t,lb) * i_FOFmultiplier(k,lb)) / sum(t, hoursPerBlock(t,lb)) ;

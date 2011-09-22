@@ -10,12 +10,18 @@ File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.a
 *    - merge all runVersion name GDX files into a single GDX file called 'all_SelectedInputData.gdx'.
 putclose bat
   'del mds1.gdx /q' /
+  'del mds2.gdx /q' /
   'del mds3.gdx /q' /
+  'del mds4.gdx /q' /
+  'del mds5.gdx /q' /
   'copy "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName% - mds1.gdx" mds1.gdx' /
+  'copy "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName% - mds2.gdx" mds2.gdx' /
   'copy "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName% - mds3.gdx" mds3.gdx' /
+  'copy "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName% - mds4.gdx" mds4.gdx' /
+  'copy "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName% - mds5.gdx" mds5.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds3.gdx output=allRV_SelectedInputData.gdx big=100000'
+execute 'gdxmerge mds1.gdx mds2.gdx mds3.gdx mds4.gdx mds5.gdx output=allRV_SelectedInputData.gdx big=100000'
 
 
 * 2. Create and execute a batch file to:
@@ -24,12 +30,18 @@ execute 'gdxmerge mds1.gdx mds3.gdx output=allRV_SelectedInputData.gdx big=10000
 *    - merge all runVersion name GDX files into a single GDX file called 'all_ReportOutput.gdx'.
 putclose bat
   'del mds1.gdx /q' /
+  'del mds2.gdx /q' /
   'del mds3.gdx /q' /
+  'del mds4.gdx /q' /
+  'del mds5.gdx /q' /
   'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds1.gdx" mds1.gdx' /
+  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds2.gdx" mds2.gdx' /
   'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds3.gdx" mds3.gdx' /
+  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds4.gdx" mds4.gdx' /
+  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds5.gdx" mds5.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds3.gdx output=allRV_ReportOutput.gdx big=100000'
+execute 'gdxmerge mds1.gdx mds2.gdx mds3.gdx mds4.gdx mds5.gdx output=allRV_ReportOutput.gdx big=100000'
 
 
 * 3. Create and execute a batch file to:

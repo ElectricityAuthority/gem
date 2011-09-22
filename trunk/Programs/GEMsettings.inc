@@ -70,7 +70,7 @@ $setglobal SolveGoal QDsol
 * Select either QDsol, VGsol, or MinGap
 $setglobal QDoptCr .0075
 * Quick and dirty relative optimality criterion for MIP (i.e. .003 equals .3%)
-$setglobal QDsolSecs 500
+$setglobal QDsolSecs 1500
 * CPU seconds available for solver to spend solving GEM for solve goal QDsol.
 $setglobal VGsolSecs 7200
 * CPU seconds available for solver to spend solving GEM for solve goal VGsol.
