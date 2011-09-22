@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 20/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -9,7 +9,8 @@
 *** does each model type have the correct modelstat error condition driving the abort stmt?
 *** The abort if slacks present has gone. Bring it back? Warning if penalties?
 
-* NB: The following symbols from input data file may have been changed in GEMdata: Sets y and exist.
+* NB: The following symbols from input data file may have been changed in GEMdata:
+*     Sets: y and exist.
 
 $ontext
  This program continues sequentially from GEMdata. The GEMdata work file must be called
@@ -248,14 +249,19 @@ loop(experiments,
             chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scenarios, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
             modelledHydroOutput(g,y,t,sc) =
               sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
+*           Capture the current mapping of hydroyears to modelled years. 
             mapHydroYearsToModelledYears(experiments,steps,scenarioSets,sc,y,chooseHydroYears) = yes ;
+*           Assign hydro output to potential new plant linked to existing schedulable hydro plant.
+            hydroOutputUpgrades(schedHydroUpg(gg),y,t,sc) = sum(mapSH_Upg(g,gg)$i_namePlate(g), modelledHydroOutput(g,y,t,sc) / i_namePlate(g) ) ;
           ) ;
         ) ;
       ) ;
-      display 'Hydro output:', modelledHydroOutput ;
+      display 'Hydro output:', modelledHydroOutput, hydroOutputUpgrades ;
 
-*     Collect modelledHydroOutput for posterity.
+*     Collect modelledHydroOutput and hydroOutputUpgrades for posterity.
       allModelledHydroOutput(experiments,steps,scenarioSets,g,y,t,sc) = modelledHydroOutput(g,y,t,sc) ;
+      allHydroOutputUpgrades(experiments,steps,scenarioSets,g,y,t,sc) = hydroOutputUpgrades(g,y,t,sc) ;
+ ;
 
 *     Solve either GEM or DISP, depending on what step we're at.
       if(sameas(steps,'dispatch'),
@@ -357,6 +363,8 @@ $     include CollectResults.inc
   s_ANNMWSLACK, s_RENCAPSLACK, s_HYDROSLACK, s_MINUTILSLACK, s_FUELSLACK, s_RESV, s_RESVVIOL, s_RESVCOMPONENTS
 * Equation marginals (ignore the objective function)
   s_bal_supdem, s_peak_nz, s_peak_ni, s_noWindPeak_ni
+* Misc parameters
+  solveReport
   ;
 
 * End of experiments loop.
@@ -406,7 +414,7 @@ Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx"
 * Reserves
   useReserves singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve
 * Hydro related sets and parameters
-  hydroOutputScalar allModelledHydroOutput mapHydroYearsToModelledYears
+  hydroOutputScalar allModelledHydroOutput allHydroOutputUpgrades mapHydroYearsToModelledYears
 * Penalties
   penaltyViolatePeakLoad, penaltyViolateRenNrg, penaltyViolateReserves
 *+++++++++++++++++++++++++

@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 20/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/09/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -63,9 +63,9 @@ Sets
   hY           'Hydrology output years'
   v            'Hydro reservoirs or river systems'  ;
 
-Alias (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
+Alias (g,gg), (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 35 mapping sets and subsets (grouped as per the navigation pane of emi)
+* 37 mapping sets and subsets (grouped as per the navigation pane of emi)
 Sets
 * 22 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -90,9 +90,11 @@ Sets
   lignite(f)                                    'Lignite fuel'
   gas(f)                                        'Gas fuel'
   diesel(f)                                     'Diesel fuel'
-* 3 generation
+* 5 generation
   mapGenPlant(g,k,i,o)                          'Generation plant mappings'
   exist(g)                                      'Generation plant that are presently operating'
+  schedHydroUpg(g)                              'New generation plant that are to be built on an existing schedulable hydro system'
+  mapSH_Upg(g,gg)                               'Map existing schedulable hydro plant to what are essentially schedulable hydro upgrades'
   maps_r(s,r)                                   'Map regions to VOLL plants'
 * 6 location
   mapLocations(i,r,e,ild)                       'Location mappings'
@@ -282,8 +284,10 @@ Parameters
   scenarioNRGFactor(scenarios)                  'Scenario-specific scaling factor for energy demand data'
   weightScenariosBySet(scenarioSets,scenarios)  'Assign weights to the scenarios comprising each set of scenarios'
   scenarioWeight(scenarios)                     'Individual scenario weights'
-  modelledHydroOutput(g,y,t,scenarios)          'Hydro output used in each modelled year by scheduleable hydro plant, GWh'
-  allModelledHydroOutput(experiments,steps,scenarioSets,g,y,t,scenarios) 'Collect the hydro output used in each modelled year by scheduleable hydro plant for all experiments-steps-scenarioSets tuples, GWh'
+  modelledHydroOutput(g,y,t,scenarios)          'Hydro output used in each modelled year by schedulable hydro plant, GWh'
+  hydroOutputUpgrades(g,y,t,scenarios)          'Hydro output normalised for new generation projects that are linked to existing schedulable hydro'
+  allModelledHydroOutput(experiments,steps,scenarioSets,g,y,t,scenarios) 'Collect the hydro output used in each modelled year by schedulable hydro plant for all experiments-steps-scenarioSets tuples, GWh'
+  allHydroOutputUpgrades(experiments,steps,scenarioSets,g,y,t,scenarios) 'Collect the hydro output normalised for new generation projects that are linked to existing schedulable hydro'
   solveReport(experiments,steps,scenarioSets,*) 'Collect various details about each solve of the models (both GEM and DISP)'
   numSolves                                     'Figure out the number of solves to sum over when computing post-solve results averaged over scenarioSets' ;
 
@@ -759,7 +763,7 @@ minReq_RenCap(y)$i_renewCapShare(y)..
 
 * Limit hydro according to energy available in inflows.
 limit_hydro(validYrOperate(g,y),t,sc)$schedHydroPlant(g)..
-  sum(lb, GEN(g,y,t,lb,sc)) =l= modelledHydroOutput(g,y,t,sc) + HYDROSLACK(y) ;
+  sum(lb, GEN(g,y,t,lb,sc)) =l= modelledHydroOutput(g,y,t,sc) + hydroOutputUpgrades(g,y,t,sc) * CAPACITY(g,y) + HYDROSLACK(y) ;
 
 * Over the period, ensure that generation from pumped hydro is less than the energy pumped.
 limit_pumpgen1(validYrOperate(g,y),t,sc)$pumpedHydroPlant(g)..
