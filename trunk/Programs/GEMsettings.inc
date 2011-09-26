@@ -1,7 +1,7 @@
 *+++ Model +++
 $setglobal firstYear 2012
 * First modelled year.
-$setglobal lastYear 2050
+$setglobal lastYear 2025
 * Last modelled year.
 $setglobal RunType 1
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
@@ -15,6 +15,8 @@ $setglobal SprsRenShrReo 0
 * Select 1 to suppress the renewable energy share constraint when/if solving the re-optimisation (REO) model; 0 otherwise.
 $setglobal SprsRenShrDis 1
 * Select 1 to suppress the renewable energy share constraint when/if solving the simulation (DISP) model; 0 otherwise.  
+$setglobal GRschedule 1
+* Select 1 to write out a GAMS-readable schedule of varibales to be used to fix levels in subsequent models.
 $setglobal LimHydYr 4
 * (default = 100) Limit the number of Hydro years to solve the DISP model over, i.e. restrict to 5, say, to get a quick turnaround.
 $setglobal calcInputLRMCs 0

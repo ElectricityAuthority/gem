@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 26/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 27/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -50,8 +50,8 @@ $offsymxref offsymlist
 * 1. Take care of preliminaries.
 
 * Declare and create basic run-time reporting capability.
-File rep "Write to a report"       / "%ProgPath%Report.txt" / ; rep.lw = 0 ; rep.ap = 1 ;
-File con "Write to the console"    / con / ;                    con.lw = 0 ;
+File rep "Write to a report"     / "%ProgPath%\Report.txt" / ; rep.lw = 0 ; rep.ap = 1 ;
+File con "Write to the console"  / con / ;                     con.lw = 0 ;
 File dummy ;
 
 putclose rep 'Run:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / @15 'Started at ', system.time, ' on ' system.date ;
@@ -299,12 +299,6 @@ loop(experiments,
         abort$( GEM.modelstat <> 1 and GEM.modelstat <> 8 ) "Problem encountered solving GEM..." ;
       ) ;
 
-*     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
-$     if not %PlotMIPtrace%==1 $goto NoTrace3
-      putclose bat 'copy MIPtrace.txt "%runName%-%runVersionName%-MIPtrace-' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl '.txt"' ;
-      execute 'temp.bat';
-$     label NoTrace3
-
 *     Collect information for solve summary report
       solveReport(allSolves,'ObjFnValue') = TOTALCOST.l ;    solveReport(allSolves,'SCcosts') = sum(sc(scenarios), SCENARIO_COSTS.l(sc) ) ;
       solveReport(allSolves,'OptFile')    = gem.optfile ;    solveReport(allSolves,'OptCr')   = gem.optcr ;
@@ -332,6 +326,37 @@ $     label skipThis
       '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
       '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 /
       ;
+
+*     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRschedule = 1).
+$     if "%GRschedule%"==0 $goto skipGRschedule
+      dummy.lw = 0 ; put dummy ;
+      put_utility 'ren' / "%OutPath%\%runName%\Processed files\GRschedule_" experiments.tl '_' steps.tl '_' scenarioSets.tl '.gms' ;
+      if(not sameas(steps,'dispatch'),
+        put "Parameter fix_BUILD(g,y)   'New capacity installed by generating plant and year, MW' /" ;
+        loop((g,y)$BUILD.l(g,y),  put / "'" g.tl "'.'" y.tl "'" BUILD.l(g,y):15:8 ) put ' /;' // ;
+        put "Parameter fix_RETIRE(g,y)  'Capacity endogenously retired by generating plant and year, MW' /" ;
+        loop((g,y)$RETIRE.l(g,y), put / "'" g.tl "'.'" y.tl "'" RETIRE.l(g,y):15:8 ) put ' /;' // ;
+        put "Parameter fix_CGEN(g,y)    'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)' /" ;
+        loop((g,y)$CGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" CGEN.l(g,y):15:8 ) put ' /;' // ;
+        put "Parameter fix_BGEN(g,y)    'Binary variable to identify build year for new generation plant' /" ;
+        loop((g,y)$BGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BGEN.l(g,y):15:8 ) put ' /;' // ;
+        put "Parameter fix_BRET(g,y)    'Binary variable to identify endogenous retirement year for the eligble generation plant' /" ;
+        loop((g,y)$BRET.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BRET.l(g,y):15:8 ) put ' /;' // ;
+        put "Parameter fix_ISRETIRED(g) 'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)' /" ;
+        loop(g$ISRETIRED.l(g),    put / "'" g.tl "'" ISRETIRED.l(g):15:8 ) put ' /;' // ;
+        put "Parameter fix_CAPACITY(g,y)  'Cumulative nameplate capacity at each generating plant in each year, MW' /" ;
+        loop((g,y)$CAPACITY.l(g,y), put / "'" g.tl "'.'" y.tl "'" CAPACITY.l(g,y):15:8 ) put ' /;' // ;
+        put "Parameter fix_BTX(r,rr,ps,y) 'Binary variable indicating the current state of a transmission path' /" ;
+        loop((r,rr,ps,y)$BTX.l(r,rr,ps,y), put / "'" r.tl "'.'" rr.tl "'.'" ps.tl "'.'" y.tl "'" BTX.l(r,rr,ps,y):15:8 ) put ' /;' // ;
+      ) ;
+$     label skipGRschedule
+
+*     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
+$     if not %PlotMIPtrace%==1 $goto NoMIPTrace
+      bat.ap = 0 ;
+      putclose bat 'copy MIPtrace.txt "%runName%-%runVersionName%-MIPtrace-' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl '.txt"' ;
+      execute 'temp.bat';
+$     label NoMIPTrace
 
 *     Collect up solution values - by experiment, step and scenarioSet.
 $     include CollectResults.inc
@@ -437,6 +462,7 @@ Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx"
   stp pNFresvCap pNFresvCost
 *+++++++++++++++++++++++++
   ;
+
 
 bat.ap = 0 ;
 putclose bat
