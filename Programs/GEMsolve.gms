@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 23/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 26/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -11,6 +11,7 @@
 
 * NB: The following symbols from input data file may have been changed in GEMdata:
 *     Sets: y and exist.
+*     Parameters: i_fixedOM.
 
 $ontext
  This program continues sequentially from GEMdata. The GEMdata work file must be called
@@ -53,7 +54,7 @@ File rep "Write to a report"       / "%ProgPath%Report.txt" / ; rep.lw = 0 ; rep
 File con "Write to the console"    / con / ;                    con.lw = 0 ;
 File dummy ;
 
-putclose rep 'Run: "%runName%"' / 'Run version: "%runVersionName%"' / '  - started at ', system.time, ' on ' system.date ;
+putclose rep 'Run:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / @15 'Started at ', system.time, ' on ' system.date ;
 
 * Specify various .lst file and solver-related options.
 if(%limitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ; ) ; 
@@ -283,10 +284,10 @@ loop(experiments,
 
 *     Post a progress message to report for use by GUI and to the console.
       if(counter = 1,
-        putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve finished with some sort of problem and the job is now going to abort.' /
-                        'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
+        putclose rep / 'The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve finished with some sort of problem and the job is now going to abort.' /
+                       'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
         else
-        putclose rep // 'The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve finished at ', system.time / 'Objective function value: ' TOTALCOST.l:<12:1 / ;
+        putclose rep / 'The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve finished at ', system.time / '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
       ) ;
       putclose con // '    The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve for "%runName% -- %runVersionName% has just finished' /
                       '    Objective function value: ' TOTALCOST.l:<12:1 // ;
@@ -315,6 +316,22 @@ $     label NoTrace3
       if(slacks > 0,    solveReport(allSolves,'Slacks') = 1    else solveReport(allSolves,'Slacks') = -99 ) ;
       if(penalties > 0, solveReport(allSolves,'Penalties') = 1 else solveReport(allSolves,'Penalties') = -99 ) ;
       display 'solve report:', slacks, penalties, solveReport ;
+
+*     Put some more information about this solve into the solve report:
+      put rep
+$     if "%GEMtype%"=="rmip" $goto skipThis
+      if(not sameas(steps,'dispatch'),
+        put'  Percent gap:'           @33 solveReport(allSolves,'Gap%'):12:2 /
+        put'  Absolute gap:'          @30 solveReport(allSolves,'GapAbs'):12:0 /
+      ) ;
+$     label skipThis
+      putclose rep
+      '  Number of variables:'        @30 solveReport(allSolves,'Vars'):12:0 /
+      '  Number of binary variables:' @30 solveReport(allSolves,'DVars'):12:0 /
+      '  Number of equations:'        @30 solveReport(allSolves,'Eqns'):12:0 /
+      '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
+      '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 /
+      ;
 
 *     Collect up solution values - by experiment, step and scenarioSet.
 $     include CollectResults.inc
@@ -363,8 +380,6 @@ $     include CollectResults.inc
   s_ANNMWSLACK, s_RENCAPSLACK, s_HYDROSLACK, s_MINUTILSLACK, s_FUELSLACK, s_RESV, s_RESVVIOL, s_RESVCOMPONENTS
 * Equation marginals (ignore the objective function)
   s_bal_supdem, s_peak_nz, s_peak_ni, s_noWindPeak_ni
-* Misc parameters
-  solveReport
   ;
 
 * End of experiments loop.
@@ -426,7 +441,8 @@ Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx"
 bat.ap = 0 ;
 putclose bat
   'copy "Selected prepared input data - %runName% - %runVersionName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
-  'copy "GEMsolve.log"                                                    "%OutPath%\%runName%\%runName% - %runVersionName% - GEMsolve.log"' /
+  'copy "GEMsolve.log"                                                    "%OutPath%\%runName%\%runName% - %runVersionName% - GEMsolveLog.txt"' /
+  'copy "Report.txt"                                                      "%OutPath%\%runName%\%runName% - %runVersionName% - GEMsolveReport.txt"' /
   ;
 execute 'temp.bat' ;
 

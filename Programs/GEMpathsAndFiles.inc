@@ -1,6 +1,10 @@
-$setglobal runName         "Test"
+$inlinecom { }
+$eolcom !
+$setglobal runName         "test"
 $setglobal runVersionName  "mds3"
 $setglobal baseRunVersion  "mds3"
+*$setglobal runVersionName  "mds3_stdLoad_withOutFDC"
+*$setglobal baseRunVersion  "mds3_stdLoad_withFDC"
 
 $setglobal GEMinputGDX     "standardGEMinput9LB.gdx"
 $setglobal GEMnetworkGDX   "2RegionNetwork.gdx"
@@ -9,31 +13,29 @@ $setglobal GEMdemandGDX    "NRG_2Region9LB_TiwaiGoes.gdx"
 $setglobal GEMoverrideGDX  "mds4_Override.gdx"
 
 $setglobal useOverrides     0
-$setglobal sprsGEMsolve     0
+$setglobal sprsGEMsolve     1
 $setglobal Mode             0
 
-$inlinecom { }
-$eolcom !
-$setglobal ProgPath        "%system.fp%"
-$setglobal DataPath        "%system.fp%..\Data\"
-$setglobal MatCodePath     "%system.fp%..\Matlab code\"
-$setglobal OutPath         "%system.fp%..\Output\"
-
-
 Set runVersions "Variants or instances of the run - all stored in the 'runName' output directory" /
+*  "mds3_stdLoad_withFDC"
+*  "mds3_stdLoad_withOutFDC" /
   mds1 '2010 Sustainable path'
   mds2 '2010 SI wind'
   mds3 '2010 Medium renewables'
   mds4 '2010 Coal'
   mds5 '2010 High gas discovery' / ;
 
-Set runVersionColor(runVersions,*,*,*) 'RGB color mix for the various versions comprising the run - to pass to plotting applications' ;
-runVersionColor('mds1','0','0','255')   = yes ;
-runVersionColor('mds2','255','0','0')   = yes ;
-runVersionColor('mds3','0','255','0')   = yes ;
-runVersionColor('mds4','0','0','0')     = yes ;
-runVersionColor('mds5','255','0','255') = yes ;
+*Set runVersionColor(runVersions,*,*,*) 'RGB color mix for the various versions comprising the run - to pass to plotting applications' ;
+*runVersionColor('mds1','0','0','255')   = yes ;
+*runVersionColor('mds2','255','0','0')   = yes ;
+*runVersionColor('mds3','0','255','0')   = yes ;
+*runVersionColor('mds4','0','0','0')     = yes ;
+*runVersionColor('mds5','255','0','255') = yes ;
 
+$setglobal ProgPath        "%system.fp%"
+$setglobal DataPath        "%system.fp%..\Data\"
+$setglobal MatCodePath     "%system.fp%..\Matlab code\"
+$setglobal OutPath         "%system.fp%..\Output\"
 
 * Set LogMode to 0 if it hasn't already been set to 1 via invocation, e.g. gams GEMsolve --LogMode=1
 * 0 ==> GAMSIDE will display log info in process window, capture it, and then subsequently archive it.

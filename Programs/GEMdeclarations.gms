@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 23/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 26/09/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
@@ -113,7 +113,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 77 parameters (again, grouped as per the navigation pane of emi).
+* Declare 78 parameters (again, grouped as per the navigation pane of emi).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -131,7 +131,7 @@ Parameters
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantities(f,y)                         'Quantitative limit on availability of various fuels by year, PJ'
   i_co2tax(y)                                   'CO2 tax by year, $/tonne CO2-equivalent'
-* 31 generation
+* 32 generation
   i_nameplate(g)                                'Nameplate capacity of generating plant, MW'
   i_UnitLargestProp(g)                          'Largest proportion of generating plant output carried by a single unit at the plant'
   i_baseload(g)                                 'Force plant to be baseloaded, 0/1 (1 = baseloaded)'
@@ -148,7 +148,8 @@ Parameters
   i_maxHydroCapFact(g)                          'Maximum capacity factors for selected schedulable hydro plant (default = 1)'
   i_fixedOM(g)                                  'Fixed O&M costs by plant, $/kW/year'
   i_varOM(g)                                    'Variable O&M costs by plant, $/MWh'
-  i_FuelDeliveryCost(g)                         'Fuel delivery cost, $/GJ'
+  i_varFuelDeliveryCosts(g)                     'Variable fuel delivery costs (over and above cost of fuel at source), $/GJ'
+  i_fixedFuelDeliveryCosts(g)                   'Fixed fuel delivery costs (to be added to i_fixedOM), $/kW/year'
   i_capitalCost(g)                              'Generation plant capital cost, $/kW'
   i_connectionCost(g)                           'Capital cost for connecting generation plant to grid, $m (NZD)'
   i_refurbCapitalCost(g)                        'Generation plant refurbishment capital cost, $/kW'
@@ -459,6 +460,7 @@ Parameters
   historicalHydroOutput(v,hY,m)                 'Historical hydro output sequences by reservoir and month, GWh'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
 * Input data summaries
+  avgSRMC(g)                                    'Short run marginal cost of each generation project - averaged over years for the default scenario, $/MWh'
   avgPeakCon(g)                                 'Contribution to peak factor - averaged over years for each plant'
   avgMaxCapFact(g)                              'Maximum capacity factor averaged over periods and load blocks for each plant (hours per block per period are the weights)'
   avgMinCapFact(g)                              'Minimum capacity factor averaged over years and periods for each plant' 
