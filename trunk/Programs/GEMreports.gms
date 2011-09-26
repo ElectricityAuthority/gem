@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 20/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 26/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -185,6 +185,8 @@ Sets
 
 Parameters
   cntr                                             'A counter'
+  unDiscFactor(runVersions,y,t)                    "Factor to adjust or 'un-discount' and 'un-tax' shadow prices and values - by period and year"
+  unDiscFactorYr(runVersions,y)                    "Factor to adjust or 'un-discount' and 'un-tax' shadow prices and values - by year (use last period of year)"
   objComponents(*,*,*,*,objc)                      'Components of objective function value'
   scenarioWeight(scenarios)                        'Individual scenario weights'
   loadByRegionAndYear(*,*,*,*,r,y)                 'Load by region and year, GWh'
@@ -201,6 +203,9 @@ Parameters
   ;
 
 rv(runVersions)$sum(reportDomain, s_TOTALCOST(runVersions,reportDomain)) = yes ;
+
+unDiscFactor(rv,y,t) = 1 / ( (1 - taxRate) * PVfacG(rv,y,t) ) ;
+unDiscFactorYr(rv,y) = sum(t$( ord(t) = card(t) ), unDiscFactor(rv,y,t)) ;
 
 loop((rv,reportDomain(experiments,steps,scenarioSets)),
 
@@ -240,13 +245,13 @@ loop((rv,reportDomain(experiments,steps,scenarioSets)),
 
   txByRegionYear(rv,reportDomain,paths,y) = sum((t,lb,sc), 1e-3 * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_TX(rv,reportDomain,paths,y,t,lb,sc)) ;
 
-  energyPrice(rv,reportDomain,r,y) = 1e3 * sum((t,lb,sc), scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_bal_supdem(rv,reportDomain,r,y,t,lb,sc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
+  energyPrice(rv,reportDomain,r,y) = 1e3 * sum((t,lb,sc), unDiscFactor(rv,y,t) * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_bal_supdem(rv,reportDomain,r,y,t,lb,sc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
 
-  peakNZPrice(rv,reportDomain,y) = 1e3 * sum(sc, scenarioWeight(sc) * s_peak_nz(rv,reportDomain,y,sc) ) ;
+  peakNZPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, scenarioWeight(sc) * s_peak_nz(rv,reportDomain,y,sc) ) ;
 
-  peakNIPrice(rv,reportDomain,y) = 1e3 * sum(sc, scenarioWeight(sc) * s_peak_ni(rv,reportDomain,y,sc) ) ;
+  peakNIPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, scenarioWeight(sc) * s_peak_ni(rv,reportDomain,y,sc) ) ;
 
-  peaknoWindNIPrice(rv,reportDomain,y) = 1e3 * sum(sc, scenarioWeight(sc) * s_noWindPeak_ni(rv,reportDomain,y,sc) ) ;
+  peaknoWindNIPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, scenarioWeight(sc) * s_noWindPeak_ni(rv,reportDomain,y,sc) ) ;
 
 ) ;
 
@@ -254,7 +259,7 @@ objComponents(rv,reportDomain,'obj_Check') = sum(objc, objComponents(rv,reportDo
 
 loadByRegionAndYear(rv,reportDomain,r,y) = sum((t,lb,sc), scenarioWeight(sc) * NrgDemand(rv,r,y,t,lb,sc)) ;
 
-Display rv, objComponents, builtByTechRegion ;
+Display unDiscFactor, unDiscFactorYr, rv, objComponents, builtByTechRegion ;
 
 
 * Write results out to a csv file.

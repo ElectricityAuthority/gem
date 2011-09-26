@@ -1,7 +1,7 @@
 *+++ Model +++
 $setglobal firstYear 2012
 * First modelled year.
-$setglobal lastYear 2020
+$setglobal lastYear 2050
 * Last modelled year.
 $setglobal RunType 1
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only

@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 23/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 26/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -75,7 +75,7 @@ execute 'temp.bat' ;
 
 Set y  / %firstYear% * %lastYear% / ;
 
-* Load the 109 network invariant symbols from GEMinputGDX.
+* Load the 110 network invariant symbols from GEMinputGDX.
 $gdxin "%DataPath%%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
@@ -89,8 +89,8 @@ $loaddc mapReservoirs
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
 $load   i_fuelPrices i_fuelQuantities i_co2tax i_minUtilisation
-$loaddc i_nameplate i_UnitLargestProp i_baseload i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear
-$loaddc i_fof i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_FuelDeliveryCost
+$loaddc i_nameplate i_UnitLargestProp i_baseload i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear i_fof i_heatrate
+$loaddc i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_varFuelDeliveryCosts i_fixedFuelDeliveryCosts
 $loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_plantReservesCap i_plantReservesCost i_PltCapFact
 $loaddc i_HVDCshr
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
@@ -249,7 +249,6 @@ if(depType = 0,
 ) ;
 
 
-
 * d) Generation data.
 * Derive various generating plant subsets.
 * i) Existing plant - remove any plant where i_nameplate(g) = 0 from exist(g).
@@ -391,6 +390,9 @@ refurbCapCharge(g,y)$( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i
 
 * Calculate reserve capability per generating plant.
 reservesCapability(g,rc)$i_plantReservesCap(g,rc) = i_nameplate(g) * i_plantReservesCap(g,rc) ;
+
+* Add any fixed costs associated with fuel delivery to the fixed OM costs by plant.
+i_fixedOM(g) = i_fixedOM(g) + i_fixedFuelDeliveryCosts(g) ;
 
 
 * e) Transmission data.
@@ -570,7 +572,6 @@ pNFresvCost(paths(r,rr),stp)$( pNFresvCost(paths,stp) > 500 ) = 500 ;
 
 
 
-
 *===============================================================================================
 * 4. Prepare the scenario-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
 
@@ -585,7 +586,7 @@ loop(scenarioSets,
 ) ;
 
 * Compute the short-run marginal cost (and its components) for each generating plant, $/MWh.
-totalFuelCost(g,y,scenarios) = 1e-3 * i_heatrate(g) * sum(mapg_f(g,f), ( i_fuelPrices(f,y) * scenarioFuelCostFactor(scenarios) + i_FuelDeliveryCost(g) ) ) ;
+totalFuelCost(g,y,scenarios) = 1e-3 * scenarioFuelCostFactor(scenarios) * i_heatrate(g) * sum(mapg_f(g,f), i_fuelPrices(f,y) + i_varFuelDeliveryCosts(g) ) ;
 
 CO2taxByPlant(g,y,scenarios) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * scenarioCO2TaxFactor(scenarios) * i_emissionFactors(f) ) ;
 
@@ -691,6 +692,8 @@ GWhtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * ma
 
 loop(defaultScenario(scenarios),
 
+  avgSRMC(g) = sum(y, SRMC(g,y,scenarios)) / card(y) ;
+
   loadByRegionYear(r,y) = sum((t,lb), NrgDemand(r,y,t,lb,scenarios)) ;
   loadByAggRegionYear(aggR,y) = sum(mapAggR_r(aggR,r), loadByRegionYear(r,y)) ; 
 
@@ -730,7 +733,7 @@ loop(allSolves(experiments,steps,scenarioSets),
 
 
 * Write the plant data summaries.
-$set plantDataHdr 'MW  Capex  varCC  varOM  fixOM     HR  PkCon mxCapF mnCapF  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
+$set plantDataHdr 'MW  Capex  varCC  varOM avSRMC  fixOM fixFDC     HR  PkCon mxCapF mnCapF  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
 put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
   'First modelled year:'                @38 firstYear:<4:0 /
   'Last modelled year:'                 @38 lastYear:<4:0 //
@@ -760,7 +763,10 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
   'Capex - Capital cost of new plant, $/kW (as levelised and used in objective function). Includes any connection cost and randomisation.' / 
   'varCC - the variablised connection cost component of the aforementioned capex, $/kW.' / 
   'varOM - variable O&M costs by plant, $/MWh' /
-  'fixOM - fixed O&M costs by plant, $/kW/year' /
+  'avSRMC - SRMC averaged over all years for the default scenario, $/MWh' /
+  '  NB: SRMC includes variable O&M, CO2 tax, and total fuel costs (which is made up of fuel price plus any variable fuel delivery cost)' /
+  'fixOM - fixed O&M costs by plant (as used in objective function and including any fixed fuel delivery costs), $/kW/year' /
+  'fixFDC - fixed fuel delivery costs (included in fixOM above), $/kW/year' /
   'HR - heat rate of generating plant, GJ/GWh' /
   'PkCon - contribution to peak factor - averaged over years.' /
   'mxCapF - maximum capacity factor averaged over periods and load blocks (hours per block per period are the weights).' /
@@ -783,37 +789,37 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
 counter = 0 ;
 loop((k,exist(g))$mapg_k(g,k),
   counter = counter + 1 ;
-  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, i_heatrate(g):7:0
-        avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, @95 '-' @101 'Y' @109 ;
-  if(commit(g),       put 'Y' else put '-' ) put @115 ;
-  if(new(g),          put 'Y' else put '-' ) put @120 ;
-  if(neverBuild(g),   put 'Y' else put '-' ) put @126 ;
-  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @133 ;
-  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @140 ;
-  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @148 ;
-  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @154 ;
-  if(possibleToRetire(g),     put 'Y' else put '-' ) put @160 ;
-  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @167 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @176 '-' @180 ;
-  loop(mapg_r(g,r), put r.tl ) put @187 loop(mapg_o(g,o), put o.tl ) put @194 loop(mapg_i(g,i), put i.tl ) put @202 g.te(g) ;
+  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, avgSRMC(g):7:1, i_fixedOM(g):7:1
+        i_fixedFuelDeliveryCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, @109 'Y' @115 '-' @123 ;
+  if(commit(g),       put 'Y' else put '-' ) put @129 ;
+  if(new(g),          put 'Y' else put '-' ) put @134 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @140 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @147 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @154 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @162 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @168 ;
+  if(possibleToRetire(g),     put 'Y' else put '-' ) put @174 ;
+  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @181 ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @190 '-' @194 ;
+  loop(mapg_r(g,r), put r.tl ) put @201 loop(mapg_o(g,o), put o.tl ) put @208 loop(mapg_i(g,i), put i.tl ) put @216 g.te(g) ;
 ) ;
 put // 'Non-existing plant' @34 "%plantDataHdr%" ;
 loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
   counter = counter + 1 ;
-  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, i_fixedOM(g):7:1, i_heatrate(g):7:0
-        avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, @95 '-' @101 'Y' @109 ;
-  if(commit(g),       put 'Y' else put '-' ) put @115 ;
-  if(new(g),          put 'Y' else put '-' ) put @120 ;
-  if(neverBuild(g),   put 'Y' else put '-' ) put @126 ;
-  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @133 ;
-  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @140 ;
-  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @148 ;
-  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @154 ;
-  if(possibleToRetire(g),     put 'Y' else put '-' ) put @160 ;
-  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @167 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @176 ;
-  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @180 ;
-  loop(mapg_r(g,r), put r.tl ) put @187 loop(mapg_o(g,o), put o.tl ) put @194 loop(mapg_i(g,i), put i.tl ) put @202 g.te(g) ;
+  put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, avgSRMC(g):7:1, i_fixedOM(g):7:1
+        i_fixedFuelDeliveryCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, @109 '-' @115 'Y' @123 ;
+  if(commit(g),       put 'Y' else put '-' ) put @129 ;
+  if(new(g),          put 'Y' else put '-' ) put @134 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @140 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @147 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @154 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @162 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @168 ;
+  if(possibleToRetire(g),     put 'Y' else put '-' ) put @174 ;
+  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @181 ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @190 ;
+  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @194 ;
+  loop(mapg_r(g,r), put r.tl ) put @201 loop(mapg_o(g,o), put o.tl ) put @208 loop(mapg_i(g,i), put i.tl ) put @216 g.te(g) ;
 ) ;
 
 
