@@ -1,24 +1,20 @@
 $inlinecom { }
 $eolcom !
 $setglobal runName         "test"
-$setglobal runVersionName  "mds3"
+$setglobal runVersionName  "mds5"
 $setglobal baseRunVersion  "mds3"
-*$setglobal runVersionName  "mds3_stdLoad_withOutFDC"
-*$setglobal baseRunVersion  "mds3_stdLoad_withFDC"
 
 $setglobal GEMinputGDX     "standardGEMinput9LB.gdx"
 $setglobal GEMnetworkGDX   "2RegionNetwork.gdx"
-$setglobal GEMdemandGDX    "NRG_2Region9LB_TiwaiGoes.gdx"
+$setglobal GEMdemandGDX    "NRG_2Region9LB_Standard.gdx"
 
 $setglobal GEMoverrideGDX  "mds4_Override.gdx"
 
 $setglobal useOverrides     0
-$setglobal sprsGEMsolve     1
+$setglobal sprsGEMsolve     0
 $setglobal Mode             0
 
 Set runVersions "Variants or instances of the run - all stored in the 'runName' output directory" /
-*  "mds3_stdLoad_withFDC"
-*  "mds3_stdLoad_withOutFDC" /
   mds1 '2010 Sustainable path'
   mds2 '2010 SI wind'
   mds3 '2010 Medium renewables'

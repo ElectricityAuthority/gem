@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 26/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 27/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -665,11 +665,11 @@ $offtext
 
 * Declare input data summary files.
 Files
-  stochasticSummary / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - Stochastic summary.txt" /
-  plantData         / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - Plant summary.txt" /
-  capexStats        / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - Capex, MW and GWh summaries.txt" /
-  loadSummary       / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - Load summary.txt" /
-  lrmc_inData       / "%OutPath%%runName%\Input data checks\%runName% - %runVersionName% - LRMC estimates based on GEM input data (non-existing plant only).csv" /
+  stochasticSummary / "%OutPath%%runName%\Input data checks\Stochastic summary - %runName%_%runVersionName%.txt" /
+  plantData         / "%OutPath%%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
+  capexStats        / "%OutPath%%runName%\Input data checks\Capex, MW and GWh summaries - %runName%_%runVersionName%.txt" /
+  loadSummary       / "%OutPath%%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
+  lrmc_inData       / "%OutPath%%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" /
   ;
 
 stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;

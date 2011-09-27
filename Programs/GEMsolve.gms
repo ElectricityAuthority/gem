@@ -54,7 +54,7 @@ File rep "Write to a report"     / "%ProgPath%\Report.txt" / ; rep.lw = 0 ; rep.
 File con "Write to the console"  / con / ;                     con.lw = 0 ;
 File dummy ;
 
-putclose rep 'Run:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / @15 'Started at ', system.time, ' on ' system.date ;
+putclose rep 'Run:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / ;
 
 * Specify various .lst file and solver-related options.
 if(%limitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ; ) ; 
@@ -284,13 +284,13 @@ loop(experiments,
 
 *     Post a progress message to report for use by GUI and to the console.
       if(counter = 1,
-        putclose rep / 'The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve finished with some sort of problem and the job is now going to abort.' /
+        putclose rep / 'The ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' solve finished with some sort of problem and the job is now going to abort.' /
                        'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
         else
-        putclose rep / 'The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve finished at ', system.time / '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
+        putclose rep / 'The ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' solve finished at ', system.time / '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
       ) ;
-      putclose con // '    The ' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl ' solve for "%runName% -- %runVersionName% has just finished' /
-                      '    Objective function value: ' TOTALCOST.l:<12:1 // ;
+      putclose con // '   The ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' solve for "%runName% -- %runVersionName% has just finished' /
+                      '   Objective function value: ' TOTALCOST.l:<12:1 // ;
 
       if(sameas(steps,'dispatch'),
         abort$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) "Problem encountered when solving DISP..." ;
@@ -324,13 +324,12 @@ $     label skipThis
       '  Number of binary variables:' @30 solveReport(allSolves,'DVars'):12:0 /
       '  Number of equations:'        @30 solveReport(allSolves,'Eqns'):12:0 /
       '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
-      '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 /
-      ;
+      '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 // ;
 
 *     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRschedule = 1).
 $     if "%GRschedule%"==0 $goto skipGRschedule
       dummy.lw = 0 ; put dummy ;
-      put_utility 'ren' / "%OutPath%\%runName%\Processed files\GRschedule_" experiments.tl '_' steps.tl '_' scenarioSets.tl '.gms' ;
+      put_utility 'ren' / "%OutPath%\%runName%\Processed files\GRschedule - %runVersionName%_" experiments.tl '_' steps.tl '_' scenarioSets.tl '.gms' ;
       if(not sameas(steps,'dispatch'),
         put "Parameter fix_BUILD(g,y)   'New capacity installed by generating plant and year, MW' /" ;
         loop((g,y)$BUILD.l(g,y),  put / "'" g.tl "'.'" y.tl "'" BUILD.l(g,y):15:8 ) put ' /;' // ;
@@ -354,7 +353,7 @@ $     label skipGRschedule
 *     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
 $     if not %PlotMIPtrace%==1 $goto NoMIPTrace
       bat.ap = 0 ;
-      putclose bat 'copy MIPtrace.txt "%runName%-%runVersionName%-MIPtrace-' experiments.tl ' - ' steps.tl ' - ' scenarioSets.tl '.txt"' ;
+      putclose bat 'copy MIPtrace.txt "MIPtrace - %runName%_%runVersionName%_' experiments.tl '_' steps.tl '_' scenarioSets.tl '.txt"' ;
       execute 'temp.bat';
 $     label NoMIPTrace
 
@@ -427,7 +426,7 @@ execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\RepOut\"*.gdx output="%OutPath%\
 * edit above heading
 
 * x) Dump selected input data into a GDX file (as imported, or from intermediate steps in GEMdata, or what's actually used to solve the model).
-Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx",
+Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
   y t f k g s o lb i r e ild ps scenarios rc n tgc hY
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r isIldEqReg firstPeriod firstYr lastYr allButFirstYr
@@ -466,9 +465,9 @@ Execute_Unload "Selected prepared input data - %runName% - %runVersionName%.gdx"
 
 bat.ap = 0 ;
 putclose bat
-  'copy "Selected prepared input data - %runName% - %runVersionName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
-  'copy "GEMsolve.log"                                                    "%OutPath%\%runName%\%runName% - %runVersionName% - GEMsolveLog.txt"' /
-  'copy "Report.txt"                                                      "%OutPath%\%runName%\%runName% - %runVersionName% - GEMsolveReport.txt"' /
+  'copy "GEMsolve.log"                                                  "%OutPath%\%runName%\GEMsolveLog - %runName%_%runVersionName%.txt"' /
+  'copy "Report.txt"                                                    "%OutPath%\%runName%\GEMsolveReport - %runName%_%runVersionName%.txt"' /
+*  'copy "Selected prepared input data - %runName%_%runVersionName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
   ;
 execute 'temp.bat' ;
 
