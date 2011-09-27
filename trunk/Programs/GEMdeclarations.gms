@@ -1,14 +1,14 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 26/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 28/09/2011 (imm@ea.govt.nz)
 
 $ontext
-  This program declares all of the symbols (sets, scalars, parameters, variables and equations used throughout
-  the various GEM codes - up to and including GEMsolve, the program that solves the models. Symbols required only
-  for post-solve reporting purposes are declared in GEMreports.
-  In a very few cases (a handful of sets), the symbols are intialised here as well. In other words, the membership
-  of those sets is assigned at the time of declaration. In all other cases, set membership and data values are obtained
-  from user-specified input files, or are computed using the imported data.
+  This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used throughout
+  the various GEM codes - up to and including GEMsolve, the program that solves the models. Symbols required only for
+  post-solve reporting purposes are declared in GEMreports.
+  In a very few cases (a handful of sets whose memebership never changes), the symbols are intialised here as well. In
+  other words, the membership of those sets is assigned at the time of declaration. In all other cases, set membership
+  and data values are obtained from user-specified input files, or are computed using the imported data.
   The GEMdeclarations work file is saved and used at invocation to restart GEMdata.
 
  Code sections:
@@ -21,6 +21,7 @@ $ontext
   3. Declare model variables and equations.
   4. Specify the equations and declare the models.
   5. Declare the 's_' parameters and specify the statements used to collect up results at end of each experiment.
+  6. Declare some (but not all) output files to be created by GEMdata and GEMsolve.
 $offtext
 
 * Turn the following maps on/off as desired.
@@ -1119,6 +1120,19 @@ $if %RunType%==2 $goto skip
   s_endogretonce(steps,scenarioSets,g)                       = endogretonce.m(g) ;
 $label skip
 $offecho
+
+
+
+*===============================================================================================
+* 6. Declare some (but not all) output files to be created by GEMdata and GEMsolve.
+
+Files
+  rep   'Write to a solve summary report'  / Report.txt /
+  con   'Write to the console'             / con /
+  dummy ;
+
+rep.lw = 0 ; rep.ap = 1 ;
+con.lw = 0 ;
 
 
 

@@ -1,12 +1,12 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 27/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 28/09/2011 (imm@ea.govt.nz)
 
 
 *** To do:
 *** Sort out the MIPtrace stuff, also, can it be made to work on all solvers?
-*** does each model type have the correct modelstat error condition driving the abort stmt?
+*** Does each model type have the correct modelstat error condition driving the abort stmt?
 *** The abort if slacks present has gone. Bring it back? Warning if penalties?
 
 * NB: The following symbols from input data file may have been changed in GEMdata:
@@ -49,11 +49,7 @@ $offsymxref offsymlist
 *===============================================================================================
 * 1. Take care of preliminaries.
 
-* Declare and create basic run-time reporting capability.
-File rep "Write to a report"     / "%ProgPath%\Report.txt" / ; rep.lw = 0 ; rep.ap = 1 ;
-File con "Write to the console"  / con / ;                     con.lw = 0 ;
-File dummy ;
-
+* Stamp run name and run version name into solve report.
 putclose rep 'Run:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / ;
 
 * Specify various .lst file and solver-related options.
@@ -284,12 +280,12 @@ loop(experiments,
 
 *     Post a progress message to report for use by GUI and to the console.
       if(counter = 1,
-        putclose rep / 'The ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' solve finished with some sort of problem and the job is now going to abort.' /
+        putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' finished with some sort of problem and the job is now going to abort.' /
                        'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
         else
-        putclose rep / 'The ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' solve finished at ', system.time / '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
+        putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' (', system.time ')' / '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
       ) ;
-      putclose con // '   The ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' solve for "%runName% -- %runVersionName% has just finished' /
+      putclose con // '   Model: ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' from the %runName%_%runVersionName% run has finished' /
                       '   Objective function value: ' TOTALCOST.l:<12:1 // ;
 
       if(sameas(steps,'dispatch'),
@@ -419,6 +415,10 @@ execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\RepOut\"*.gdx output="%OutPath%\
 * can lead to reading the same gdx file many times, but it allows the merging of large data sets.
 
 
+* Stamp the finishing time of current run version into solve summary report.
+putclose / rep 'Run version ' "%runVersionName%" ' finished at ' system.time /// ;
+
+
 
 *===============================================================================================
 * 4. Dump results out to GDX files and rename/relocate certain output files.
@@ -465,11 +465,10 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
 
 bat.ap = 0 ;
 putclose bat
-  'copy "GEMsolve.log"                                                  "%OutPath%\%runName%\GEMsolveLog - %runName%_%runVersionName%.txt"' /
-  'copy "Report.txt"                                                    "%OutPath%\%runName%\GEMsolveReport - %runName%_%runVersionName%.txt"' /
-*  'copy "Selected prepared input data - %runName%_%runVersionName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
-  ;
+  'copy "GEMsolve.log" "%OutPath%\%runName%\Processed files\GEMsolveLog - %runName%_%runVersionName%.txt"' /
+  'copy "Report.txt"   "%OutPath%\%runName%\GEMsolveReport - %runName%.txt"' / ;
 execute 'temp.bat' ;
+
 
 
 
