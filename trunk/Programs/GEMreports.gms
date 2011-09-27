@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 26/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 27/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -26,7 +26,7 @@ $include GEMpathsAndFiles.inc
 $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolcom !
 
 * Declare output files to be created by GEMreports.
-File summaryResults / "%OutPath%\%runName%\%runName% - summary results.csv" / ;
+File summaryResults / "%OutPath%\%runName%\Summary results - %runName%.csv" / ;
 summaryResults.pc = 5 ; summaryResults.pw = 999 ;
 
 
@@ -83,7 +83,7 @@ Sets
   sigen(g)          'South Island generation plant' ;
 
 * Load set membership from the GDX file containing the default or base case run version.
-$gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName% - %baseRunVersion%.gdx"
+$gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%baseRunVersion%.gdx"
 $loaddc k g s o i r e t lb rc hY
 $loaddc firstPeriod nwd swd paths mapg_k mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen sigen
 

@@ -16,3 +16,4 @@ if exist GEM*.gdx             erase GEM*.gdx /q
 if exist selected*.gdx        erase selected*.gdx /q
 if exist allRV_selected*.gdx  erase allRV_selected*.gdx /q
 if exist allRV_Report*.gdx    erase allRV_Report*.gdx /q
+if exist Report.txt           erase Report.txt /q
