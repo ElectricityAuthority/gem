@@ -49,9 +49,7 @@ execute 'gdxmerge mds1.gdx mds2.gdx mds3.gdx mds4.gdx mds5.gdx output=allRV_Repo
 *    - delete the temp directory in the GDX folder, which contained the various 'experiment' GDX files.
 putclose bat
   'copy allRV_SelectedInputData.gdx     "%OutPath%\%runName%\Input data checks\"' /
-  'copy allRV_ReportOutput.gdx          "%OutPath%\%runName%\GDX\"' /
-  'rmdir "%OutPath%\%runName%\GDX\temp" /s /q'
-  ;
+  'copy allRV_ReportOutput.gdx          "%OutPath%\%runName%\GDX\"' / ;
 execute 'temp.bat' ;
 
 

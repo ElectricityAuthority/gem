@@ -8,11 +8,15 @@ $setglobal GEMinputGDX     "standardGEMinput9LB.gdx"
 $setglobal GEMnetworkGDX   "2RegionNetwork.gdx"
 $setglobal GEMdemandGDX    "NRG_2Region9LB_Standard.gdx"
 
-$setglobal GEMoverrideGDX  "mds4_Override.gdx"
+$setglobal GEMoverrideGDX  "mds5_Override.gdx"
 
-$setglobal useOverrides     0
-$setglobal sprsGEMsolve     0
+$setglobal useOverrides     1
+$setglobal sprsGEMsolve     1
 $setglobal Mode             0
+
+
+$setglobal defaultScenario  "piAvg"
+$setglobal reportDomain     "'standardExp','timing','standardAvg'"
 
 Set runVersions "Variants or instances of the run - all stored in the 'runName' output directory" /
   mds1 '2010 Sustainable path'
@@ -21,17 +25,17 @@ Set runVersions "Variants or instances of the run - all stored in the 'runName' 
   mds4 '2010 Coal'
   mds5 '2010 High gas discovery' / ;
 
-*Set runVersionColor(runVersions,*,*,*) 'RGB color mix for the various versions comprising the run - to pass to plotting applications' ;
-*runVersionColor('mds1','0','0','255')   = yes ;
-*runVersionColor('mds2','255','0','0')   = yes ;
-*runVersionColor('mds3','0','255','0')   = yes ;
-*runVersionColor('mds4','0','0','0')     = yes ;
-*runVersionColor('mds5','255','0','255') = yes ;
+Set runVersionColor(runVersions,*,*,*) 'RGB color mix for the various versions comprising the run - to pass to plotting applications' ;
+runVersionColor('mds1','0','0','255')   = yes ;
+runVersionColor('mds2','255','0','0')   = yes ;
+runVersionColor('mds3','0','255','0')   = yes ;
+runVersionColor('mds4','0','0','0')     = yes ;
+runVersionColor('mds5','255','0','255') = yes ;
 
-$setglobal ProgPath        "%system.fp%"
-$setglobal DataPath        "%system.fp%..\Data\"
-$setglobal MatCodePath     "%system.fp%..\Matlab code\"
-$setglobal OutPath         "%system.fp%..\Output\"
+$setglobal ProgPath    "%system.fp%"
+$setglobal DataPath    "%system.fp%..\Data\"
+$setglobal MatCodePath "%system.fp%..\Matlab code\"
+$setglobal OutPath     "%system.fp%..\Output\"
 
 * Set LogMode to 0 if it hasn't already been set to 1 via invocation, e.g. gams GEMsolve --LogMode=1
 * 0 ==> GAMSIDE will display log info in process window, capture it, and then subsequently archive it.

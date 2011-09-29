@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 27/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/09/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -49,7 +49,7 @@ $include GEMpathsAndFiles.inc
 $include GEMsettings.inc
 
 * Turn the following stuff on/off as desired.
-*$offupper onempty inlinecom { } eolcom !
+$offupper onempty inlinecom { } eolcom !
 $offuelxref offuellist	
 *$onuelxref  onuellist	
 $offsymxref offsymlist
@@ -130,11 +130,9 @@ Parameters
 
 $gdxin "%DataPath%%GEMoverrideGDX%"
 $load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
-*$load   i_co2taxOvrd
-if(sum((f,y), i_fuelPricesOvrd(f,y)), i_fuelPrices(f,y) = 0 ) ;         i_fuelPrices(f,y) = i_fuelPricesOvrd(f,y) ;
-if(sum((f,y), i_fuelQuantitiesOvrd(f,y)), i_fuelQuantities(f,y) = 0 ) ; i_fuelQuantities(f,y) = i_fuelQuantitiesOvrd(f,y) ;
-if(sum(y, i_co2taxOvrd(y)), i_co2tax(y) = 0 ) ;                         i_co2tax(y) = i_co2taxOvrd(y) ;
-
+i_fuelPrices(f,y)$i_fuelPricesOvrd(f,y) = i_fuelPricesOvrd(f,y) ;              i_fuelPrices(f,y)$( i_fuelPrices(f,y) = eps ) = 0 ;
+i_fuelQuantities(f,y)$i_fuelQuantitiesOvrd(f,y) = i_fuelQuantitiesOvrd(f,y) ;  i_fuelQuantities(f,y)$( i_fuelQuantities(f,y) = eps ) = 0 ;
+i_co2tax(y)$i_co2taxOvrd(y) = i_co2taxOvrd(y) ;                                i_co2tax(y)$( i_co2tax(y) = eps ) = 0 ; 
 $label noOverrides
 
 
@@ -683,6 +681,7 @@ lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
 avgPeakCon(g) = sum(y, peakConPlant(g,y)) / card(y) ;
 avgMaxCapFact(g) = sum((t,lb), hoursPerBlock(t,lb) * maxCapFactPlant(g,t,lb)) / sum((t,lb), hoursPerBlock(t,lb)) ;
 avgMinCapFact(g) = sum((y,t),  minCapFactPlant(g,y,t)) / ( card(y) * card(t) ) ;
+avgMinUtilisation(g) = sum(y, i_minUtilisation(g,y)) / card(y) ;
 
 assumedGWh(g) = sum(mapg_k(g,k), 8.76 * i_capFacTech(k) * i_nameplate(g)) ;
 assumedGWh(pumpedHydroPlant(g)) = i_PumpedHydroEffic(g) * sum(mapm_t(m,t), 1) * i_PumpedHydroMonth(g) ;
@@ -690,6 +689,7 @@ assumedGWh(pumpedHydroPlant(g)) = i_PumpedHydroEffic(g) * sum(mapm_t(m,t), 1) * 
 MWtoBuild(k,aggR)  = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), i_nameplate(g)) ;
 GWhtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), assumedGWh(g)) ;
 
+defaultScenario("%defaultScenario%") = yes ;
 loop(defaultScenario(scenarios),
 
   avgSRMC(g) = sum(y, SRMC(g,y,scenarios)) / card(y) ;
@@ -733,8 +733,10 @@ loop(allSolves(experiments,steps,scenarioSets),
 
 
 * Write the plant data summaries.
-$set plantDataHdr 'MW  Capex  varCC  varOM avSRMC  fixOM fixFDC     HR  PkCon mxCapF mnCapF  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
-put plantData, 'Various plant data - based on user-supplied data and the machinations of GEMdata.gms.' //
+$set plantDataHdr 'MW  Capex  varCC  varOM avSRMC  fixOM fixFDC     HR  PkCon mxCapF mnCapF  avMnU  Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
+put plantData, 'Plant data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
+  'All scenarios:'                      @38 loop(scenarios, put scenarios.tl ', ' ) put /
+  'Default scenario:'                   @38 loop(defaultScenario(scenarios), put scenarios.tl ) put //
   'First modelled year:'                @38 firstYear:<4:0 /
   'Last modelled year:'                 @38 lastYear:<4:0 //
   'Summary counts' /
@@ -769,8 +771,9 @@ put plantData, 'Various plant data - based on user-supplied data and the machina
   'fixFDC - fixed fuel delivery costs (included in fixOM above), $/kW/year' /
   'HR - heat rate of generating plant, GJ/GWh' /
   'PkCon - contribution to peak factor - averaged over years.' /
-  'mxCapF - maximum capacity factor averaged over periods and load blocks (hours per block per period are the weights).' /
   'mnCapF - minimum capacity factor averaged over years and periods.' /
+  'mxCapF - maximum capacity factor averaged over periods and load blocks (hours per block per period are the weights).' /
+  'avMnU - minimum utilisation of plant averaged over years.' /
   'Exist - plant already exists.' /
   'noExst - plant does not exist but may be a candidate for building.' /
   'Commit - plant is committed to be built in the single year given in the column entitled FixYr.' /
@@ -790,36 +793,36 @@ counter = 0 ;
 loop((k,exist(g))$mapg_k(g,k),
   counter = counter + 1 ;
   put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, avgSRMC(g):7:1, i_fixedOM(g):7:1
-        i_fixedFuelDeliveryCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, @109 'Y' @115 '-' @123 ;
-  if(commit(g),       put 'Y' else put '-' ) put @129 ;
-  if(new(g),          put 'Y' else put '-' ) put @134 ;
-  if(neverBuild(g),   put 'Y' else put '-' ) put @140 ;
-  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @147 ;
-  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @154 ;
-  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @162 ;
-  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @168 ;
-  if(possibleToRetire(g),     put 'Y' else put '-' ) put @174 ;
-  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @181 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @190 '-' @194 ;
-  loop(mapg_r(g,r), put r.tl ) put @201 loop(mapg_o(g,o), put o.tl ) put @208 loop(mapg_i(g,i), put i.tl ) put @216 g.te(g) ;
+        i_fixedFuelDeliveryCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, avgMinUtilisation(g):7:2, @116 'Y' @122 '-' @130 ;
+  if(commit(g),       put 'Y' else put '-' ) put @136 ;
+  if(new(g),          put 'Y' else put '-' ) put @141 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @147 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @154 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @161 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @169 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @175 ;
+  if(possibleToRetire(g),     put 'Y' else put '-' ) put @181 ;
+  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @188 ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @197 '-' @201 ;
+  loop(mapg_r(g,r), put r.tl ) put @208 loop(mapg_o(g,o), put o.tl ) put @215 loop(mapg_i(g,i), put i.tl ) put @223 g.te(g) ;
 ) ;
 put // 'Non-existing plant' @34 "%plantDataHdr%" ;
 loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
   counter = counter + 1 ;
   put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, avgSRMC(g):7:1, i_fixedOM(g):7:1
-        i_fixedFuelDeliveryCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, @109 '-' @115 'Y' @123 ;
-  if(commit(g),       put 'Y' else put '-' ) put @129 ;
-  if(new(g),          put 'Y' else put '-' ) put @134 ;
-  if(neverBuild(g),   put 'Y' else put '-' ) put @140 ;
-  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @147 ;
-  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @154 ;
-  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @162 ;
-  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @168 ;
-  if(possibleToRetire(g),     put 'Y' else put '-' ) put @174 ;
-  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @181 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @190 ;
-  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @194 ;
-  loop(mapg_r(g,r), put r.tl ) put @201 loop(mapg_o(g,o), put o.tl ) put @208 loop(mapg_i(g,i), put i.tl ) put @216 g.te(g) ;
+        i_fixedFuelDeliveryCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, avgMinUtilisation(g):7:2, @116 '-' @122 'Y' @130 ;
+  if(commit(g),       put 'Y' else put '-' ) put @136 ;
+  if(new(g),          put 'Y' else put '-' ) put @141 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @147 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @154 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @161 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @169 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @175 ;
+  if(possibleToRetire(g),     put 'Y' else put '-' ) put @181 ;
+  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @188 ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @197 ;
+  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @201 ;
+  loop(mapg_r(g,r), put r.tl ) put @208 loop(mapg_o(g,o), put o.tl ) put @215 loop(mapg_i(g,i), put i.tl ) put @223 g.te(g) ;
 ) ;
 
 

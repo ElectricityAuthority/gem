@@ -11,9 +11,5 @@ if exist GEMsolve.g00         erase GEMsolve.g00 /q
 if exist GEMreports.g00       erase GEMreports.g00 /q
 if exist GEMsolve.log         erase GEMsolve.log /q
 if exist MIPtrace.txt         erase MIPtrace.txt /q
-if exist diffile.gdx          erase diffile.gdx /q
-if exist GEM*.gdx             erase GEM*.gdx /q
-if exist selected*.gdx        erase selected*.gdx /q
-if exist allRV_selected*.gdx  erase allRV_selected*.gdx /q
-if exist allRV_Report*.gdx    erase allRV_Report*.gdx /q
 if exist Report.txt           erase Report.txt /q
+if exist *.gdx                erase *.gdx /q
