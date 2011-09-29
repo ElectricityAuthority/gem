@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 28/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/09/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used throughout
@@ -277,7 +277,8 @@ Sets
   mapSC_hY(scenarios,hY)                        'Map historical hydro output years to scenarios (compute the average if more than one hydro year is specified)'
   mapSC_hydroSeqTypes(scenarios,hydroSeqTypes)  'Map the way types of hydrology sequences are developed (same or sequential) to scenarios'
   mapHydroYearsToModelledYears(experiments,steps,scenarioSets,scenarios,y,hY) 'Collect the mapping of hydro years to modelled modelled years for all experiments-steps-scenarioSets tuples'
-  sumSolves(scenarioSets)                       'Figure out which solves to sum over when computing post-solve results averaged over scenarioSets' ;
+  sumSolves(scenarioSets)                       'Figure out which solves to sum over when computing post-solve results averaged over scenarioSets'
+  defaultScenario(scenarios)                    'Identify a default scenario to use when reporting summaries of input data (see GEMdata)' ;
 
 Parameters
   scenarioPeakLoadFactor(scenarios)             'Scenario-specific scaling factor for peak load data'
@@ -465,6 +466,7 @@ Parameters
   avgPeakCon(g)                                 'Contribution to peak factor - averaged over years for each plant'
   avgMaxCapFact(g)                              'Maximum capacity factor averaged over periods and load blocks for each plant (hours per block per period are the weights)'
   avgMinCapFact(g)                              'Minimum capacity factor averaged over years and periods for each plant' 
+  avgMinUtilisation(g)                          'Minimum utilisation of plant averaged over years'
   assumedGWh(g)                                 'Gigawatt hours per plant using assumed technology-specific capacity factors'
   MWtoBuild(k,aggR)                             'MW available for installation by technology, island and NZ'
   GWhtoBuild(k,aggR)                            'Assumed GWh from all plant available for installation by technology, island and NZ'

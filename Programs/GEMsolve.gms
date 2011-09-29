@@ -38,7 +38,9 @@ $offtext
 option seed = 101 ;
 
 * Turn the following stuff on/off as desired.
-$offupper onempty inlinecom { } eolcom !
+$offinline offeolcom
+$inlinecom { } eolcom !
+$offupper onempty
 $offuelxref offuellist	
 *$onuelxref  onuellist	
 $offsymxref offsymlist
@@ -309,18 +311,19 @@ loop(experiments,
 
 *     Put some more information about this solve into the solve report:
       put rep
-$     if "%GEMtype%"=="rmip" $goto skipThis
+$     if "%GEMtype%"=="RMIP" $goto skipThis
       if(not sameas(steps,'dispatch'),
         put'  Percent gap:'           @33 solveReport(allSolves,'Gap%'):12:2 /
         put'  Absolute gap:'          @30 solveReport(allSolves,'GapAbs'):12:0 /
       ) ;
 $     label skipThis
-      putclose rep
+      put rep
       '  Number of variables:'        @30 solveReport(allSolves,'Vars'):12:0 /
       '  Number of binary variables:' @30 solveReport(allSolves,'DVars'):12:0 /
       '  Number of equations:'        @30 solveReport(allSolves,'Eqns'):12:0 /
       '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
-      '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 // ;
+      '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 /
+      '  MIP/RMIP:' @42 if(sameas(steps,'dispatch'), put "%DISPtype%" // else put "%GEMtype%" // ) ;
 
 *     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRschedule = 1).
 $     if "%GRschedule%"==0 $goto skipGRschedule
@@ -429,6 +432,7 @@ putclose / rep 'Run version ' "%runVersionName%" ' finished at ' system.time ///
 Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
   y t f k g s o lb i r e ild ps scenarios rc n tgc hY
+  techColor fuelColor fuelGrpColor
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r isIldEqReg firstPeriod firstYr lastYr allButFirstYr
   paths nwd swd interIsland pumpedHydroPlant wind gas diesel
   thermalFuel i_fuelQuantities renew schedHydroPlant nsegment demandGen 

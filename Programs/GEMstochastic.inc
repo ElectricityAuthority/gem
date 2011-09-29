@@ -22,8 +22,6 @@ Sets
 *                           standardAvg, standardDry, standard1932*standard2007 /
                             standardAvg  /
 
-  defaultScenario(scenarios) 'Select a default scenario - used when reporting summaries of input data' / piAvg /
-
 * Mapping sets:
   mapScenarios(scenarioSets,scenarios)     'Map the individual scenarios to an scenario set (i.e. 1 or more scenarios make up an scenario set)' /
     #scenarioSets:#scenarios  /

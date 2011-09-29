@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 27/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/09/2011 (imm@ea.govt.nz)
 
 
 
@@ -18,6 +18,7 @@ $ontext
  Code sections:
   1. Declare required symbols and load data.
   2. Perform the calculations to be reported.
+  3. Write out the external files.
 $offtext
 
 option seed = 101 ;
@@ -26,8 +27,12 @@ $include GEMpathsAndFiles.inc
 $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolcom !
 
 * Declare output files to be created by GEMreports.
-File summaryResults / "%OutPath%\%runName%\Summary results - %runName%.csv" / ;
+Files
+  summaryResults / "%OutPath%\%runName%\Summary results - %runName%.csv" /
+  plotResults    / "%OutPath%\%runName%\Processed files\Plotting results - %runName%.csv" /
+ ;
 summaryResults.pc = 5 ; summaryResults.pw = 999 ;
+plotResults.pc = 5 ;    plotResults.pw = 999 ;
 
 
 
@@ -46,6 +51,7 @@ Sets
   aggR              'Aggregate regional entities'         / ni         'North Island'
                                                             si         'South Island'
                                                             nz         'New Zealand' /
+  col               'RGB color codes'                     / 0 * 256 /
   ;
 
 * Initialise set y with values from GEMsettings.inc.
@@ -65,27 +71,32 @@ Sets
   rc                'Reserve classes'
   hY                'Hydrology output years' ;
 
-Alias (i,ii), (r,rr) ;
+Alias (i,ii), (r,rr), (col,red,green,blue) ;
 
 * Declare the selected subsets and mapping sets required for reporting.
 Sets
-  firstPeriod(t)    'First time period (i.e. period within the modelled year)'
-  nwd(r,rr)         'Northward direction of flow on Benmore-Haywards HVDC'
-  swd(r,rr)         'Southward direction of flow on Benmore-Haywards HVDC'
-  paths(r,rr)       'All valid transmission paths'
-  mapg_k(g,k)       'Map technology types to generating plant'
-  mapg_o(g,o)       'Map plant owners to generating plant'
-  mapg_r(g,r)       'Map regions to generating plant'
-  mapg_e(g,e)       'Map zones to generating plant'
-  mapAggR_r(aggR,r) 'Map the regions to the aggregated regional entities (this is primarily to facilitate reporting)'
-  isIldEqReg(ild,r) 'Figure out if the region labels are identical to the North and South island labels (a reporting facilitation device)' 
-  demandGen(k)      'Demand side technologies modelled as generation'
-  sigen(g)          'South Island generation plant' ;
+  techColor(k,red,green,blue)      'RGB color mix for technologies - to pass to plotting applications'
+*  fuelColor(f,red,green,blue)     'RGB color mix for fuels - to pass to plotting applications'
+*  fuelGrpcolor(fg,red,green,blue) 'RGB color mix for fuel groups - to pass to plotting applications'
+  firstPeriod(t)                   'First time period (i.e. period within the modelled year)'
+  nwd(r,rr)                        'Northward direction of flow on Benmore-Haywards HVDC'
+  swd(r,rr)                        'Southward direction of flow on Benmore-Haywards HVDC'
+  paths(r,rr)                      'All valid transmission paths'
+  mapg_k(g,k)                      'Map technology types to generating plant'
+  mapg_o(g,o)                      'Map plant owners to generating plant'
+  mapg_r(g,r)                      'Map regions to generating plant'
+  mapg_e(g,e)                      'Map zones to generating plant'
+  mapAggR_r(aggR,r)                'Map the regions to the aggregated regional entities (this is primarily to facilitate reporting)'
+  isIldEqReg(ild,r)                'Figure out if the region labels are identical to the North and South island labels (a reporting facilitation device)' 
+  demandGen(k)                     'Demand side technologies modelled as generation'
+  sigen(g)                         'South Island generation plant' ;
 
 * Load set membership from the GDX file containing the default or base case run version.
 $gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%baseRunVersion%.gdx"
 $loaddc k g s o i r e t lb rc hY
 $loaddc firstPeriod nwd swd paths mapg_k mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen sigen
+$loaddc techColor
+* fuelColor fuelGrpColor
 
 * Need steps for the non-free reserves stuff - this may yet get deleted!
 Set stp 'Steps'  / stp1 * stp5 / ;
@@ -166,7 +177,6 @@ Sets
   sc(scenarios)                                    '(Dynamically) selected elements of scenarios'
   rv(runVersions)                                  'runVersions loaded into GEMreports'
   reportDomain(experiments,steps,scenarioSets)     'The experiment-steps-scenarioSets tuples to be reported on'
-                                                  / standardExp.timing.standardAvg /
   objc                                             'Objective function components'
                                                   / obj_Check       'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'
                                                     obj_total       'Objective function value'
@@ -202,6 +212,7 @@ Parameters
   peaknoWindNIPrice(*,*,*,*,y)                     'Shadow price off peak no wind NI constraint, $/kW'
   ;
 
+reportDomain(%reportDomain%) = yes ;
 rv(runVersions)$sum(reportDomain, s_TOTALCOST(runVersions,reportDomain)) = yes ;
 
 unDiscFactor(rv,y,t) = 1 / ( (1 - taxRate) * PVfacG(rv,y,t) ) ;
@@ -245,13 +256,13 @@ loop((rv,reportDomain(experiments,steps,scenarioSets)),
 
   txByRegionYear(rv,reportDomain,paths,y) = sum((t,lb,sc), 1e-3 * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_TX(rv,reportDomain,paths,y,t,lb,sc)) ;
 
-  energyPrice(rv,reportDomain,r,y) = 1e3 * sum((t,lb,sc), unDiscFactor(rv,y,t) * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_bal_supdem(rv,reportDomain,r,y,t,lb,sc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
+  energyPrice(rv,reportDomain,r,y) = 1e3 * sum((t,lb,sc), unDiscFactor(rv,y,t) * hoursPerBlock(rv,t,lb) * s_bal_supdem(rv,reportDomain,r,y,t,lb,sc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
 
-  peakNZPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, scenarioWeight(sc) * s_peak_nz(rv,reportDomain,y,sc) ) ;
+  peakNZPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, s_peak_nz(rv,reportDomain,y,sc) ) ;
 
-  peakNIPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, scenarioWeight(sc) * s_peak_ni(rv,reportDomain,y,sc) ) ;
+  peakNIPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, s_peak_ni(rv,reportDomain,y,sc) ) ;
 
-  peaknoWindNIPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, scenarioWeight(sc) * s_noWindPeak_ni(rv,reportDomain,y,sc) ) ;
+  peaknoWindNIPrice(rv,reportDomain,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, s_noWindPeak_ni(rv,reportDomain,y,sc) ) ;
 
 ) ;
 
@@ -262,7 +273,11 @@ loadByRegionAndYear(rv,reportDomain,r,y) = sum((t,lb,sc), scenarioWeight(sc) * N
 Display unDiscFactor, unDiscFactorYr, rv, objComponents, builtByTechRegion ;
 
 
-* Write results out to a csv file.
+
+*===============================================================================================
+* 3. Write out the external files.
+
+* Write summary results to a csv file.
 put summaryResults 'Objective function value components, $m' / '' ;
 loop(rv, put rv.tl ) ;
 loop(objc,
@@ -387,241 +402,38 @@ loop(y,
 $offtext
 
 
+* Write results to be plotted to a csv file.
+put plotResults 'Results to be plotted' "%FigureTitles%", card(k), card(rv), card(y) ;
+put // 'Technologies' '' 'R', 'G', 'B' ;
+loop(k,
+  put / k.tl, k.te(k) loop(techColor(k,red,green,blue), put red.tl, green.tl, blue.tl ) ; 
+) ;
+
+put // 'Run versions' '' 'R', 'G', 'B' ;
+loop(rv(runVersions),
+  put / runVersions.tl, runVersions.te(runVersions) loop(runVersionColor(runVersions,red,green,blue), put red.tl, green.tl, blue.tl ) ; 
+) ;
+
+put // 'Time-weighted energy price by region and year, $/MWh' / '' loop(y, put y.tl ) ;
+loop(rv, put / rv.tl ;
+  loop(r,
+    put / r.tl ;
+    loop(y, put sum(reportDomain, energyPrice(rv,reportDomain,r,y)) ) ;
+  ) ;
+) ;
+
+put // 'Capacity by technology and year (existing plus built less retired), MW' / '' loop(y, put y.tl ) ;
+loop(rv, put / rv.tl ;
+  loop(k$sum((reportDomain,r,y), capacityByTechRegionYear(rv,reportDomain,k,r,y)),
+    put / k.tl ;
+    loop(y, put sum((reportDomain,r), capacityByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
+  ) ;
+  put / 'Total' loop(y, put sum((reportDomain,k,r), capacityByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
+) ;
+
+
 
 $stop
-*===============================================================================================
-* 1. Declare fundamental sets and load the required data (from the 'base case' input GDX file).
-
-* 26 fundamental sets
-Sets
-  k            'Generation technologies'
-  f            'Fuels'
-  fg           'Fuel groups'
-  g            'Generation plant'
-  s            'Shortage or VOLL plants'
-  o            'Owners of generating plant'
-  fc           'Currencies'
-  i            'Substations'
-  r            'Regions'
-  e            'Zones'
-  ild          'Islands'
-  p            'Transmission paths (or branches)'
-  ps           'Transmission path states (state of upgrade)'
-  tupg         'Transmission upgrade projects'
-  tgc          'Transmission group constraints'
-  y            'Modelled calendar years'
-  t            'Time periods (within a year)'
-  prf          'Load growth profiles'
-  lb           'Load blocks'
-  rc           'Reserve classes'
-  hY           'Hydrology output years'
-  v            'Hydro reservoirs or river systems'
-  scenarios     'Stochastic scenarios or uncertainty states'
-  m            '12 months'
-  geo          'Geographic co-ordinate types'
-  col          'RGB color codes'
-  ;
-
-Alias (sc,scc), (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
-
-* Re-initialise set y with the modelled years from GEMsettings.inc (the set y in the GDX input file contains all data years).
-Set y / %firstYear% * %lastYear% / ;
-
-* Get the other 25 of the 26 fundamental sets from the first scenario's input GDX file.
-$gdxin "%DataPath%%firstScenario%"
-$loaddc k f fg g s o fc i r e ild p ps tupg tgc t prf lb rc hY v scenarios m geo col
-
-* Re-declare and initialise a few miscellaneous sets with fixed membership.
-Sets
-  mt                      'Model run types'                     / tmg      'Run model GEM to determine optimal timing of new builds'
-                                                                  reo      'Run model GEM to re-optimise timing while allowing specified plants to move'
-                                                                  dis      'Run model DISP with build forced and timing fixed'   /
-  goal                    'Goals for MIP solution procedure'    / QDsol    'Find a quick and dirty solution using a user-specified optcr'
-                                                                  VGsol    'Find a very good solution reasonably quickly'
-                                                                  MinGap   'Minimize the gap between best possible and best found'  /
-  tmg(mt)                 'Run type TMG - determine timing'     / tmg /
-  reo(mt)                 'Run type REO - re-optimise timing'   / reo /
-  dis(mt)                 'Run type DIS - dispatch'             / dis /
-*++++++++++
-* More non-free reserves code.
-  stp                     'Steps'                               / stp1 * stp5 /
-*++++++++++
-  ;
-
-
-
-*===============================================================================================
-* 2. Declare the sets and parameters:
-*    a) Re-declare sets and parameters that are to be obtained from the scenario-specific input GDX files (excluding the 26 fundamental sets).
-*    b) Re-declare sets and parameters that are to be obtained from the scenario-specific GEMdata GDX files.
-*    c) Re-declare sets and parameters that are to be obtained from the prepared output GDX files.
-*    d) Declare sets and parameters local to GEMreports, i.e. declared here for the first time.
-
-* NB: The following symbols from input data file may have been changed in GEMdata. So procure from
-*     GEMdataGDX rather than from GEMinputGDX, or make commensurate change.
-*     Sets: y, exist, commit, new, neverBuild
-*     Parameters: i_txCapacity, i_txCapacityPO
-
-* a) Sets and parameters from input GDX file - now with an extra dimension, i.e. set sc.
-Sets
-  mapf_fg(sc,f,fg)                              'Map fuel groups to fuel types'
-  techColor(sc,k,red,green,blue)                'RGB color mix for technologies - to pass to plotting applications'
-  fuelColor(sc,f,red,green,blue)                'RGB color mix for fuels - to pass to plotting applications'
-  fuelGrpcolor(sc,fg,red,green,blue)            'RGB color mix for fuel groups - to pass to plotting applications'
-  peaker(sc,k)                                  'Peaking plant technologies'
-  demandGen(sc,k)                               'Demand side technologies modelled as generation'
-  regionCentroid(sc,i,r)                        'Identify the centroid of each region with a substation'
-Parameters
-  i_nameplate(sc,g)                             'Nameplate capacity of generating plant, MW'
-  i_fixedOM(sc,g)                               'Fixed O&M costs by plant, $/kW/year'
-  i_refurbDecisionYear(sc,g)                    'Decision year for endogenous "refurbish or retire" decision for eligble generation plant'
-  i_plantReservesCost(sc,g,rc)                  'Plant-specific cost per reserve class, $/MWh'
-  i_VOLLcost(sc,s)                              'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
-  i_HVDCshr(sc,o)                               'Share of HVDC charge to be incurred by plant owner'
-  i_HVDClevy(sc,y)                              'HVDC charge levied on new South Island plant by year, $/kW'
-  i_scenarioWeight(sc,scenarios)                  'Weights on scenarios when multiple scenarios are used'
-  i_txCapacity(sc,r,rr,ps)                      'Transmission path capacities (bi-directional), MW'
-  i_substnCoordinates(sc,i,geo)                 'Geographic coordinates for substations'
-  ;
-
-$gdxin 'all_input.gdx'
-$loaddc mapf_fg techColor fuelColor fuelGrpcolor peaker demandGen regionCentroid
-$load   i_nameplate i_fixedOM i_refurbDecisionYear i_plantReservesCost i_VOLLcost i_HVDCshr i_HVDClevy i_scenarioWeight i_txCapacity
-$loaddc i_substnCoordinates
-* Make sure intraregional transmission capacities are zero.
-i_txCapacity(sc,r,r,ps) = 0 ;
-
-
-
-* b) Sets and parameters from GEMdata GDX file - now with an extra dimension, i.e. set sc.
-Sets
-  firstPeriod(sc,t)                             'First time period (i.e. period within the modelled year)'
-  exist(sc,g)                                   'Generation plant that are presently operating'
-  commit(sc,g)                                  'Generation plant that are assumed to be committed'
-  new(sc,g)                                     'Potential generation plant that are neither existing nor committed'
-  neverBuild(sc,g)                              'Generation plant that are determined a priori by user never to be built'
-  schedHydroPlant(sc,g)                         'Schedulable hydro generation plant'
-  mapg_k(sc,g,k)                                'Map technology types to generating plant'
-  mapg_f(sc,g,f)                                'Map fuel types to generating plant'
-  mapg_o(sc,g,o)                                'Map plant owners to generating plant'
-  mapg_i(sc,g,i)                                'Map substations to generating plant'
-  mapg_r(sc,g,r)                                'Map regions to generating plant'
-  mapg_e(sc,g,e)                                'Map zones to generating plant'
-  mapg_ild(sc,g,ild)                            'Map islands to generating plant'
-  mapild_r(sc,ild,r)                            'Map the regions to islands'
-  sigen(sc,g)                                   'South Island generation plant'
-  possibleToBuild(sc,g)                         'Generating plant that may possibly be built in any valid build year'
-  possibleToRefurbish(sc,g)                     'Generating plant that may possibly be refurbished in any valid modelled year'
-  possibleToEndogRetire(sc,g)                   'Generating plant that may possibly be endogenously retired'
-  possibleToRetire(sc,g)                        'Generating plant that may possibly be retired (exogenously or endogenously)'
-  validYrBuild(sc,g,y)                          'Valid years in which new generation plant may be built'
-  nwd(sc,r,rr)                                  'Northward direction of flow on Benmore-Haywards HVDC'
-  swd(sc,r,rr)                                  'Southward direction of flow on Benmore-Haywards HVDC'
-  paths(sc,r,rr)                                'All valid transmission paths'
-  transitions(sc,tupg,r,rr,ps,pss)              'For all transmission paths, define the allowable transitions from one upgrade state to another'
-  allowedStates(sc,r,rr,ps)                     'All of the allowed states (initial and upgraded) for each active path'
-Parameters
-  yearNum(sc,y)                                 'Real number associated with each year'
-  hoursPerBlock(sc,t,lb)                        'Hours per load block by time period'
-  PVfacG(sc,y,t)                                "Generation investor's present value factor by period"
-  PVfacT(sc,y,t)                                "Transmission investor's present value factor by period"
-  capCharge(sc,g,y)                             'Annualised or levelised capital charge for new generation plant, $/MW/yr'
-  refurbCapCharge(sc,g,y)                       'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
-  exogMWretired(sc,g,y)                         'Exogenously retired MW by plant and year, MW'
-  SRMC(sc,g,y)                                  'Short run marginal cost of each generation project by year, $/MWh'
-  locFac_Recip(sc,e)                            'Reciprocal of zonally-based location factors'
-  AClossFactors(sc,ild)                         'Upwards adjustment to load to account for AC (or intraregional) losses'
-  NrgDemand(sc,r,y,t,lb)                        'Load (or energy demand) by region, year, time period and load block for selected growth profile, GWh (used to create ldcMW)'
-  txEarlyComYr(sc,tupg,r,rr,ps,pss)             'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
-  txFixedComYr(sc,tupg,r,rr,ps,pss)             'Fixed year in which a transmission upgrade must occur (a parameter, not a set)'
-  penaltyViolateReserves(sc,ild,rc)             'Reserve violation penalty, $/MWh'
-*++++++++++
-* More non-free reserves code.
-  pNFresvCost(sc,r,rr,stp)                      'Constant cost of each non-free piece (or step) of function, $/MWh'
-*++++++++++
-  ;
-
-$gdxin 'all_gemdata.gdx'
-$loaddc firstPeriod exist commit new neverBuild schedHydroPlant mapg_k mapg_f mapg_o mapg_i mapg_r mapg_e mapg_ild mapild_r sigen
-$loaddc possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrBuild
-$loaddc nwd swd paths transitions allowedStates
-$loaddc yearNum hoursPerBlock PVfacG PVfacT capCharge refurbCapCharge exogMWretired SRMC locFac_Recip AClossFactors NrgDemand txEarlyComYr txFixedComYr
-$loaddc reserveViolationPenalty pNFresvCost
-
-
-
-* c) Sets and parameters from prepared output GDX file - now with an extra dimension, i.e. set sc.
-Sets
-  oc(sc,scenarios)                               'Selected elements of scenarios'
-  activeSolve(sc,mt,hY)                         'Collect the mt-hY index used for each solve' 
-*  activeOC(sc,mt,hY,scenarios)                   'Collect the mt-hY-scenarios index used for each solve'
-  activeMT(sc,mt)                               'Identify the run types actually employed in this model run'
-  solveGoal(sc,goal)                            'User-selected solve goal'
-Parameters
-* Miscellaneous parameters
-  solveReport(sc,mt,hY,*,*)                     'Collect various details about each solve of the models (both GEM and DISP)'
-* Free variables
-  s2_TOTALCOST(sc,mt)                           'Discounted total system costs over all modelled years, $m (objective function value)'
-  s2_TX(sc,mt,r,rr,y,t,lb,scenarios)             'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
-* Binary Variables
-  s2_BRET(sc,mt,g,y)                            'Binary variable to identify endogenous retirement year for the eligble generation plant'
-  s2_ISRETIRED(sc,mt,g)                         'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
-  s2_BTX(sc,mt,r,rr,ps,y)                       'Binary variable indicating the current state of a transmission path'
-* Positive Variables
-  s2_REFURBCOST(sc,mt,g,y)                      'Annualised generation plant refurbishment expenditure charge, $'
-  s2_BUILD(sc,mt,g,y)                           'New capacity installed by generating plant and year, MW'
-  s2_RETIRE(sc,mt,g,y)                          'Capacity endogenously retired by generating plant and year, MW'
-  s2_CAPACITY(sc,mt,g,y)                        'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s2_TXCAPCHARGES(sc,mt,r,rr,y)                 'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s2_GEN(sc,mt,g,y,t,lb,scenarios)               'Generation by generating plant and block, GWh'
-  s2_VOLLGEN(sc,mt,s,y,t,lb,scenarios)           'Generation by VOLL plant and block, GWh'
-  s2_PUMPEDGEN(sc,mt,g,y,t,lb,scenarios)         'Energy from pumped hydro (treated like demand), GWh'
-  s2_LOSS(sc,mt,r,rr,y,t,lb,scenarios)           'Transmission losses along each path, MW'
-  s2_TXPROJVAR(sc,mt,tupg,y)                    'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  s2_TXUPGRADE(sc,mt,r,rr,ps,pss,y)             'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
-  s2_RESV(sc,mt,g,rc,y,t,lb,scenarios)           'Reserve energy supplied, MWh'
-  s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,scenarios)     'Reserve energy supply violations, MWh'
-  s2_RESVTRFR(sc,mt,rc,ild,ild1,y,t,lb,scenarios)'Reserve energy transferred from one island to another, MWh'
-* Penalty variables
-  s2_RENNRGPENALTY(sc,mt,y)                     'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s2_SEC_NZ_PENALTY(sc,mt,scenarios,y)           'Penalty with cost of penaltyLostPeak - used to make NZ security constraint feasible, MW'
-  s2_SEC_NI1_PENALTY(sc,mt,scenarios,y)          'Penalty with cost of penaltyLostPeak - used to make NI1 security constraint feasible, MW'
-  s2_SEC_NI2_PENALTY(sc,mt,scenarios,y)          'Penalty with cost of penaltyLostPeak - used to make NI2 security constraint feasible, MW'
-  s2_NOWIND_NZ_PENALTY(sc,mt,scenarios,y)        'Penalty with cost of penaltyLostPeak - used to make NZ no wind constraint feasible, MW'
-  s2_NOWIND_NI_PENALTY(sc,mt,scenarios,y)        'Penalty with cost of penaltyLostPeak - used to make NI no wind constraint feasible, MW'
-* Slack variables
-  s2_ANNMWSLACK(sc,mt,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s2_RENCAPSLACK(sc,mt,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s2_HYDROSLACK(sc,mt,y)                        'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s2_MINUTILSLACK(sc,mt,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s2_FUELSLACK(sc,mt,y)                         'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
-* Equations, i.e. marginal values. (ignore the objective function)
-  s2_bal_supdem(sc,mt,r,y,t,lb,scenarios)        'Balance supply and demand in each region, year, time period and load block'
-*++++++++++
-* More non-free reserves code.
-  s2_RESVCOMPONENTS(sc,mt,r,rr,y,t,lb,scenarios,stp) 'Non-free reserve components, MW'
-*++++++++++
-  ;
-
-$gdxin 'all_prepout.gdx'
-* Sets
-$loaddc oc activeSolve activeOC activeMT solveGoal
-* Parameters
-* Miscellaneous parameters
-$loaddc solveReport s2_TOTALCOST s2_TX s2_BRET s2_ISRETIRED s2_BTX
-$loaddc s2_REFURBCOST s2_BUILD s2_RETIRE s2_CAPACITY  s2_TXCAPCHARGES s2_GEN s2_VOLLGEN s2_LOSS s2_TXPROJVAR s2_TXUPGRADE s2_RESV s2_RESVVIOL
-$loaddc s2_RENNRGPENALTY s2_SEC_NZ_PENALTY s2_SEC_NI1_PENALTY s2_SEC_NI2_PENALTY s2_NOWIND_NZ_PENALTY s2_NOWIND_NI_PENALTY
-$loaddc s2_ANNMWSLACK s2_RENCAPSLACK s2_HYDROSLACK s2_MINUTILSLACK s2_FUELSLACK s2_bal_supdem
-*++++++++++
-* More non-free reserves code.
-$loaddc s2_RESVCOMPONENTS
-*++++++++++
-
-*  declared but not loaded yet - follows s2_VOLLGEN
-*  s2_PUMPEDGEN(sc,mt,g,y,t,lb,scenarios)        'Energy from pumped hydro (treated like demand), GWh'
-*  s2_RESV(sc,mt,g,rc,y,t,lb,scenarios)          'Reserve energy supplied, MWh'
-*  s2_RESVVIOL(sc,mt,rc,ild,y,t,lb,scenarios)    'Reserve energy supply violations, MWh'
-*  s2_RESVTRFR(sc,mt,rc,ild,ild1,y,t,lb,scenarios)   'Reserve energy transferred from one island to another, MWh'
 
 
 
@@ -1102,98 +914,6 @@ loop((sc,buildSoln(mt),tupg,r,rr,ps,pss,y)$( (paths(sc,r,rr) * transitions(sc,tu
   put priorTxCap(sc,r,rr,ps), postTxCap(sc,r,rr,pss), actualTxCap(sc,mt,r,rr,y), ps.tl, pss.tl, yearNum(sc,y), tupg.tl, tupg.te(tupg) ;
 ) ;
 
-$ontext
-* g) Build schedule in GAMS-readable format - only write this file if GEM was run (i.e. skip it if RunType = 2).
-$if %RunType%==2 $goto CarryOn2
-put bld_GR ;
-loop(buildSoln(mt),
-* Write table of installed MW
-  put "TABLE InstallMW(g,y,sc) 'Generation capacity to be installed by plant, year, and SC, MW'" / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop((g,y)$sum(sc_sim(sc), s2_BUILD(sc,mt,g,y)),
-    put / g.tl:>15, '.', y.tl:<6 ;
-    loop(sc_sim(sc), if(s2_BUILD(sc,mt,g,y), put s2_BUILD(sc,mt,g,y):14:8 else put '              '  ) ) ;
-  ) ;
-* Write table of exogenously retired MW
-  put '  ;' /// "TABLE ExogRetireSched(sc,g,y) 'Exogenous retirement schedule by plant, year, and SC'" / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop((g,y)$sum(sc_sim(sc), exogMWretired(sc,g,y)),
-    put / g.tl:>15, '.', y.tl:<6 ;
-    loop(sc_sim(sc), if(exogMWretired(sc,g,y), put exogMWretired(sc,g,y):14:8 else put '              ' ) ) ;
-  ) ;
-* Write table of endogenously retired MW
-  put '  ;' /// "TABLE EndogRetireSched(g,y,sc) 'Endogenous retirement schedule by plant, year, and SC'" / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop((g,y)$sum(sc_sim(sc), s2_RETIRE(sc,mt,g,y)),
-    put / g.tl:>15, '.', y.tl:<6 ;
-    loop(sc_sim(sc), if(s2_RETIRE(sc,mt,g,y), put s2_RETIRE(sc,mt,g,y):14:8 else put '              ' ) ) ;
-  ) ;
-* Write table of indicator variables for endogenously retired plant
-  put '  ;' /// "TABLE BRETFIX(g,y,sc) 'Indicate whether a plant has been endogenously retired'" / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop((g,y)$sum(sc_sim(sc), s2_BRET(sc,mt,g,y)),
-    put / g.tl:>15, '.', y.tl:<6 ;
-    loop(sc_sim(sc), if(s2_BRET(sc,mt,g,y), put s2_BRET(sc,mt,g,y):14:8 else put '              ' ) ) ;
-  ) ;
-* Write table of installation year for generation plant
-  put '  ;' /// "TABLE BuildSched(g,y,sc) 'Generation build schedule by plant, year, and SC'" / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop((g,y)$sum(sc_sim(sc), s2_BUILD(sc,mt,g,y)),
-    put / g.tl:>15, '.', y.tl:<6 ;
-    loop(sc_sim(sc), if(s2_BUILD(sc,mt,g,y), put yearNum(sc,y):14:0 else put '              ' ) ) ;
-  ) ;
-* Write table of installed MW for those cases where plant is partially built
-  if(sum((sc,g), partialMWbuilt(sc,g)),
-    put '  ;' /// "TABLE PartialMWbuilt(g,sc) 'MW actually built in the case of plant not fully constructed'" / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-    loop(g$sum(sc_sim(sc), partialMWbuilt(sc,g)),
-      put / g.tl:>15 @23 ;
-      loop(sc_sim(sc), if(partialMWbuilt(sc,g), put partialMWbuilt(sc,g):14:8 else put '              ' ) ) ;
-    ) ;
-    put '  ;' /// ;
-    else
-    put /// ;
-  ) ;
-) ;
-* Now write a summary of what happened to peakers if re-optimisation took place.
-if(%SuppressReOpt% = 1,
-  put '* Generation build schedule was not re-optimised by moving peakers about' /// ;
-  else
-  put '* Generation build schedule was re-optimised by allowing peakers to move' //
-      '$ontext' / 'Summary of re-optimised peakers' / '  -Peakers in initial solution' / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop(movers(k),
-    loop((tmg(mt),g,y)$( mapg_k(g,k) * (sum(sc_sim(sc), s2_BUILD(sc,mt,g,y)) > 0) ),
-      put / g.tl:>15, '.', y.tl:<6 ;
-      loop(sc_sim(sc), if(s2_BUILD(sc,mt,g,y), put yearNum(sc,y):14:0 else put '              ' ) ) ;
-    ) ;
-  ) ;
-  put / '  -Peakers in re-optimised solution' / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop(movers(k),
-    loop((reo(mt),g,y)$( mapg_k(g,k) * (sum(sc_sim(sc), s2_BUILD(sc,mt,g,y)) > 0) ),
-      put / g.tl:>15, '.', y.tl:<6 ;
-      loop(sc_sim(sc), if(s2_BUILD(sc,mt,g,y), put yearNum(sc,y):14:0 else put '              ' ) ) ;
-    ) ;
-  ) ;
-  put / '$offtext' /// ;
-) ;
-* Finally, write summary tables pertaining to transmission upgrades.
-bld_GR.ap = 1 ; put bld_GR ;
-loop(buildSoln(mt),
-  put "TABLE TXPROJECT(tupg,y,sc) 'Indicate whether an upgrade project is applied'" / @23 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop((tupg,y)$sum(sc_sim(sc), s2_TXPROJVAR(sc,mt,tupg,y)),
-    put / tupg.tl:>15, '.', y.tl:<6 ;
-    loop(sc_sim(sc), if(s2_TXPROJVAR(sc,mt,tupg,y), put s2_TXPROJVAR(sc,mt,tupg,y):14:8 else put '              ' ) ) ;
-  ) ;
-  put '  ;' /// "TABLE TXUPGRADES(r,rr,ps,pss,y,sc) 'Indicate whether a transmission upgrade is applied'" / @71 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop((paths(r,rr),ps,pss,y)$sum(sc_sim(sc), s2_TXUPGRADE(sc,mt,paths,ps,pss,y)),
-    put / r.tl:>15, '.', rr.tl:>15, '.', ps.tl:>15, '.', pss.tl:>15, '.', y.tl:<6 ;
-    loop(sc_sim(sc), if(s2_TXUPGRADE(sc,mt,paths,ps,pss,y), put s2_TXUPGRADE(sc,mt,paths,ps,pss,y):14:8 else put '              ' ) ) ;
-  ) ;
-  put '  ;' /// "TABLE BTXFIX(r,rr,ps,y,sc) 'Indicate the current state of a transmission path'" / @55 loop(sc_sim(sc), put sc.tl:>14 ) ;
-  loop((paths(r,rr),ps,y)$sum(sc_sim(sc), s2_BTX(sc,mt,paths,ps,y)),
-    put / r.tl:>15, '.', rr.tl:>15, '.', ps.tl:>15, '.', y.tl:<6 ;
-    loop(sc_sim(sc), if(s2_BTX(sc,mt,paths,ps,y), put s2_BTX(sc,mt,paths,ps,y):14:8 else put '              ' ) ) ;
-  ) ;
-  put '  ;' / ;
-) ;
-$label CarryOn2
-$offtext
-
-
 
 *===============================================================================================
 * x. Write the solve summary report.
@@ -1217,17 +937,6 @@ put ss
   'This report generated at ', system.time, ' on ' system.date  /
   'Search this entire report for 4 plus signs (++++) to identify any important error messages.' ///
   'Scenarios reported on are:' loop(sc, put / @3 sc.tl @15 sc.te(sc) ) ;
-
-** Note - something is wrong with this table (or the calcs that come before) - the numbers don't add up.
-put /// 'Generating plant status count' / @37 loop(sc, put sc.tl:>8 ) ; put /
-'Total number plants in input file'       @37 loop(sc, put numGenPlant(sc):8:0 ) ; put /
-'  Number of existing plant'              @37 loop(sc, put numExist(sc):8:0 ) ; put /
-'    - includes scheduable hydro'         @37 loop(sc, put numSchedHydroPlant(sc):8:0 ) ; put /
-'  Number of committed plant'             @37 loop(sc, put numCommit(sc):8:0 ) ; put /
-'  Number of uncommitted plant'           @37 loop(sc, put numNew(sc):8:0 ) ; put /
-'  Number of plant unable to be built'    @37 loop(sc, put numNeverBuild(sc):8:0 ) ; put /
-'    - includes some due to zero MW'      @37 loop(sc, put numZeroMWplt(sc):8:0 ) ; put /
-'Additionally, number of VOLL plant'      @37 loop(sc, put numVOLLplant(sc):8:0 ) ; put // ;
 
 $ontext
   @3 'Run type:'                       @37 if(%RunType%=0, put 'GEM and DISP' else if(%RunType% = 1, put 'GEM only' else put 'DISP only')) ; put /
@@ -2527,185 +2236,3 @@ Execute_Unload '%OutPath%\%Outprefix%\GDX\%Outprefix% - ReportsData.gdx',
 
 
 * End of file
-
-$ontext
-
-** LRMC code still under development. Use the stuff in GEMbaseOut as a template to create estimates of LRMC by plant
-** given the actual GEM solution.
-
-Sets
-  z                                             'A sequence of years'            / z1 * z100  /
-  mc                                            'Index for LRMC values'          / c1 * c2000 /
-  checkmap(sc,g,y,z)
-
-Parameter
-*  mwh(sc,g,y)                                  'MWh per year per plant actually generated'
-  mwh(sc,g)                                     'MWh per year per plant actually generated'
-  plantyrs(g)                                   'Plant life, years'
-  depreciation(sc,g,z)                          'Depreciation in each year of plant life, $m'
-  undepcapital(sc,g,z)                          'Undepreciated capital in each year of plant life, $m'
-  cndte_lrmc(mc)                                'Candidate lrmc's, $/MWh'
-  dcf(sc,g,mc)                                  'Post-tax discounted cashflows by plant at each candidate LRMC level, $m'
-  lrmc(sc,g)                                    'LRMC of each plant, $/MWh'
-  totcosts(sc,g,z)                              'Total costs, $m'
-  lrmc_offset                                   'Constant to add to 1 to kick off the candidate LRMC series'     / 0 /
-  ycount
-  zcount(sc,g)
-  ;
-
-* h is dum only for mt=dis - need to do mwh for tmg and/or reo too 
-*mwh(sc,noexist(sc,g),y)$numdisyrs(sc) = 1e3 * sum((dis(mt),hY,scenarios) $( s_hdindex(sc,mt,hY,scenarios)  * ( not (ahy(hY) or mhy(hY)) ) ), s2_genYr(sc,mt,hY,g,y,scenarios) ) / numdisyrs(sc) ;
-mwh(sc,noexist(sc,g)) = i_nameplate(sc,g) * 8760 * (1 - fof(g)) ;
-
-
-* Convert plant life by technology to plant life by plant.
-plantyrs(noexist(sc,g)) = sum(mapg_k(g,k), plantlife(k)) ;
-
-zcount(sc_sim(sc),noexist(sc,g)) = plantyrs(g) + lastyear - firstyear ;
-
-loop((sc_sim(sc),noexist(sc,g),y,z)$( ord(z) = ord(y) and buildYr(sc,'dis','1932',g) ),
-  totcosts(sc,g,z) = 1e-6 * mwh(sc,g) * SRMC(g,y) + 1e-9 * gendata(g,'fOM') * nameplate(g) ;
-) ;
-
-* Complete the series for sequential years up to the number of modelled years plus plant life years.
-loop((sc_sim(sc),noexist(sc,g),z)$( zcount(sc,g) and (ord(z) > 1) and (ord(z) <= zcount(sc,g)) ),
-  totcosts(sc,g,z)$( not totcosts(sc,g,z) ) = totcosts(sc,g,z-1) ; 
-) ;
-
-* Zero out totcosts for all years prior to build year.
-totcosts(sc,g,z)$( ord(z) < ( buildYr(sc,'dis','1932',g) - firstyear + 1 ) ) = 0 ;
-
-* Compute depreciation and undepreciated capital for each relevant 'z' year. 
-loop((sc_sim(sc),noexist(sc,g),z)$totcosts(sc,g,z),
-  undepcapital(sc,g,z)$( ord(z) = buildYr(sc,'dis','1932',g) - firstyear + 1 ) = 1e-6 * nameplate(g) * capandconcost(g) ;
-  depreciation(sc,g,z)$( ord(z) > buildYr(sc,'dis','1932',g) - firstyear + 1 ) = sum(mapg_k(g,k), deprate(k) * undepcapital(sc,g,z-1) ) ;
-  undepcapital(sc,g,z)$( ord(z) > buildYr(sc,'dis','1932',g) - firstyear + 1 ) = undepcapital(sc,g,z-1) - depreciation(sc,g,z) ;
-) ;
-
-* Add depreciation to totcosts.
-totcosts(sc,g,z) = totcosts(sc,g,z) + depreciation(sc,g,z) ;
-
-Parameter capex(sc,g,z) ;
-capex(sc,g,z)$( zcount(sc,g) and (ord(z) = buildYr(sc,'dis','1932',g) - firstyear + 1) ) = -1e-6 * nameplate(g) * capandconcost(g) ;
-
-counter = 0 ;
-lrmc(sc,g) = 0 ;
-loop((sc,noexist(sc,g),mc)$( zcount(sc,g) and lrmc(sc,g) = 0 ),
-
-  cndte_lrmc(mc) = ord(mc) + lrmc_offset ;
-
-  dcf(sc,g,mc)$sum(z, capex(sc,g,z)) = 
-                                sum(z$( ord(z) <= zcount(sc,g) ),
-                                  capex(sc,g,z) / ( ( 1 + WACCg) ** ( ord(z) ) ) +
-                                  ( ( 1 - i_taxRate ) * ( 1e-6 * mwh(sc,g) * cndte_lrmc(mc) - totcosts(sc,g,z) ) + depreciation(sc,g,z) ) /
-                                  ( ( 1 + WACCg) ** ( ord(z) ) )
-                                ) ;
-
-  if(dcf(sc,g,mc) > 0 and counter = 0,
-    counter = 1 ;
-    lrmc(sc,g) = cndte_lrmc(mc) ;
-  ) ;
-
-  counter = 0 ;
-
-) ;
-
-Execute_Unload 'test.gdx', mwh, srmcm, buildYr, totcosts, zcount, undepcapital, depreciation, lrmc, capex ;
-
-*$ontext
-
-zcount = 0 ; counter = 0 ; lrmc(sc,g) = 0 ;
-loop((sc_sim(sc),noexist(sc,g),y)$( buildYr(sc,'dis','1932',g) = yearNum(sc,y) ),
-
-  loop(z$( ord(z) <= plantyrs(g) ),
-
-    checkmap(sc,g,y,z) = yes ;
-
-    zcount = zcount + 1 ;
-
-    undepcapital(sc,g,z)$( ord(z) = 1 ) = 1e-6 * nameplate(g) * capandconcost(g) ;
-    depreciation(sc,g,z)$( ord(z) > 1 ) = sum(mapg_k(g,k), deprate(k) * undepcapital(sc,g,z-1) ) ;
-    undepcapital(sc,g,z)$( ord(z) > 1 ) = undepcapital(sc,g,z-1) - depreciation(sc,g,z) ;
-
-    totcosts(sc,g,z) = 1e-6 * mwh(sc,g,y) * srmcm(g,y+zcount,sc) +
-                        1e-9 * gendata(g,'fOM') * nameplate(g) ;
-    ) ;
-
-  zcount = 0 ;
-
-* Complete the series for sequential years up to the number of plant life years.
-  loop(z$( ord(z) > 1  and ord(z) <= plantyrs(g) ),
-    totcosts(sc,g,z)$( not totcosts(sc,g,z) ) = totcosts(sc,g,z-1) ; 
-  ) ;
-
-* Add depreciation to totcosts.
-  totcosts(sc,g,z) = totcosts(sc,g,z) + depreciation(sc,g,z) ;
-
-  loop(mc$( lrmc(sc,g) = 0 ),
-    cndte_lrmc(mc) = ord(mc) + lrmc_offset ;
-    dcf(sc,g,mc)$mwh(sc,g,y) = -capandconcost(g) * nameplate(g) * 1e-6 +
-                                 sum(z$( ord(z) <= plantyrs(g) ),
-                                   ( ( 1 - i_taxRate ) * ( 1e-6 * mwh(sc,g,y) * cndte_lrmc(mc) - totcosts(sc,g,z) ) + depreciation(sc,g,z) ) /
-                                   ( ( 1 + WACCg) ** ( ord(z) ) )
-                                 ) ;
-    if(dcf(sc,g,mc) > 0 and counter = 0,
-      counter = 1 ;
-      lrmc(sc,g) = cndte_lrmc(mc) ;
-    ) ;
-
-    counter = 0 ;
-
-  ) ;
-
-) ;
-
-
-Execute_Unload 'test.gdx', mwh, srmcm, totcosts, checkmap, buildYr, undepcapital, depreciation, lrmc, dcf ;
-
-
-file lrmc_sc  LRMCs based on GEM solution  / "LRMC estimates by SC.csv" / ; lrmc_sc.pc = 5 ;
-
-put lrmc_sc 'Plant', 'Technology', 'MW' ; loop(sc_sim(sc), put sc.tl ); loop(sc_sim(sc), put sc.tl ) ;
-*loop((k,noexist(sc,g))$( sum(sc, lrmc(sc,g)) * mapg_k(g,k) ),
-loop((k,noexist(sc,g))$( sum(sc, buildYr(sc,'dis','1932',g)) * mapg_k(g,k) ),
-  put / g.tl, k.tl, nameplate(g) ;
-  loop(sc_sim(sc), put lrmc(sc,g) ) ;
-  loop(sc_sim(sc), put buildYr(sc,'dis','1932',g) ) ;
-) ;
-
-
-
-  tmg(mt)                'Run type TMG - determine timing'   / tmg /
-  reo(mt)                'Run type REO - re-optimise timing' / reo /
-  dis(mt)                'Run type DIS - dispatch'           / dis /
-
-  loop((tmg(mt),tmnghydyr(hY)),
-  loop((reo(mt),reopthydyr(hY)),
-
-$ if %SuppressReopt%==1 $goto NoReOpt
-
-    loop(dis(mt),
-
-*   Capture the elements of the run type - SC - hydro year tuple, i.e. the 3 looping sets:
-    activeSolve(sc,mt,hY) = yes ;
-
-*   Capture the Scenario index.
-     = yes ;
-
-* Compute depreciation and undepreciated capital by sequential year. 
-undepcapital(noexist(sc,g),z)$( ord(z) = 1 ) = 1e-6 * nameplate(g) * capandconcost(g) ;
-
-loop((noexist(sc,g),z)$( ( ord(z) > 1 ) and ( ord(z) <= plantyrs(g) ) ),
-  depreciation(g,z) = sum(mapg_k(g,k), deprate(k) * undepcapital(g,z-1) ) ;
-  undepcapital(g,z) = undepcapital(g,z-1) - depreciation(g,z) ;
-) ;
-
-* Convert costs from modelled years (y) to sequential years (z), from $/MWh to $m, and collect into a parameter called totcosts.
-loop((noexist(sc,g),z,y)$( ( ord(z) <= plantyrs(g) ) and ( ord(z) = ord(y) ) ),
-  totcosts(g,z,sc) = 1e-6 * mwh(g) * varomm(g,y,sc) +             ! Variable O&M costs, $m
-                      1e-9 * gendata(g,'fOM') * nameplate(g) +      ! Fixed O&M costs, $m
-                      1e-6 * mwh(g) * fuelcostm(g,y,sc) +          ! Fuel costs, $m
-                      1e-6 * mwh(g) * co2taxm(g,y,sc)   ;          ! CO2 taxes, $m
-) ;
-
-$offtext
