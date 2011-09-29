@@ -29,10 +29,13 @@ $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolc
 * Declare output files to be created by GEMreports.
 Files
   summaryResults / "%OutPath%\%runName%\Summary results - %runName%.csv" /
-  plotResults    / "%OutPath%\%runName%\Processed files\Plotting results - %runName%.csv" /
- ;
+  plotResults    / "%OutPath%\%runName%\Processed files\Results to be plotted - %runName%.csv" /
+  plotBat        / "%OutPath%\%runName%\Archive\GEMplots.bat" /
+  ;
+
 summaryResults.pc = 5 ; summaryResults.pw = 999 ;
 plotResults.pc = 5 ;    plotResults.pw = 999 ;
+plotBat.lw = 0 ;
 
 
 
@@ -402,33 +405,36 @@ loop(y,
 $offtext
 
 
+* Write a batch file to the archive folder to be used to invoke the plotting executable.
+putclose plotBat '"%MatCodePath%\GEMplots.exe" "%OutPath%\%runName%\Processed files\Results to be plotted - %runName%.csv"' / ;
+
 * Write results to be plotted to a csv file.
-put plotResults 'Results to be plotted' "%FigureTitles%", card(k), card(rv), card(y) ;
-put // 'Technologies' '' 'R', 'G', 'B' ;
+put plotResults "%runName%" '' "%FigureTitles%", card(y) ; ! card(y) needs to indicate the number of columns of data (the first 2 cols are not data.
+put // 'Technologies' ;
 loop(k,
   put / k.tl, k.te(k) loop(techColor(k,red,green,blue), put red.tl, green.tl, blue.tl ) ; 
 ) ;
 
-put // 'Run versions' '' 'R', 'G', 'B' ;
+put // 'Run versions' ;
 loop(rv(runVersions),
   put / runVersions.tl, runVersions.te(runVersions) loop(runVersionColor(runVersions,red,green,blue), put red.tl, green.tl, blue.tl ) ; 
 ) ;
 
-put // 'Time-weighted energy price by region and year, $/MWh' / '' loop(y, put y.tl ) ;
+put // 'Time-weighted energy price by region and year, $/MWh' / '' '' loop(y, put y.tl ) ;
 loop(rv, put / rv.tl ;
   loop(r,
-    put / r.tl ;
+    put / r.tl '' ;
     loop(y, put sum(reportDomain, energyPrice(rv,reportDomain,r,y)) ) ;
   ) ;
 ) ;
 
-put // 'Capacity by technology and year (existing plus built less retired), MW' / '' loop(y, put y.tl ) ;
+put // 'Capacity by technology and year (existing plus built less retired), MW' / '' '' loop(y, put y.tl ) ;
 loop(rv, put / rv.tl ;
   loop(k$sum((reportDomain,r,y), capacityByTechRegionYear(rv,reportDomain,k,r,y)),
-    put / k.tl ;
+    put / k.tl '' ;
     loop(y, put sum((reportDomain,r), capacityByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
   ) ;
-  put / 'Total' loop(y, put sum((reportDomain,k,r), capacityByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
+  put / 'Total' '' loop(y, put sum((reportDomain,k,r), capacityByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
 ) ;
 
 
