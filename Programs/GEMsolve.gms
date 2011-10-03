@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 28/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 03/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -240,7 +240,10 @@ loop(experiments,
         if(mapSC_hydroSeqTypes(scenarios,'same'),
           modelledHydroOutput(g,y,t,scenarios) = hydroOutputScalar *
             sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapSC_hY(scenarios,hY)), historicalHydroOutput(v,hY,m)) / sum(mapSC_hY(scenarios,hY1), 1) ;
+*         Capture the current mapping of hydroyears to modelled years.
           mapHydroYearsToModelledYears(experiments,steps,scenarioSets,sc,y,hY)$( ord(hY) = sum(mapSC_hY(scenarios,hY1), 1) ) = yes ;
+*         Assign hydro output to potential new plant linked to existing schedulable hydro plant.
+          hydroOutputUpgrades(schedHydroUpg(gg),y,t,sc) = sum(mapSH_Upg(g,gg)$i_namePlate(g), modelledHydroOutput(g,y,t,sc) / i_namePlate(g) ) ;
           else
           loop(y,
             chooseHydroYears(hY) = no ;
