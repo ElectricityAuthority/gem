@@ -1,7 +1,7 @@
 *+++ Model +++
 $setglobal firstYear 2012
 * First modelled year.
-$setglobal lastYear 2050
+$setglobal lastYear 2025
 * Last modelled year.
 $setglobal RunType 1
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
@@ -72,7 +72,7 @@ $setglobal SolveGoal QDsol
 * Select either QDsol, VGsol, or MinGap
 $setglobal QDoptCr .0075
 * Quick and dirty relative optimality criterion for MIP (i.e. .003 equals .3%)
-$setglobal QDsolSecs 1500
+$setglobal QDsolSecs 20000
 * CPU seconds available for solver to spend solving GEM for solve goal QDsol.
 $setglobal VGsolSecs 7200
 * CPU seconds available for solver to spend solving GEM for solve goal VGsol.

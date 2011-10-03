@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 29/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 03/10/2011 (imm@ea.govt.nz)
 
 
 
@@ -28,14 +28,20 @@ $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolc
 
 * Declare output files to be created by GEMreports.
 Files
-  summaryResults / "%OutPath%\%runName%\Summary results - %runName%.csv" /
-  plotResults    / "%OutPath%\%runName%\Processed files\Results to be plotted - %runName%.csv" /
   plotBat        / "%OutPath%\%runName%\Archive\GEMplots.bat" /
+  plotResults    / "%OutPath%\%runName%\Processed files\Results to be plotted - %runName%.csv" /
+  summaryResults / "%OutPath%\%runName%\Summary results - %runName%.csv" /
+  capacityPlant  / "%OutPath%\%runName%\Processed files\Capacity by plant and year (net of retirements) - %runName%.csv" /
+  genPlant       / "%OutPath%\%runName%\Processed files\Generation and utilisation by plant - %runName%.csv" /
+  genPlantYear   / "%OutPath%\%runName%\Processed files\Generation and utilisation by plant (annually) - %runName%.csv" /
   ;
 
-summaryResults.pc = 5 ; summaryResults.pw = 999 ;
-plotResults.pc = 5 ;    plotResults.pw = 999 ;
 plotBat.lw = 0 ;
+plotResults.pc = 5 ;     plotResults.pw = 999 ;
+summaryResults.pc = 5 ;  summaryResults.pw = 999 ;
+capacityPlant.pc = 5 ;   capacityPlant.pw = 999 ;
+genPlant.pc = 5 ;        genPlant.pw = 999 ;
+genPlantYear.pc = 5 ;    genPlantYear.pw = 999 ;
 
 
 
@@ -148,6 +154,7 @@ Sets
   validYrOperate(runVersions,g,y)                           'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years' ;
 
 Parameters
+  i_namePlate(runVersions,g)                                'Nameplate capacity of generating plant, MW'
   i_fixedOM(runVersions,g)                                  'Fixed O&M costs by plant, $/kW/year'
   i_VOLLcost(runVersions,s)                                 'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
   i_HVDCshr(runVersions,o)                                  'Share of HVDC charge to be incurred by plant owner'
@@ -168,7 +175,7 @@ Parameters
 
 $gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData.gdx"
 $loaddc possibleToBuild possibleToRefurbish validYrOperate
-$loaddc i_fixedOM i_VOLLcost i_HVDCshr i_HVDClevy i_plantReservesCost
+$loaddc i_namePlate i_fixedOM i_VOLLcost i_HVDCshr i_HVDClevy i_plantReservesCost
 $loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge MWtoBuild SRMC locFac_recip penaltyViolateReserves pNFresvCost
 
 
@@ -375,7 +382,6 @@ loop(rv, put / rv.tl ; loop(y, put y.tl ) ;
   put / ;
 ) ;
 
-
 $ontext
 * Write Peak constraint info to a txt file.
 File PeakResults / "%OutPath%\%runName%\%runName% - %scenarioName% - PeakResults.txt" / ; PeakResults.lw = 0 ; PeakResults.pw = 999 ;
@@ -436,6 +442,29 @@ loop(rv, put / rv.tl ;
   ) ;
   put / 'Total' '' loop(y, put sum((reportDomain,k,r), capacityByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
 ) ;
+
+
+
+* Write out csv files with everything
+put capacityPlant 'Capacity by plant and year (net of retirements), MW' / 'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Plant' 'Year' 'MW' ;
+loop((rv,experiments,steps,scenarioSets,g,y)$s_CAPACITY(rv,experiments,steps,scenarioSets,g,y),
+  put / rv.tl, experiments.tl, steps.tl, scenarioSets.tl, g.tl, y.tl, s_CAPACITY(rv,experiments,steps,scenarioSets,g,y) ;
+) ;
+
+put genPlant 'Generation (GWh) and utilisation (percent) by plant and year' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Plant' 'Year' 'Period' 'Block' 'Scenario' 'GWh' 'Percent' ;
+loop((rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios)$s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios),
+  put / rv.tl, experiments.tl, steps.tl, scenarioSets.tl, g.tl, y.tl, t.tl, lb.tl, scenarios.tl, s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios) ;
+  put (100 * s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios) / ( 1e-3 * hoursPerBlock(rv,t,lb) * i_namePlate(rv,g) )) ;
+) ;
+
+put genPlantYear 'Annual generation (GWh) and utilisation (percent) by plant' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Plant' 'Year' 'Scenario' 'GWh' 'Percent' ;
+loop((rv,experiments,steps,scenarioSets,g,y,scenarios)$sum((t,lb), s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios)),
+  put / rv.tl, experiments.tl, steps.tl, scenarioSets.tl, g.tl, y.tl, scenarios.tl, sum((t,lb), s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios)) ;
+  put ( 100 * sum((t,lb), s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios)) / ( 8.76 * i_namePlate(rv,g) ) ) ;
+) ;
+
 
 
 
