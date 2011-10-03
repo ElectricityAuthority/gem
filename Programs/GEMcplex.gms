@@ -1,37 +1,15 @@
 * GEMcplex.gms
 
+* Last modified by Dr Phil Bishop, 03/10/2011 (imm@ea.govt.nz)
+
 $ontext
- --------------------------------------------------------------------------------
- Generation Expansion Model (GEM)
- Copyright (C) 2007, Electricity Commission
-
- This file is part of GEM.
-
- GEM is free software; you can redistribute it and/or
- modify it under the terms of the GNU General Public License
- as published by the Free Software Foundation; either version 2
- of the License, or (at your option) any later version.
-
- GEM is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with GEM; if not, write to the Free Software Foundation, Inc., 
- 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- --------------------------------------------------------------------------------
-
- Last modified by Dr Phil Bishop, 16/11/2009 (gem@electricitycommission.govt.nz)
-
  The purpose of this program is to create a bunch of Cplex options files. The specific options
- file to be used by Cplex depends on the user's choice of solution 'goal'.
- This file will be $include'd into GEMexec.gms.
-
+ file to be used by Cplex depends on the user's choice of solution 'goal'.  This file will be
+ $include'd into GEMsolve.gms.
 $offtext
 
 $onecho > Cplex.op2
-* Goal: QDsol (a coarse optcr value is supplied by user in RunGEM)
+* Goal: QDsol (a coarse optcr value is supplied by user in GEMsettings)
   mipemphasis   2
   heurfreq      500
   rinsheur      500
@@ -103,7 +81,7 @@ objrng      Specify which variables to calculate sensitivity ranges on (default 
 rngrestart  Specify a file to write ranging info to (default is to print to the listing file).
 objrng       CAPACITY
 rhsrng       bal_pkload_new_NZ
-rngrestart   "%OutPath%%OutPrefix% - Ranging information.txt"
+rngrestart   "%OutPath%%runName% - Ranging information.txt"
 
 $offtext
 
