@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 29/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 04/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used throughout
@@ -462,6 +462,7 @@ Parameters
   historicalHydroOutput(v,hY,m)                 'Historical hydro output sequences by reservoir and month, GWh'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
 * Input data summaries
+  xFoFm(g)                                      'eXceptional forced outage factor multipliers, i.e. at least one load block less than 0.5 or greater than 1.5'
   avgSRMC(g)                                    'Short run marginal cost of each generation project - averaged over years for the default scenario, $/MWh'
   avgPeakCon(g)                                 'Contribution to peak factor - averaged over years for each plant'
   avgMaxCapFact(g)                              'Maximum capacity factor averaged over periods and load blocks for each plant (hours per block per period are the weights)'
