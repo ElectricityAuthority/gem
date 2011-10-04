@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 04/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -762,7 +762,7 @@ put plantData, 'Plant data summarised (default scenario only) - based on user-su
   'Average VoLL plant capacity, MW:'    @38 (sum(s, i_VOLLcap(s))  / card(s)):<4:0 /
   'Average VoLL plant cost, $/MWh:'     @38 (sum(s, i_VOLLcost(s)) / card(s)):<4:0 //
 
-  'Technologies with randomised capex:' @38 if(sum(movers(k), 1), loop(movers(k), put k.tl, ', ' ) else put 'There are none' ) put /
+  'Technologies with randomised capex:' @38 if(sum(randomiseCapex(k), 1), loop(randomiseCapex(k), put k.tl, ', ' ) else put 'There are none' ) put /
   'Randomised cost range (+/-), %:'     @38 (100 * randomCapexCostAdjuster):<5:1 //
 
   'Notes:' /
