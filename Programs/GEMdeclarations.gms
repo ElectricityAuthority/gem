@@ -280,6 +280,8 @@ Sets
   sumSolves(scenarioSets)                       'Figure out which solves to sum over when computing post-solve results averaged over scenarioSets'
   defaultScenario(scenarios)                    'Identify a default scenario to use when reporting summaries of input data (see GEMdata)' ;
 
+Alias(scenarios,scen), (scenarioSets,scenSet) ;
+
 Parameters
   scenarioPeakLoadFactor(scenarios)             'Scenario-specific scaling factor for peak load data'
   scenarioCO2TaxFactor(scenarios)               'Scenario-specific scaling factor for CO2 tax data'

@@ -577,35 +577,35 @@ $include GEMstochastic.inc
 
 * Pro-rate weightScenariosBySet values so that weights sum to exactly one for each scenarioSets:
 counter = 0 ;
-loop(scenarioSets,
-  counter = sum(scenarios, weightScenariosBySet(scenarioSets,scenarios)) ;
-  weightScenariosBySet(scenarioSets,scenarios)$counter = weightScenariosBySet(scenarioSets,scenarios) / counter ;
+loop(scenSet,
+  counter = sum(scen, weightScenariosBySet(scenSet,scen)) ;
+  weightScenariosBySet(scenSet,scen)$counter = weightScenariosBySet(scenSet,scen) / counter ;
   counter = 0 ;
 ) ;
 
 * Compute the short-run marginal cost (and its components) for each generating plant, $/MWh.
-totalFuelCost(g,y,scenarios) = 1e-3 * scenarioFuelCostFactor(scenarios) * i_heatrate(g) * sum(mapg_f(g,f), i_fuelPrices(f,y) + i_varFuelDeliveryCosts(g) ) ;
+totalFuelCost(g,y,scen) = 1e-3 * scenarioFuelCostFactor(scen) * i_heatrate(g) * sum(mapg_f(g,f), i_fuelPrices(f,y) + i_varFuelDeliveryCosts(g) ) ;
 
-CO2taxByPlant(g,y,scenarios) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * scenarioCO2TaxFactor(scenarios) * i_emissionFactors(f) ) ;
+CO2taxByPlant(g,y,scen) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * scenarioCO2TaxFactor(scen) * i_emissionFactors(f) ) ;
 
-SRMC(g,y,scenarios) = i_varOM(g) + totalFuelCost(g,y,scenarios) + CO2taxByPlant(g,y,scenarios) ;
+SRMC(g,y,scen) = i_varOM(g) + totalFuelCost(g,y,scen) + CO2taxByPlant(g,y,scen) ;
 
 * If SRMC is zero or negligible (< .05) for any plant, assign a positive small value.
-SRMC(g,y,scenarios)$( SRMC(g,y,scenarios) < .05 ) = 1e-3 * ord(g) / card(g) ;
+SRMC(g,y,scen)$( SRMC(g,y,scen) < .05 ) = 1e-3 * ord(g) / card(g) ;
 
 * Capture the island-wide AC loss adjustment factors.
 AClossFactors('ni') = %AClossesNI% ;
 AClossFactors('si') = %AClossesSI% ;
 
 * Transfer i_NrgDemand to NrgDemand and adjust for intraregional AC transmission losses and the scenario-specific energy factor.
-NrgDemand(r,y,t,lb,scenarios) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * scenarioNRGfactor(scenarios) ;
+NrgDemand(r,y,t,lb,scen) = sum(mapild_r(ild,r), (1 + AClossFactors(ild)) * i_NrgDemand(r,y,t,lb)) * scenarioNRGfactor(scen) ;
 
 * Use the GWh of NrgDemand and hours per LDC block to compute ldcMW (MW).
-ldcMW(r,y,t,lb,scenarios)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,scenarios) / hoursPerBlock(t,lb) ;
+ldcMW(r,y,t,lb,scen)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,scen) / hoursPerBlock(t,lb) ;
 
 * Calculate peak load as peak:average ratio and adjust by the scenario-specific peak load factor.
-peakLoadNZ(y,scenarios) = scenarioPeakLoadFactor(scenarios) * i_P200ratioNZ(y) * ( 1 / 8.76 ) * sum((r,t,lb)$mapAggR_r('nz',r), NrgDemand(r,y,t,lb,scenarios)) ;
-peakLoadNI(y,scenarios) = scenarioPeakLoadFactor(scenarios) * i_P200ratioNI(y) * ( 1 / 8.76 ) * sum((r,t,lb)$mapAggR_r('ni',r), NrgDemand(r,y,t,lb,scenarios)) ;
+peakLoadNZ(y,scen) = scenarioPeakLoadFactor(scen) * i_P200ratioNZ(y) * ( 1 / 8.76 ) * sum((r,t,lb)$mapAggR_r('nz',r), NrgDemand(r,y,t,lb,scen)) ;
+peakLoadNI(y,scen) = scenarioPeakLoadFactor(scen) * i_P200ratioNI(y) * ( 1 / 8.76 ) * sum((r,t,lb)$mapAggR_r('ni',r), NrgDemand(r,y,t,lb,scen)) ;
 
 * Transfer hydro output for all hydro years from i_historicalHydroOutput to historicalHydroOutput (no scenario-specific adjustment factors at this time).
 historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
@@ -694,15 +694,15 @@ MWtoBuild(k,aggR)  = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * ma
 GWhtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), assumedGWh(g)) ;
 
 defaultScenario("%defaultScenario%") = yes ;
-loop(defaultScenario(scenarios),
+loop(defaultScenario(scen),
 
-  avgSRMC(g) = sum(y, SRMC(g,y,scenarios)) / card(y) ;
+  avgSRMC(g) = sum(y, SRMC(g,y,scen)) / card(y) ;
 
-  loadByRegionYear(r,y) = sum((t,lb), NrgDemand(r,y,t,lb,scenarios)) ;
+  loadByRegionYear(r,y) = sum((t,lb), NrgDemand(r,y,t,lb,scen)) ;
   loadByAggRegionYear(aggR,y) = sum(mapAggR_r(aggR,r), loadByRegionYear(r,y)) ; 
 
-  peakLoadByYearAggR(y,'nz') = peakLoadNZ(y,scenarios) ;
-  peakLoadByYearAggR(y,'ni') = peakLoadNI(y,scenarios) ;
+  peakLoadByYearAggR(y,'nz') = peakLoadNZ(y,scen) ;
+  peakLoadByYearAggR(y,'ni') = peakLoadNI(y,scen) ;
   peakLoadByYearAggR(y,'si') = peakLoadByYearAggR(y,'nz') - peakLoadByYearAggR(y,'ni') ;
 
 ) ;
@@ -724,14 +724,14 @@ put stochasticSummary 'Summary of mappings, weights and factors relating to expe
   'Scenario factors:' @110 'Same => averaged over the listed hydro years; Sequential => listed hydro year maps to first modelled year.' /
   'Experiments' @18 'Steps' @28 'scenarioSets' @45 'Scenarios' @61 'Weight' @71 'PeakLoad' @81 'Co2' @91 'FuelCost' @101 'Energy' @110
   'SeqType' @121 'Hydro years' ;
-loop(allSolves(experiments,steps,scenarioSets),
-  put / experiments.tl @18 steps.tl @28 scenarioSets.tl @45
-  loop(mapScenarios(scenarioSets,scenarios),
-    put scenarios.tl @56 weightScenariosBySet(scenarioSets,scenarios):10:3, scenarioPeakLoadFactor(scenarios):10:3
-      scenarioCO2TaxFactor(scenarios):10:3, scenarioFuelCostFactor(scenarios):10:3, scenarioNRGFactor(scenarios):10:3
+loop(allSolves(experiments,steps,scenSet),
+  put / experiments.tl @18 steps.tl @28 scenSet.tl @45
+  loop(mapScenarios(scenSet,scen),
+    put scen.tl @56 weightScenariosBySet(scenSet,scen):10:3, scenarioPeakLoadFactor(scen):10:3
+      scenarioCO2TaxFactor(scen):10:3, scenarioFuelCostFactor(scen):10:3, scenarioNRGFactor(scen):10:3
     put @110 ;
-    loop(mapSC_hydroSeqTypes(scenarios,hydroSeqTypes), put hydroSeqTypes.tl:<11 ) ;
-    loop(mapSC_hY(scenarios,hY), put hY.tl:<5 ) ;
+    loop(mapSC_hydroSeqTypes(scen,hydroSeqTypes), put hydroSeqTypes.tl:<11 ) ;
+    loop(mapSC_hY(scen,hY), put hY.tl:<5 ) ;
   ) ;
 );
 
@@ -740,8 +740,8 @@ loop(allSolves(experiments,steps,scenarioSets),
 $set plantDataHdr1 'MW  Capex  varCC  varOM avSRMC  fixOM fixFDC     HR  PkCon    FoF  xFoFm mnCapF mxCapF  avMnU  '
 $set plantDataHdr2 'Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
 put plantData, 'Plant data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
-  'All scenarios:'                      @38 loop(scenarios, put scenarios.tl ', ' ) put /
-  'Default scenario:'                   @38 loop(defaultScenario(scenarios), put scenarios.tl ) put //
+  'All scenarios:'                      @38 loop(scen, put scen.tl ', ' ) put /
+  'Default scenario:'                   @38 loop(defaultScenario(scen), put scen.tl ) put //
   'First modelled year:'                @38 firstYear:<4:0 /
   'Last modelled year:'                 @38 lastYear:<4:0 //
   'Summary counts' /
@@ -870,14 +870,14 @@ loop(k,
 * Write the load summaries.
 put loadSummary 'Energy and peak load by region/island and year, GWh' /
   ' - GWh energy grossed-up by AC loss factors and scaled by scenario-specific energy factor' /
-  ' - GWh energy and peak load reported here relates only to the default scenario (' loop(defaultScenario(scenarios), put scenarios.tl ) put ').' /
+  ' - GWh energy and peak load reported here relates only to the default scenario (' loop(defaultScenario(scen), put scen.tl ) put ').' /
   ' - Demand file: ' "%GEMdemandGDX%." ;
 
 put // 'Intraregional AC loss factors, %' ;
 loop(ild, put / @2 ild.tl @14 (100 * AClossFactors(ild)):>10:2 ) ;
 
 put // 'Scenario-specific energy factors' ;
-loop(scenarios, put / @2 scenarios.tl @14 scenarioNRGfactor(scenarios):>10:2 ) ;
+loop(scen, put / @2 scen.tl @14 scenarioNRGfactor(scen):>10:2 ) ;
 
 put // 'Energy, GWh' @14 loop(r$( card(isIldEqReg) <> 2 ), put r.tl:>10 ) loop(aggR, put aggR.tl:>10 ) ;
 loop(y,

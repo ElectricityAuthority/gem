@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 03/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 04/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -94,42 +94,42 @@ REFURBCOST.fx(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 
 * Restrict generation:
 * Don't allow generation unless the unit is in validYrOperate; validYrOperate embodies the appropriate date for existing, committed, and new units.
-GEN.fx(g,y,t,lb,scenarios)$( not validYrOperate(g,y) ) = 0 ;
+GEN.fx(g,y,t,lb,scen)$( not validYrOperate(g,y) ) = 0 ;
 * Force generation from the must-run plant, i.e base load (convert MW capacity to GWh for each load block).
-GEN.fx(g,y,t,lb,scenarios)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y) ) =
+GEN.fx(g,y,t,lb,scen)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y) ) =
 1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
 
 * Place restrictions on VOLL plants:
-VOLLGEN.up(s,y,t,lb,scenarios) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;  ! Respect the capacity of VOLL plants
-VOLLGEN.fx(s,y,t,lb,scenarios)$( ord(lb) <= noVOLLblks ) = 0 ;                ! Don't allow VOLL in user-specified top load blocks 
+VOLLGEN.up(s,y,t,lb,scen) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;  ! Respect the capacity of VOLL plants
+VOLLGEN.fx(s,y,t,lb,scen)$( ord(lb) <= noVOLLblks ) = 0 ;                ! Don't allow VOLL in user-specified top load blocks 
 
 * Fix bounds on TX according to the largest capacity allowed in any state. Lower bound must be zero if transportation formulation is being used.
-TX.lo(paths,y,t,lb,scenarios) = -smax(ps, i_txCapacity(paths,ps)) ;
-TX.lo(paths,y,t,lb,scenarios)$(DCloadFlow = 0) = 0 ;
-TX.up(paths,y,t,lb,scenarios) = +smax(ps, i_txCapacity(paths,ps)) ;
+TX.lo(paths,y,t,lb,scen) = -smax(ps, i_txCapacity(paths,ps)) ;
+TX.lo(paths,y,t,lb,scen)$(DCloadFlow = 0) = 0 ;
+TX.up(paths,y,t,lb,scen) = +smax(ps, i_txCapacity(paths,ps)) ;
 
 * Fix the reference bus angle to zero (only used in case of DC load flow formulation).
-THETA.fx(slackBus(r),y,t,lb,scenarios) = 0 ;
+THETA.fx(slackBus(r),y,t,lb,scen) = 0 ;
 
 * Fix various reserves variables to zero if they are not needed.
-RESV.fx(g,rc,y,t,lb,scenarios)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
-RESVVIOL.fx(rc,ild,y,t,lb,scenarios)$(        not useReserves ) = 0 ;
-RESVTRFR.fx(rc,ild,ild1,y,t,lb,scenarios)$( ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
-RESVREQINT.fx(rc,ild,y,t,lb,scenarios)$(      not useReserves ) = 0 ;
-NORESVTRFR.fx(ild,ild1,y,t,lb,scenarios)$(    not useReserves ) = 0 ;
+RESV.fx(g,rc,y,t,lb,scen)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
+RESVVIOL.fx(rc,ild,y,t,lb,scen)$(        not useReserves ) = 0 ;
+RESVTRFR.fx(rc,ild,ild1,y,t,lb,scen)$( ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
+RESVREQINT.fx(rc,ild,y,t,lb,scen)$(      not useReserves ) = 0 ;
+NORESVTRFR.fx(ild,ild1,y,t,lb,scen)$(    not useReserves ) = 0 ;
 
 * Fix to zero the intra-island reserve variables.
-RESVTRFR.fx(rc,ild,ild,y,t,lb,scenarios) = 0 ;
-NORESVTRFR.fx(ild,ild,y,t,lb,scenarios)  = 0 ;
+RESVTRFR.fx(rc,ild,ild,y,t,lb,scen) = 0 ;
+NORESVTRFR.fx(ild,ild,y,t,lb,scen)  = 0 ;
 
 * Set the lower bound on the reserve requirement if there is an external requirement specified.
-RESVREQINT.lo(rc,ild,y,t,lb,scenarios)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
+RESVREQINT.lo(rc,ild,y,t,lb,scen)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
 
 * Reserve contribution cannot exceed the specified capability during peak or other periods.
-RESV.up(g,rc,y,t,lb,scenarios)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
+RESV.up(g,rc,y,t,lb,scen)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
 
 * Don't allow reserves from units prior to committed date or earliest allowable operation or if plant is retired.
-RESV.fx(g,rc,y,t,lb,scenarios)$( not validYrOperate(g,y) ) = 0 ;
+RESV.fx(g,rc,y,t,lb,scen)$( not validYrOperate(g,y) ) = 0 ;
 
 
 
@@ -223,36 +223,36 @@ loop(experiments,
     ) ;
 
 *   Third, loop over each scenarioSet for this step of the experiment.
-    loop(allSolves(experiments,steps,scenarioSets),
+    loop(allSolves(experiments,steps,scenSet),
 
 *     Initialise the desired scenarios for this solve
-      sc(scenarios) = no ;
-      sc(scenarios)$mapScenarios(scenarioSets,scenarios) = yes ;
+      sc(scen) = no ;
+      sc(scen)$mapScenarios(scenSet,scen) = yes ;
 
 *     Select the appropriate scenario weight.
       scenarioWeight(sc) = 0 ;
-      scenarioWeight(sc) = weightScenariosBySet(scenarioSets,sc) ;
+      scenarioWeight(sc) = weightScenariosBySet(scenSet,sc) ;
       display 'Scenario and weight for this solve:', sc, scenarioWeight ;
 
 *     Compute the hydro output values to use for the selected scenarios (NB: only works for hydroSeqTypes={same,sequential}).
-      modelledHydroOutput(g,y,t,scenarios) = 0 ;
-      loop(sc(scenarios),
-        if(mapSC_hydroSeqTypes(scenarios,'same'),
-          modelledHydroOutput(g,y,t,scenarios) = hydroOutputScalar *
-            sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapSC_hY(scenarios,hY)), historicalHydroOutput(v,hY,m)) / sum(mapSC_hY(scenarios,hY1), 1) ;
+      modelledHydroOutput(g,y,t,scen) = 0 ;
+      loop(sc(scen),
+        if(mapSC_hydroSeqTypes(scen,'same'),
+          modelledHydroOutput(g,y,t,scen) = hydroOutputScalar *
+            sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapSC_hY(scen,hY)), historicalHydroOutput(v,hY,m)) / sum(mapSC_hY(scen,hY1), 1) ;
 *         Capture the current mapping of hydroyears to modelled years.
-          mapHydroYearsToModelledYears(experiments,steps,scenarioSets,sc,y,hY)$( ord(hY) = sum(mapSC_hY(scenarios,hY1), 1) ) = yes ;
+          mapHydroYearsToModelledYears(experiments,steps,scenSet,sc,y,hY)$( ord(hY) = sum(mapSC_hY(scen,hY1), 1) ) = yes ;
 *         Assign hydro output to potential new plant linked to existing schedulable hydro plant.
           hydroOutputUpgrades(schedHydroUpg(gg),y,t,sc) = sum(mapSH_Upg(g,gg)$i_namePlate(g), modelledHydroOutput(g,y,t,sc) / i_namePlate(g) ) ;
           else
           loop(y,
             chooseHydroYears(hY) = no ;
-            chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scenarios, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
-            chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scenarios, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+            chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scen, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+            chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scen, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
             modelledHydroOutput(g,y,t,sc) =
               sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
 *           Capture the current mapping of hydroyears to modelled years. 
-            mapHydroYearsToModelledYears(experiments,steps,scenarioSets,sc,y,chooseHydroYears) = yes ;
+            mapHydroYearsToModelledYears(experiments,steps,scenSet,sc,y,chooseHydroYears) = yes ;
 *           Assign hydro output to potential new plant linked to existing schedulable hydro plant.
             hydroOutputUpgrades(schedHydroUpg(gg),y,t,sc) = sum(mapSH_Upg(g,gg)$i_namePlate(g), modelledHydroOutput(g,y,t,sc) / i_namePlate(g) ) ;
           ) ;
@@ -261,8 +261,8 @@ loop(experiments,
       display 'Hydro output:', modelledHydroOutput, hydroOutputUpgrades ;
 
 *     Collect modelledHydroOutput and hydroOutputUpgrades for posterity.
-      allModelledHydroOutput(experiments,steps,scenarioSets,g,y,t,sc) = modelledHydroOutput(g,y,t,sc) ;
-      allHydroOutputUpgrades(experiments,steps,scenarioSets,g,y,t,sc) = hydroOutputUpgrades(g,y,t,sc) ;
+      allModelledHydroOutput(experiments,steps,scenSet,g,y,t,sc) = modelledHydroOutput(g,y,t,sc) ;
+      allHydroOutputUpgrades(experiments,steps,scenSet,g,y,t,sc) = hydroOutputUpgrades(g,y,t,sc) ;
  ;
 
 *     Solve either GEM or DISP, depending on what step we're at.
@@ -285,12 +285,12 @@ loop(experiments,
 
 *     Post a progress message to report for use by GUI and to the console.
       if(counter = 1,
-        putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' finished with some sort of problem and the job is now going to abort.' /
+        putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' finished with some sort of problem and the job is now going to abort.' /
                        'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
         else
-        putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' (', system.time ')' / '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
+        putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' (', system.time ')' / '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
       ) ;
-      putclose con // '   Model: ' experiments.tl '-' steps.tl '-' scenarioSets.tl ' from the %runName%_%runVersionName% run has finished' /
+      putclose con // '   Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' from the %runName%_%runVersionName% run has finished' /
                       '   Objective function value: ' TOTALCOST.l:<12:1 // ;
 
       if(sameas(steps,'dispatch'),
@@ -301,7 +301,7 @@ loop(experiments,
       ) ;
 
 *     Collect information for solve summary report
-      solveReport(allSolves,'ObjFnValue') = TOTALCOST.l ;    solveReport(allSolves,'SCcosts') = sum(sc(scenarios), SCENARIO_COSTS.l(sc) ) ;
+      solveReport(allSolves,'ObjFnValue') = TOTALCOST.l ;    solveReport(allSolves,'SCcosts') = sum(sc(scen), SCENARIO_COSTS.l(sc) ) ;
       solveReport(allSolves,'OptFile')    = gem.optfile ;    solveReport(allSolves,'OptCr')   = gem.optcr ;
       solveReport(allSolves,'ModStat')    = gem.modelstat ;  solveReport(allSolves,'SolStat') = gem.solvestat ;
       solveReport(allSolves,'Vars')       = gem.numvar ;     solveReport(allSolves,'DVars')   = gem.numdvar ;
@@ -331,7 +331,7 @@ $     label skipThis
 *     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRschedule = 1).
 $     if "%GRschedule%"==0 $goto skipGRschedule
       dummy.lw = 0 ; put dummy ;
-      put_utility 'ren' / "%OutPath%\%runName%\Processed files\GRschedule - %runVersionName%_" experiments.tl '_' steps.tl '_' scenarioSets.tl '.gms' ;
+      put_utility 'ren' / "%OutPath%\%runName%\Processed files\GRschedule - %runVersionName%_" experiments.tl '_' steps.tl '_' scenSet.tl '.gms' ;
       if(not sameas(steps,'dispatch'),
         put "Parameter fix_BUILD(g,y)   'New capacity installed by generating plant and year, MW' /" ;
         loop((g,y)$BUILD.l(g,y),  put / "'" g.tl "'.'" y.tl "'" BUILD.l(g,y):15:8 ) put ' /;' // ;
@@ -355,7 +355,7 @@ $     label skipGRschedule
 *     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
 $     if not %PlotMIPtrace%==1 $goto NoMIPTrace
       bat.ap = 0 ;
-      putclose bat 'copy MIPtrace.txt "MIPtrace - %runName%_%runVersionName%_' experiments.tl '_' steps.tl '_' scenarioSets.tl '.txt"' ;
+      putclose bat 'copy MIPtrace.txt "MIPtrace - %runName%_%runVersionName%_' experiments.tl '_' steps.tl '_' scenSet.tl '.txt"' ;
       execute 'temp.bat';
 $     label NoMIPTrace
 
@@ -434,7 +434,7 @@ putclose / rep 'Run version ' "%runVersionName%" ' finished at ' system.time ///
 * x) Dump selected input data into a GDX file (as imported, or from intermediate steps in GEMdata, or what's actually used to solve the model).
 Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
-  y t f k g s o lb i r e ild ps scenarios rc n tgc hY
+  y t f k g s o lb i r e ild ps scen rc n tgc hY
   techColor fuelColor fuelGrpColor
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r isIldEqReg firstPeriod firstYr lastYr allButFirstYr
   paths nwd swd interIsland pumpedHydroPlant wind gas diesel
@@ -444,8 +444,8 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
   capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost capexPlant refurbCapexPlant
   capCharge refurbCapCharge txCapCharge
-  i_largestGenerator, i_smallestPole, i_winterCapacityMargin, i_P200ratioNZ, i_P200ratioNI, i_fkNI
-  i_fixedOM i_HVDCshr i_HVDClevy srmc locFac_recip i_plantReservesCost
+  i_largestGenerator i_smallestPole i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI i_fkNI
+  i_fixedOM i_HVDCshr i_HVDClevy totalFuelCost CO2taxByPlant srmc locFac_recip i_plantReservesCost
 * Generation plant related sets and parameters
   exist noExist commit new neverBuild nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
   exogMWretired possibleToEndogRetire possibleToRetire possibleToRefurbish continueAftaEndogRetire peakConPlant NWpeakConPlant
@@ -462,7 +462,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
 * Hydro related sets and parameters
   hydroOutputScalar allModelledHydroOutput allHydroOutputUpgrades mapHydroYearsToModelledYears
 * Penalties
-  penaltyViolatePeakLoad, penaltyViolateRenNrg, penaltyViolateReserves
+  penaltyViolatePeakLoad penaltyViolateRenNrg penaltyViolateReserves
 *+++++++++++++++++++++++++
 * More non-free reserves code.
   stp pNFresvCap pNFresvCost

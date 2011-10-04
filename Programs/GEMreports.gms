@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 03/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 04/10/2011 (imm@ea.govt.nz)
 
 
 
@@ -34,6 +34,7 @@ Files
   capacityPlant  / "%OutPath%\%runName%\Processed files\Capacity by plant and year (net of retirements) - %runName%.csv" /
   genPlant       / "%OutPath%\%runName%\Processed files\Generation and utilisation by plant - %runName%.csv" /
   genPlantYear   / "%OutPath%\%runName%\Processed files\Generation and utilisation by plant (annually) - %runName%.csv" /
+  variousAnnual  / "%OutPath%\%runName%\Processed files\Various annual results - %runName%.csv" /
   ;
 
 plotBat.lw = 0 ;
@@ -42,6 +43,7 @@ summaryResults.pc = 5 ;  summaryResults.pw = 999 ;
 capacityPlant.pc = 5 ;   capacityPlant.pw = 999 ;
 genPlant.pc = 5 ;        genPlant.pw = 999 ;
 genPlantYear.pc = 5 ;    genPlantYear.pw = 999 ;
+variousAnnual.pc = 5 ;   variousAnnual.pw = 999 ;
 
 
 
@@ -69,6 +71,7 @@ Set y 'Modelled calendar years' / %firstYear% * %lastYear% / ;
 * Declare the fundamental sets required for reporting.
 Sets
   k                 'Generation technologies'
+  f                 'Fuels'
   g                 'Generation plant'
   s                 'Shortage or VOLL plants'
   o                 'Owners of generating plant'
@@ -88,10 +91,12 @@ Sets
 *  fuelColor(f,red,green,blue)     'RGB color mix for fuels - to pass to plotting applications'
 *  fuelGrpcolor(fg,red,green,blue) 'RGB color mix for fuel groups - to pass to plotting applications'
   firstPeriod(t)                   'First time period (i.e. period within the modelled year)'
+  thermalFuel(f)                   'Thermal fuels'
   nwd(r,rr)                        'Northward direction of flow on Benmore-Haywards HVDC'
   swd(r,rr)                        'Southward direction of flow on Benmore-Haywards HVDC'
   paths(r,rr)                      'All valid transmission paths'
   mapg_k(g,k)                      'Map technology types to generating plant'
+  mapg_f(g,f)                      'Map fuel types to generating plant'
   mapg_o(g,o)                      'Map plant owners to generating plant'
   mapg_r(g,r)                      'Map regions to generating plant'
   mapg_e(g,e)                      'Map zones to generating plant'
@@ -102,8 +107,8 @@ Sets
 
 * Load set membership from the GDX file containing the default or base case run version.
 $gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%baseRunVersion%.gdx"
-$loaddc k g s o i r e t lb rc hY
-$loaddc firstPeriod nwd swd paths mapg_k mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen sigen
+$loaddc k f g s o i r e t lb rc hY
+$loaddc firstPeriod thermalFuel nwd swd paths mapg_k mapg_f mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen sigen
 $loaddc techColor
 * fuelColor fuelGrpColor
 
@@ -112,33 +117,34 @@ Set stp 'Steps'  / stp1 * stp5 / ;
 
 * Include GEMstochastic - can't do this until hY and hydroSeqTypes are loaded 
 $include GEMstochastic.inc
+Alias(scenarios,scen), (scenarioSets,scenSet) ;
 
 * Declare and load the parameters (variable levels and marginals) to be found in the merged 'all_ReportOutput' GDX file.
 Parameters
-  s_TOTALCOST(runVersions,experiments,steps,scenarioSets)                         'Discounted total system costs over all modelled years, $m (objective function value)'
-  s_TX(runVersions,experiments,steps,scenarioSets,r,rr,y,t,lb,scenarios)          'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
-  s_REFURBCOST(runVersions,experiments,steps,scenarioSets,g,y)                    'Annualised generation plant refurbishment expenditure charge, $'
-  s_BUILD(runVersions,experiments,steps,scenarioSets,g,y)                         'New capacity installed by generating plant and year, MW'
-  s_CAPACITY(runVersions,experiments,steps,scenarioSets,g,y)                      'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s_TXCAPCHARGES(runVersions,experiments,steps,scenarioSets,r,rr,y)               'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s_GEN(runVersions,experiments,steps,scenarioSets,g,y,t,lb,scenarios)            'Generation by generating plant and block, GWh'
-  s_VOLLGEN(runVersions,experiments,steps,scenarioSets,s,y,t,lb,scenarios)        'Generation by VOLL plant and block, GWh'
-  s_RESV(runVersions,experiments,steps,scenarioSets,g,rc,y,t,lb,scenarios)        'Reserve energy supplied, MWh'
-  s_RESVVIOL(runVersions,experiments,steps,scenarioSets,rc,ild,y,t,lb,scenarios)  'Reserve energy supply violations, MWh'
-  s_RESVCOMPONENTS(runVersions,experiments,steps,scenarioSets,r,rr,y,t,lb,scenarios,stp) 'Non-free reserve components, MW'
-  s_RENNRGPENALTY(runVersions,experiments,steps,scenarioSets,y)                   'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s_PEAK_NZ_PENALTY(runVersions,experiments,steps,scenarioSets,y,scenarios)       'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
-  s_PEAK_NI_PENALTY(runVersions,experiments,steps,scenarioSets,y,scenarios)       'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
-  s_NOWINDPEAK_NI_PENALTY(runVersions,experiments,steps,scenarioSets,y,scenarios) 'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
-  s_ANNMWSLACK(runVersions,experiments,steps,scenarioSets,y)                      'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s_RENCAPSLACK(runVersions,experiments,steps,scenarioSets,y)                     'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s_HYDROSLACK(runVersions,experiments,steps,scenarioSets,y)                      'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s_MINUTILSLACK(runVersions,experiments,steps,scenarioSets,y)                    'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s_FUELSLACK(runVersions,experiments,steps,scenarioSets,y)                       'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
-  s_bal_supdem(runVersions,experiments,steps,scenarioSets,r,y,t,lb,scenarios)     'Balance supply and demand in each region, year, time period and load block'
-  s_peak_nz(runVersions,experiments,steps,scenarioSets,y,scenarios)               'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
-  s_peak_ni(runVersions,experiments,steps,scenarioSets,y,scenarios)               'Ensure enough capacity to meet peak demand in NI subject to contingencies'
-  s_noWindPeak_ni(runVersions,experiments,steps,scenarioSets,y,scenarios)         'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
+  s_TOTALCOST(runVersions,experiments,steps,scenSet)                          'Discounted total system costs over all modelled years, $m (objective function value)'
+  s_TX(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s_REFURBCOST(runVersions,experiments,steps,scenSet,g,y)                      'Annualised generation plant refurbishment expenditure charge, $'
+  s_BUILD(runVersions,experiments,steps,scenSet,g,y)                           'New capacity installed by generating plant and year, MW'
+  s_CAPACITY(runVersions,experiments,steps,scenSet,g,y)                        'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s_TXCAPCHARGES(runVersions,experiments,steps,scenSet,r,rr,y)                 'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s_GEN(runVersions,experiments,steps,scenSet,g,y,t,lb,scen)                   'Generation by generating plant and block, GWh'
+  s_VOLLGEN(runVersions,experiments,steps,scenSet,s,y,t,lb,scen)               'Generation by VOLL plant and block, GWh'
+  s_RESV(runVersions,experiments,steps,scenSet,g,rc,y,t,lb,scen)               'Reserve energy supplied, MWh'
+  s_RESVVIOL(runVersions,experiments,steps,scenSet,rc,ild,y,t,lb,scen)         'Reserve energy supply violations, MWh'
+  s_RESVCOMPONENTS(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen,stp) 'Non-free reserve components, MW'
+  s_RENNRGPENALTY(runVersions,experiments,steps,scenSet,y)                     'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s_PEAK_NZ_PENALTY(runVersions,experiments,steps,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
+  s_PEAK_NI_PENALTY(runVersions,experiments,steps,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
+  s_NOWINDPEAK_NI_PENALTY(runVersions,experiments,steps,scenSet,y,scen)        'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
+  s_ANNMWSLACK(runVersions,experiments,steps,scenSet,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s_RENCAPSLACK(runVersions,experiments,steps,scenSet,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s_HYDROSLACK(runVersions,experiments,steps,scenSet,y)                        'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s_MINUTILSLACK(runVersions,experiments,steps,scenSet,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s_FUELSLACK(runVersions,experiments,steps,scenSet,y)                         'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s_bal_supdem(runVersions,experiments,steps,scenSet,r,y,t,lb,scen)            'Balance supply and demand in each region, year, time period and load block'
+  s_peak_nz(runVersions,experiments,steps,scenSet,y,scen)                      'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
+  s_peak_ni(runVersions,experiments,steps,scenSet,y,scen)                      'Ensure enough capacity to meet peak demand in NI subject to contingencies'
+  s_noWindPeak_ni(runVersions,experiments,steps,scenSet,y,scen)                'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
   ;
 
 $gdxin "%OutPath%\%runName%\GDX\allRV_ReportOutput.gdx"
@@ -149,34 +155,38 @@ $loaddc s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni
 
 * Declare and load sets and parameters from the merged 'all_SelectedInputData' GDX file.
 Sets
-  possibleToBuild(runVersions,g)                            'Generating plant that may possibly be built in any valid build year'
-  possibleToRefurbish(runVersions,g)                        'Generating plant that may possibly be refurbished in any valid modelled year'
-  validYrOperate(runVersions,g,y)                           'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years' ;
+  possibleToBuild(runVersions,g)                       'Generating plant that may possibly be built in any valid build year'
+  possibleToRefurbish(runVersions,g)                   'Generating plant that may possibly be refurbished in any valid modelled year'
+  validYrOperate(runVersions,g,y)                      'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years' ;
 
 Parameters
-  i_namePlate(runVersions,g)                                'Nameplate capacity of generating plant, MW'
-  i_fixedOM(runVersions,g)                                  'Fixed O&M costs by plant, $/kW/year'
-  i_VOLLcost(runVersions,s)                                 'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
-  i_HVDCshr(runVersions,o)                                  'Share of HVDC charge to be incurred by plant owner'
-  i_HVDClevy(runVersions,y)                                 'HVDC charge levied on new South Island plant by year, $/kW'
-  i_plantReservesCost(runVersions,g,rc)                     'Plant-specific cost per reserve class, $/MWh'
-  hoursPerBlock(runVersions,t,lb)                           'Hours per load block by time period'
-  NrgDemand(runVersions,r,y,t,lb,scenarios)                 'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
-  PVfacG(runVersions,y,t)                                   "Generation investor's present value factor by period"
-  PVfacT(runVersions,y,t)                                   "Transmission investor's present value factor by period"
-  capCharge(runVersions,g,y)                                'Annualised or levelised capital charge for new generation plant, $/MW/yr'
-  refurbCapCharge(runVersions,g,y)                          'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
-  MWtoBuild(runVersions,k,aggR)                             'MW available for installation by technology, island and NZ'
-  SRMC(runVersions,g,y,scenarios)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
-  locFac_Recip(runVersions,e)                               'Reciprocal of zonally-based location factors'
-  penaltyViolateReserves(runVersions,ild,rc)                'Penalty for failing to meet certain reserve classes, $/MW'
-  pNFresvCost(runVersions,r,rr,stp)                         'Constant cost of each non-free piece (or step) of function, $/MWh' ;
+  i_fuelQuantities(runVersions,f,y)                    'Quantitative limit on availability of various fuels by year, PJ'
+  i_namePlate(runVersions,g)                           'Nameplate capacity of generating plant, MW'
+  i_heatrate(runVersions,g)                            'Heat rate of generating plant, GJ/GWh (default = 3600)'
+  totalFuelCost(runVersions,g,y,scen)                  'Total fuel cost - price plus fuel delivery charge all times heatrate - by plant, year and scenario, $/MWh'
+  CO2taxByPlant(runVersions,g,y,scen)                  'CO2 tax by plant, year and scenario, $/MWh'
+  SRMC(runVersions,g,y,scen)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
+  i_fixedOM(runVersions,g)                             'Fixed O&M costs by plant, $/kW/year'
+  i_VOLLcost(runVersions,s)                            'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
+  i_HVDCshr(runVersions,o)                             'Share of HVDC charge to be incurred by plant owner'
+  i_HVDClevy(runVersions,y)                            'HVDC charge levied on new South Island plant by year, $/kW'
+  i_plantReservesCost(runVersions,g,rc)                'Plant-specific cost per reserve class, $/MWh'
+  hoursPerBlock(runVersions,t,lb)                      'Hours per load block by time period'
+  NrgDemand(runVersions,r,y,t,lb,scen)                 'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
+  PVfacG(runVersions,y,t)                              "Generation investor's present value factor by period"
+  PVfacT(runVersions,y,t)                              "Transmission investor's present value factor by period"
+  capCharge(runVersions,g,y)                           'Annualised or levelised capital charge for new generation plant, $/MW/yr'
+  refurbCapCharge(runVersions,g,y)                     'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
+  MWtoBuild(runVersions,k,aggR)                        'MW available for installation by technology, island and NZ'
+  locFac_Recip(runVersions,e)                          'Reciprocal of zonally-based location factors'
+  penaltyViolateReserves(runVersions,ild,rc)           'Penalty for failing to meet certain reserve classes, $/MW'
+  pNFresvCost(runVersions,r,rr,stp)                    'Constant cost of each non-free piece (or step) of function, $/MWh' ;
 
 
 $gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData.gdx"
 $loaddc possibleToBuild possibleToRefurbish validYrOperate
-$loaddc i_namePlate i_fixedOM i_VOLLcost i_HVDCshr i_HVDClevy i_plantReservesCost
-$loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge MWtoBuild SRMC locFac_recip penaltyViolateReserves pNFresvCost
+$loaddc i_fuelQuantities i_namePlate i_heatrate totalFuelCost CO2taxByPlant SRMC i_fixedOM i_VOLLcost i_HVDCshr i_HVDClevy i_plantReservesCost
+$loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge MWtoBuild locFac_recip penaltyViolateReserves pNFresvCost
 
 
 
@@ -184,42 +194,42 @@ $loaddc hoursPerBlock NrgDemand PVfacG PVfacT capCharge refurbCapCharge MWtoBuil
 * 2. Perform the calculations to be reported.
 
 Sets
-  sc(scenarios)                                    '(Dynamically) selected elements of scenarios'
-  rv(runVersions)                                  'runVersions loaded into GEMreports'
-  reportDomain(experiments,steps,scenarioSets)     'The experiment-steps-scenarioSets tuples to be reported on'
-  objc                                             'Objective function components'
-                                                  / obj_Check       'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'
-                                                    obj_total       'Objective function value'
-                                                    obj_gencapex    'Discounted levelised generation plant capital costs'
-                                                    obj_refurb      'Discounted levelised refurbishment capital costs'
-                                                    obj_txcapex     'Discounted levelised transmission capital costs'
-                                                    obj_fixOM       'After tax discounted fixed costs at generation plant'
-                                                    obj_varOM       'After tax discounted variable costs at generation plant'
-                                                    obj_hvdc        'After tax discounted HVDC charges'
-                                                    VOLLcost        'After tax discounted value of lost load'
-                                                    obj_rescosts    'After tax discounted reserve costs at generation plant'
-                                                    obj_resvviol    'Penalty cost of failing to meet reserves'
-                                                    obj_nfrcosts    'After tax discounted cost of non-free reserve cover for HVDC'
-                                                    obj_Penalties   'Value of all penalties'
-                                                    obj_Slacks      'Value of all slacks' / ;
+  sc(scen)                                    '(Dynamically) selected elements of scenarios'
+  rv(runVersions)                             'runVersions loaded into GEMreports'
+  reportDomain(experiments,steps,scenSet)     'The experiment-steps-scenarioSets tuples to be reported on'
+  objc                                        'Objective function components'
+                                             / obj_Check       'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'
+                                               obj_total       'Objective function value'
+                                               obj_gencapex    'Discounted levelised generation plant capital costs'
+                                               obj_refurb      'Discounted levelised refurbishment capital costs'
+                                               obj_txcapex     'Discounted levelised transmission capital costs'
+                                               obj_fixOM       'After tax discounted fixed costs at generation plant'
+                                               obj_varOM       'After tax discounted variable costs at generation plant'
+                                               obj_hvdc        'After tax discounted HVDC charges'
+                                               VOLLcost        'After tax discounted value of lost load'
+                                               obj_rescosts    'After tax discounted reserve costs at generation plant'
+                                               obj_resvviol    'Penalty cost of failing to meet reserves'
+                                               obj_nfrcosts    'After tax discounted cost of non-free reserve cover for HVDC'
+                                               obj_Penalties   'Value of all penalties'
+                                               obj_Slacks      'Value of all slacks' / ;
 
 Parameters
-  cntr                                             'A counter'
-  unDiscFactor(runVersions,y,t)                    "Factor to adjust or 'un-discount' and 'un-tax' shadow prices and values - by period and year"
-  unDiscFactorYr(runVersions,y)                    "Factor to adjust or 'un-discount' and 'un-tax' shadow prices and values - by year (use last period of year)"
-  objComponents(*,*,*,*,objc)                      'Components of objective function value'
-  scenarioWeight(scenarios)                        'Individual scenario weights'
-  loadByRegionAndYear(*,*,*,*,r,y)                 'Load by region and year, GWh'
-  builtByTechRegion(*,*,*,*,k,r)                   'MW built by technology and region/island'
-  builtByTech(*,*,*,*,k)                           'MW built by technology'
-  builtByRegion(*,*,*,*,r)                         'MW built by region/island'
-  capacityByTechRegionYear(*,*,*,*,k,r,y)          'Capacity by technology and region/island and year, MW'
-  genByTechRegionYear(*,*,*,*,k,r,y)               'Generation by technology and region/island and year, GWh'
-  txByRegionYear(*,*,*,*,r,rr,y)                   'Interregional transmission by year, GWh'
-  energyPrice(*,*,*,*,r,y)                         'Time-weighted energy price by region and year, $/MWh (from marginal price off of energy balance constraint)'
-  peakNZPrice(*,*,*,*,y)                           'Shadow price off peak NZ constraint, $/kW'
-  peakNIPrice(*,*,*,*,y)                           'Shadow price off peak NI constraint, $/kW'
-  peaknoWindNIPrice(*,*,*,*,y)                     'Shadow price off peak no wind NI constraint, $/kW'
+  cntr                                        'A counter'
+  unDiscFactor(runVersions,y,t)               "Factor to adjust or 'un-discount' and 'un-tax' shadow prices and values - by period and year"
+  unDiscFactorYr(runVersions,y)               "Factor to adjust or 'un-discount' and 'un-tax' shadow prices and values - by year (use last period of year)"
+  objComponents(*,*,*,*,objc)                 'Components of objective function value'
+  scenarioWeight(scen)                        'Individual scenario weights'
+  loadByRegionAndYear(*,*,*,*,r,y)            'Load by region and year, GWh'
+  builtByTechRegion(*,*,*,*,k,r)              'MW built by technology and region/island'
+  builtByTech(*,*,*,*,k)                      'MW built by technology'
+  builtByRegion(*,*,*,*,r)                    'MW built by region/island'
+  capacityByTechRegionYear(*,*,*,*,k,r,y)     'Capacity by technology and region/island and year, MW'
+  genByTechRegionYear(*,*,*,*,k,r,y)          'Generation by technology and region/island and year, GWh'
+  txByRegionYear(*,*,*,*,r,rr,y)              'Interregional transmission by year, GWh'
+  energyPrice(*,*,*,*,r,y)                    'Time-weighted energy price by region and year, $/MWh (from marginal price off of energy balance constraint)'
+  peakNZPrice(*,*,*,*,y)                      'Shadow price off peak NZ constraint, $/kW'
+  peakNIPrice(*,*,*,*,y)                      'Shadow price off peak NI constraint, $/kW'
+  peaknoWindNIPrice(*,*,*,*,y)                'Shadow price off peak no wind NI constraint, $/kW'
   ;
 
 reportDomain(%reportDomain%) = yes ;
@@ -228,15 +238,15 @@ rv(runVersions)$sum(reportDomain, s_TOTALCOST(runVersions,reportDomain)) = yes ;
 unDiscFactor(rv,y,t) = 1 / ( (1 - taxRate) * PVfacG(rv,y,t) ) ;
 unDiscFactorYr(rv,y) = sum(t$( ord(t) = card(t) ), unDiscFactor(rv,y,t)) ;
 
-loop((rv,reportDomain(experiments,steps,scenarioSets)),
+loop((rv,reportDomain(experiments,steps,scenSet)),
 
 * Initialise the desired scenarios for this solve
-  sc(scenarios) = no ;
-  sc(scenarios)$mapScenarios(scenarioSets,scenarios) = yes ;
+  sc(scen) = no ;
+  sc(scen)$mapScenarios(scenSet,scen) = yes ;
 
 * Select the appropriate scenario weight.
   scenarioWeight(sc) = 0 ;
-  scenarioWeight(sc) = weightScenariosBySet(scenarioSets,sc) ;
+  scenarioWeight(sc) = weightScenariosBySet(scenSet,sc) ;
 
   objComponents(rv,reportDomain,'obj_total')     = s_TOTALCOST(rv,reportDomain) ;
   objComponents(rv,reportDomain,'obj_gencapex')  = 1e-6 * sum((y,firstPeriod(t),possibleToBuild(rv,g)), PVfacG(rv,y,t) * capCharge(rv,g,y) * s_CAPACITY(rv,reportDomain,g,y) ) ;
@@ -415,7 +425,7 @@ $offtext
 putclose plotBat '"%MatCodePath%\GEMplots.exe" "%OutPath%\%runName%\Processed files\Results to be plotted - %runName%.csv"' / ;
 
 * Write results to be plotted to a csv file.
-put plotResults "%runName%" '' "%FigureTitles%", card(y) ; ! card(y) needs to indicate the number of columns of data (the first 2 cols are not data.
+put plotResults "%runName%" "%FigureTitles%", card(y) ; ! card(y) needs to indicate the number of columns of data (the first 2 cols are not data.
 put // 'Technologies' ;
 loop(k,
   put / k.tl, k.te(k) loop(techColor(k,red,green,blue), put red.tl, green.tl, blue.tl ) ; 
@@ -443,32 +453,180 @@ loop(rv, put / rv.tl ;
   put / 'Total' '' loop(y, put sum((reportDomain,k,r), capacityByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
 ) ;
 
-
+put // 'Generation by technology and region and year, GWh' / '' '' loop(y, put y.tl ) ;
+loop(rv, put / rv.tl ;
+  loop(k$sum((reportDomain,r,y), genByTechRegionYear(rv,reportDomain,k,r,y)),
+    put / k.tl '' ;
+    loop(y, put sum((reportDomain,r), genByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
+  ) ;
+  put / 'Total' '' loop(y, put sum((reportDomain,k,r), genByTechRegionYear(rv,reportDomain,k,r,y)) ) ;
+) ;
 
 * Write out csv files with everything
 put capacityPlant 'Capacity by plant and year (net of retirements), MW' / 'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Plant' 'Year' 'MW' ;
-loop((rv,experiments,steps,scenarioSets,g,y)$s_CAPACITY(rv,experiments,steps,scenarioSets,g,y),
-  put / rv.tl, experiments.tl, steps.tl, scenarioSets.tl, g.tl, y.tl, s_CAPACITY(rv,experiments,steps,scenarioSets,g,y) ;
+loop((rv,experiments,steps,scenSet,g,y)$s_CAPACITY(rv,experiments,steps,scenSet,g,y),
+  put / rv.tl, experiments.tl, steps.tl, scenSet.tl, g.tl, y.tl, s_CAPACITY(rv,experiments,steps,scenSet,g,y) ;
 ) ;
 
 put genPlant 'Generation (GWh) and utilisation (percent) by plant and year' /
   'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Plant' 'Year' 'Period' 'Block' 'Scenario' 'GWh' 'Percent' ;
-loop((rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios)$s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios),
-  put / rv.tl, experiments.tl, steps.tl, scenarioSets.tl, g.tl, y.tl, t.tl, lb.tl, scenarios.tl, s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios) ;
-  put (100 * s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios) / ( 1e-3 * hoursPerBlock(rv,t,lb) * i_namePlate(rv,g) )) ;
+loop((rv,experiments,steps,scenSet,g,y,t,lb,scen)$s_GEN(rv,experiments,steps,scenSet,g,y,t,lb,scen),
+  put / rv.tl, experiments.tl, steps.tl, scenSet.tl, g.tl, y.tl, t.tl, lb.tl, scen.tl, s_GEN(rv,experiments,steps,scenSet,g,y,t,lb,scen) ;
+  put (100 * s_GEN(rv,experiments,steps,scenSet,g,y,t,lb,scen) / ( 1e-3 * hoursPerBlock(rv,t,lb) * i_namePlate(rv,g) )) ;
 ) ;
 
 put genPlantYear 'Annual generation (GWh) and utilisation (percent) by plant' /
   'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Plant' 'Year' 'Scenario' 'GWh' 'Percent' ;
-loop((rv,experiments,steps,scenarioSets,g,y,scenarios)$sum((t,lb), s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios)),
-  put / rv.tl, experiments.tl, steps.tl, scenarioSets.tl, g.tl, y.tl, scenarios.tl, sum((t,lb), s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios)) ;
-  put ( 100 * sum((t,lb), s_GEN(rv,experiments,steps,scenarioSets,g,y,t,lb,scenarios)) / ( 8.76 * i_namePlate(rv,g) ) ) ;
+loop((rv,experiments,steps,scenSet,g,y,scen)$sum((t,lb), s_GEN(rv,experiments,steps,scenSet,g,y,t,lb,scen)),
+  put / rv.tl, experiments.tl, steps.tl, scenSet.tl, g.tl, y.tl, scen.tl, sum((t,lb), s_GEN(rv,experiments,steps,scenSet,g,y,t,lb,scen)) ;
+  put ( 100 * sum((t,lb), s_GEN(rv,experiments,steps,scenSet,g,y,t,lb,scen)) / ( 8.76 * i_namePlate(rv,g) ) ) ;
+) ;
+
+Set ryr 'Labels for results by year' /
+  FuelPJ   'Fuel burn, PJ'
+  / ;
+
+put variousAnnual 'Various results reported by year' / ''
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Scenario' 'Fuel' loop(y, put y.tl) ;
+loop((ryr,rv,experiments,steps,scenSet,scen,thermalfuel(f))$sum((mapg_f(g,f),y,t,lb), s_GEN(rv,experiments,steps,scenSet,g,y,t,lb,scen)),
+  put / ryr.te(ryr), rv.tl, experiments.tl, steps.tl, scenSet.tl, scen.tl, f.tl ;
+  loop(y, put sum((mapg_f(g,f),t,lb), 1e-6 * i_heatrate(rv,g) * s_GEN(rv,experiments,steps,scenSet,g,y,t,lb,scen)) ) ;
+) ;
+
+* Need to check units are correct on Fuel burn, PJ?
+* Create a parameter to calculate this stuff and move it into a loop where it all gets done at once.
+
+*CO2taxByPlant(g,y,scen) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * scenarioCO2TaxFactor(scen) * i_emissionFactors(f) ) ;
+
+
+$stop
+
+Stuff to do results by year - see SOO_ReDO spreadsheet in GEM root dir.
+
+  ryr    Labels for results by year
+       / 'TxUpgrades'      'Identify the years in which transmission upgrades are made'
+         'NZInstMW'        'Installed capacity in NZ, MW'
+         'NZFirmMW'        'Firm capacity in NZ, MW'
+         'NIInstMW'        'Installed capacity in NI, MW'
+         'NIFirmMW'        'Firm capacity in NI, MW'
+         'RetireMW'        'Retired capacity, MW'
+         'MaxPotGWh'       'Theoretical maximum annual energy production, GWh'
+         'GenGWh'          'Total New Zealand output, GWh'
+         'RenewGWh'        'Energy produced from renewable sources, GWh'
+         'TxGWh'           'Total New Zealand interregional transmission, GWh'
+         'IITxGWh'         'Total inter-island transmission, GWh'
+         'TxLossGWh'       'Total New Zealand interregional transmission losses, GWh'
+         'IITxLossGWh'     'Total inter-island transmission losses, GWh'
+         'IntraLossGWh'    'Total intraregional transmission losses, GWh'
+         'Losses$m'        'Annual value of losses (intraregional and interregional) valued at LRMC, $m'
+         'DemGWh'          'Energy demand, GWh'
+         'tCO2'            'CO2e emissions, tonnes'
+         'fOMpre$m'        'Fixed O&M expenses (pre tax), $m'
+         'fOMpost$m'       'Fixed O&M expenses (post tax), $m'
+         'HVDCpre$m'       'HVDC charges (pre tax), $m'
+         'HVDCpost$m'      'HVDC charges (post tax), $m'
+         'vOMpre$m'        'Variable O&M expenses with LF adjustment (pre tax), $m'
+         'vOMpreNoLF$m'    'Variable O&M expenses without LF adjustment (pre tax), $m'
+         'vOMpost$m'       'Variable O&M expenses with LF adjustment (post tax), $m'
+         'vOMpostNoLF$m'   'Variable O&M expenses without LF adjustment (post tax), $m'
+         'Fuelpre$m'       'Fuel expenses with LF adjustment (pre tax), $m'
+         'FuelpreNoLF$m'   'Fuel expenses without LF adjustment (pre tax), $m'
+         'Fuelpost$m'      'Fuel expenses with LF adjustment (post tax), $m'
+         'FuelpostNoLF$m'  'Fuel expenses without LF adjustment (post tax), $m'
+         'Ctaxpre$m'       'CO2 charges with LF adjustment (pre tax), $m'
+         'CtaxpreNoLF$m'   'CO2 charges without LF adjustment (pre tax), $m'
+         'Ctaxpost$m'      'CO2 charges with LF adjustment (post tax), $m'
+         'CtaxpostNoLF$m'  'CO2 charges without LF adjustment (post tax), $m'
+         'CCSpre$m'        'CCS expenses with LF adjustment (pre tax), $m'
+         'CCSpreNoLF$m'    'CCS expenses without LF adjustment (pre tax), $m'
+         'CCSpost$m'       'CCS expenses with LF adjustment (post tax), $m'
+         'CCSpostNoLF$m'   'CCS expenses without LF adjustment (post tax), $m'
+         'CapCost$m'       'Pre tax lumpy capital cost of new generation plants, $m (real)'
+         'CapexR$m'        'Generation capex charges (net of depreciation tax credit effects) by year, $m (real)'
+         'CapexPV$m'       'Generation capex charges (net of depreciation tax credit effects) by year, $m (present value)'
+         'TxCapCost$m'     'Pre tax lumpy capital cost of new transmission investments by year, $m (real)'
+         'TxCapexR$m'      'Transmission capex charges (net of depreciation tax credit effects) by year, $m (real)'
+         'TxCapexPV$m'     'Transmission capex charges (net of depreciation tax credit effects) by year, $m (present value)'       /
+
+
+* c) Compute results by year, set 'ryr'.
+loop((mds,rt,hd,y)$mds_rt_hd(mds,rt,hd),
+  resultsyr(mds,rt,hd,y,'TxUpgrades')     = sum(tupg, s3_txprojvar(mds,rt,tupg,y)) ;
+  resultsyr(mds,rt,hd,y,'NZInstMW')       = sum(g, s3_capacity(mds,rt,g,y)) ;
+  resultsyr(mds,rt,hd,y,'NZFirmMW')       = sum(g, peakconm(g,y,mds) * s3_capacity(mds,rt,g,y)) ;
+  resultsyr(mds,rt,hd,y,'NIInstMW')       = sum((g,ild)$( ni(ild) * mapg_ild(g,ild) ), s3_capacity(mds,rt,g,y)) ;
+  resultsyr(mds,rt,hd,y,'NIFirmMW')       = sum((g,ild)$( ni(ild) * mapg_ild(g,ild) ), peakconm(g,y,mds) * s3_capacity(mds,rt,g,y)) ;
+  resultsyr(mds,rt,hd,y,'RetireMW')       = sum(g, s3_retire(mds,rt,g,y) + exogretireMWm(g,y,mds)) ;
+  resultsyr(mds,rt,hd,y,'MaxPotGWh')      = sum(g, pltresultsyr(mds,rt,hd,'MaxPotGWh',g,y)) ;
+  resultsyr(mds,rt,hd,y,'GenGWh')         = sum(g, pltresultsyr(mds,rt,hd,'GenGWh',g,y)) ;
+  resultsyr(mds,rt,hd,y,'RenewGWh')       = sum((g,k)$( mapg_k(g,k) * renew(k) ), genyr(mds,rt,g,y,hd)) ;
+  resultsyr(mds,rt,hd,y,'TxGWh')          = sum((paths(r,rr),t,lb), s3_Tx(mds,rt,paths,y,t,lb,hd) * hrsperblk(t,lb) * 1e-3 ) ;
+  resultsyr(mds,rt,hd,y,'IITxGWh')        = sum((paths(r,rr),t,lb)$( nwd(r,rr) or swd(r,rr) ), s3_Tx(mds,rt,paths,y,t,lb,hd) * hrsperblk(t,lb) * 1e-3 ) ;
+  resultsyr(mds,rt,hd,y,'TxLossGWh')      = sum((paths(r,rr),t,lb), s3_loss(mds,rt,paths,y,t,lb,hd) * hrsperblk(t,lb) * 1e-3 ) ;
+  resultsyr(mds,rt,hd,y,'IITxLossGWh')    = sum((paths(r,rr),t,lb)$( nwd(r,rr) or swd(r,rr) ), s3_loss(mds,rt,paths,y,t,lb,hd) * hrsperblk(t,lb) * 1e-3 ) ;
+  resultsyr(mds,rt,hd,y,'IntraLossGWh')   = sum((ild,r,t,lb)$mapild_r(ild,r), load(y,lb,mds,r,t) * AClossFactor(ild) / ( 1 + AClossFactor(ild) ) ) ;
+  resultsyr(mds,rt,hd,y,'Losses$m')       = 1.0e-3 * %LossValue% * (resultsyr(mds,rt,hd,y,'TxLossGWh') + resultsyr(mds,rt,hd,y,'IntraLossGWh')) ;
+  resultsyr(mds,rt,hd,y,'Losses$m')       = 1.0e-3 * %LossValue% * (resultsyr(mds,rt,hd,y,'TxLossGWh')) ;
+  resultsyr(mds,rt,hd,y,'DemGWh')         = sum((r,t,lb), ldcMWm(mds,r,t,lb,y) * hrsperblk(t,lb)) * 1e-3 ;
+  resultsyr(mds,rt,hd,y,'tCO2')           = sum(g, pltresultsyr(mds,rt,hd,'tCO2',g,y)) ;
+  resultsyr(mds,rt,hd,y,'fOMpre$m')       = sum(g, pltresultsyr(mds,rt,hd,'fOMpre$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'fOMpost$m')      = sum(g, pltresultsyr(mds,rt,hd,'fOMpost$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'HVDCpre$m')      = sum(g, pltresultsyr(mds,rt,hd,'HVDCpre$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'HVDCpost$m')     = sum(g, pltresultsyr(mds,rt,hd,'HVDCpost$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'vOMpre$m')       = sum(g, pltresultsyr(mds,rt,hd,'vOMpre$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'vOMpreNoLF$m')   = sum(g, pltresultsyr(mds,rt,hd,'vOMpreNoLF$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'vOMpost$m')      = sum(g, pltresultsyr(mds,rt,hd,'vOMpost$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'vOMpostNoLF$m')  = sum(g, pltresultsyr(mds,rt,hd,'vOMpostNoLF$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'Fuelpre$m')      = sum(g, pltresultsyr(mds,rt,hd,'Fuelpre$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'FuelpreNoLF$m')  = sum(g, pltresultsyr(mds,rt,hd,'FuelpreNoLF$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'Fuelpost$m')     = sum(g, pltresultsyr(mds,rt,hd,'Fuelpost$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'FuelpostNoLF$m') = sum(g, pltresultsyr(mds,rt,hd,'FuelpostNoLF$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'Ctaxpre$m')      = sum(g, pltresultsyr(mds,rt,hd,'Ctaxpre$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'CtaxpreNoLF$m')  = sum(g, pltresultsyr(mds,rt,hd,'CtaxpreNoLF$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'Ctaxpost$m')     = sum(g, pltresultsyr(mds,rt,hd,'Ctaxpost$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'CtaxpostNoLF$m') = sum(g, pltresultsyr(mds,rt,hd,'CtaxpostNoLF$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'CCSpre$m')       = sum(g, pltresultsyr(mds,rt,hd,'Ctaxpre$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'CCSpreNoLF$m')   = sum(g, pltresultsyr(mds,rt,hd,'CCSpreNoLF$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'CCSpost$m')      = sum(g, pltresultsyr(mds,rt,hd,'CCSpost$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'CCSpostNoLF$m')  = sum(g, pltresultsyr(mds,rt,hd,'CCSpostNoLF$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'CapCost$m')      = sum(g, pltresultsyr(mds,rt,hd,'CapCost$m',g,y)) ;
+  resultsyr(mds,rt,hd,y,'CapexR$m')       = capchrgyr_r(mds,rt,y) ;
+  resultsyr(mds,rt,hd,y,'CapexPV$m')      = sum(gend(d), capchrgyr_pv(mds,rt,y,d)) ;
+  resultsyr(mds,rt,hd,y,'TxCapCost$m')    = sum(transitions(tupg,r,rr,ps,pss)$alltxps(r,rr,pss), txcapcost(r,rr,pss) * s3_txprojvar(mds,rt,tupg,y)) ;
+  resultsyr(mds,rt,hd,y,'TxCapexR$m')     = txcapchrgyr_r(mds,rt,y) ;
+  resultsyr(mds,rt,hd,y,'TxCapexPV$m')    = sum(txd(d), txcapchrgyr_pv(mds,rt,y,d)) ;
+) ;
+
+
+* Write out results by year, set 'ryr'.
+* - Row headers - Attribute, run type, and hydro domain.
+* - Column header is years.
+* - One table of results per file, one file per MDS.
+loop(mds$mds_sim(mds),
+
+  putclose bat 'copy temp.dat "' "%OutPath%\%OutPrefix%\Processed files\", "%OutPrefix%", ' - Yearly info - All inflows - ' ,mds.tl, '.%suffix%"' / ;
+
+  put temp 'Series', 'RT', 'hd' ; loop(y, put y.tl ) ;
+  loop((ryr,rt,hd)$( sum(y, resultsyr(mds,rt,hd,y,ryr)) ),
+    put / put ryr.te(ryr), rt.tl, hd.tl ;
+    loop(y, put resultsyr(mds,rt,hd,y,ryr)) ;
+  ) ;
+  putclose ;
+  
+  execute 'temp.bat';
+
 ) ;
 
 
 
 
-$stop
+
+
+
+
+
+
+
 
 
 
