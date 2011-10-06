@@ -1,7 +1,7 @@
 *+++ Model +++
 $setglobal firstYear 2012
 * First modelled year.
-$setglobal lastYear 2025
+$setglobal lastYear 2030
 * Last modelled year.
 $setglobal RunType 1
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
@@ -47,7 +47,7 @@ Scalar renNrgShrOn / 1 / ;
 Scalar penaltyViolatePeakLoad / 4000 / ;
 Scalar penaltyViolateRenNrg / 400 / ;
 Scalar slackCost / 9999 / ;
-Scalar noVOLLblks / 3 / ;
+Scalar noVOLLblks / 0 / ;
 Scalar DCloadFlow / 0 / ;
 Scalar useReserves / 0 / ;
 $setglobal NumVertices 4
