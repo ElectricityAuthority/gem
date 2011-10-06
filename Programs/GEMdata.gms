@@ -1,11 +1,11 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 05/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 06/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
-** See comment on line #469, i.e. "Should this next line be ord or card?"
+** See comment on ~line #486, i.e. "Should this next line be ord or card?"
 ** Formalise/fix up the override stuff once we get GEM back into emi.
 
 
@@ -58,9 +58,9 @@ $offsymxref offsymlist
 * Create and execute a batch file to archive/save selected files.
 File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
 putclose bat
-  'copy "%DataPath%%GEMinputGDX%"        "%OutPath%\%runName%\Archive\"' /
-  'copy "%DataPath%%GEMnetworkGDX%"      "%OutPath%\%runName%\Archive\"' /
-  'copy "%DataPath%%GEMdemandGDX%"       "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%\%GEMinputGDX%"       "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%\%GEMnetworkGDX%"     "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%\%GEMdemandGDX%"      "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%GEMpathsAndFiles.inc" "%OutPath%\%runName%\Archive\GEMpathsAndFiles - %runVersionName%.inc"' /
   'copy "%ProgPath%GEMsettings.inc"      "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
   'copy "%ProgPath%GEMstochastic.inc"    "%OutPath%\%runName%\Archive\GEMstochastic.inc"' / ;
@@ -76,7 +76,7 @@ execute 'temp.bat' ;
 Set y  / %firstYear% * %lastYear% / ;
 
 * Load the 110 network invariant symbols from GEMinputGDX.
-$gdxin "%DataPath%%GEMinputGDX%"
+$gdxin "%DataPath%\%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
 $loaddc mapf_k mapf_fg techColor fuelColor fuelGrpColor movers refurbish endogRetire cogen peaker hydroSched hydroPumped
@@ -102,7 +102,7 @@ $load   i_reserveReqMW i_fkNI i_largestGenerator i_smallestPole i_winterCapacity
 $load   i_firstHydroYear i_historicalHydroOutput
 
 * Load the 22 region/network-related symbols from GEMnetworkGDX.
-$gdxin "%DataPath%%GEMnetworkGDX%"
+$gdxin "%DataPath%\%GEMnetworkGDX%"
 * Sets
 $loaddc s r p ps tupg maps_r mapLocations regionCentroid txUpgradeTransitions mapArcNode
 * Parameters 
@@ -111,7 +111,7 @@ $loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost
 $loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 
 * Load the energy demand from GEMdemandGDX.
-$gdxin "%DataPath%%GEMdemandGDX%"
+$gdxin "%DataPath%\%GEMdemandGDX%"
 $load   i_NrgDemand
 
 * Initialise set 'n' - data comes from GEMsettings.inc.
@@ -128,12 +128,58 @@ Parameters
   i_co2taxOvrd(y)                 'CO2 tax by year, $/tonne CO2-equivalent'
   ;
 
-$gdxin "%DataPath%%GEMoverrideGDX%"
+$gdxin "%DataPath%\%GEMoverrideGDX%"
 $load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
 i_fuelPrices(f,y)$i_fuelPricesOvrd(f,y) = i_fuelPricesOvrd(f,y) ;              i_fuelPrices(f,y)$( i_fuelPrices(f,y) = eps ) = 0 ;
 i_fuelQuantities(f,y)$i_fuelQuantitiesOvrd(f,y) = i_fuelQuantitiesOvrd(f,y) ;  i_fuelQuantities(f,y)$( i_fuelQuantities(f,y) = eps ) = 0 ;
 i_co2tax(y)$i_co2taxOvrd(y) = i_co2taxOvrd(y) ;                                i_co2tax(y)$( i_co2tax(y) = eps ) = 0 ; 
 $label noOverrides
+
+
+* Create a csv file of input data - unadulterated and just as imported.
+File rawData 'GEM input data' / "%OutPath%\%runName%\Input data checks\Raw GEM input data.csv" / ; rawData.pc = 5 ; rawData.pw = 999 ;
+put rawData 'Data as imported into GEMdata.gms. Sourced from:' /
+  '' "%DataPath%\%GEMinputGDX%" / '' "%DataPath%\%GEMnetworkGDX%" / '' "%DataPath%\%GEMdemandGDX%" / ;
+put$(%useOverrides% <> 0) '' "%DataPath%\%GEMoverrideGDX%" / ;
+put 'Sets and parameter symbols, and units, are more fully defined in "%DataPath%GEMdeclarations.gms"' // 'Technology data' / 'k' 'f' 'fg' 'movers'
+  'refurbish' 'endogRetire' 'cogen' 'peaker' 'hydroSched' 'hydroPumped' 'wind' 'renew' 'thermalTech' 'demandGen' 'randomiseCapex' 'linearBuildTech'
+  'coal' 'lignite' 'gas' 'diesel' 'i_plantLife' 'i_refurbishmentLife' 'i_retireOffsetYrs' 'i_linearBuildMW' 'i_linearBuildYr' 'i_depRate' 'i_peakContribution'
+  'i_NWpeakContribution' 'i_capFacTech' 'i_maxNrgByFuel' 'i_emissionFactors' ;
+loop((k,f,fg)$( mapf_k(f,k) * mapf_fg(f,fg) ),
+  put / k.tl, f.tl, fg.tl, movers(k), refurbish(k), endogRetire(k), cogen(k), peaker(k), hydroSched(k), hydroPumped(k), wind(k), renew(k), thermalTech(k)
+  demandGen(k), randomiseCapex(k), linearBuildTech(k), coal(f), lignite(f), gas(f), diesel(f), i_plantLife(k), i_refurbishmentLife(k), i_retireOffsetYrs(k)
+  i_linearBuildMW(k), i_linearBuildYr(k), i_depRate(k), i_peakContribution(k), i_NWpeakContribution(k), i_capFacTech(k), i_maxNrgByFuel(f), i_emissionFactors(f) ;
+) ;
+put // 'Generation plant data' / 'g' 'k' 'f' 'i' 'o' 'exist' 'schedHydroUpg' 'cogen' 'peaker'
+  'hydroSched' 'hydroPumped' 'wind' 'renew' 'thermalTech' 'demandGen' 'coal' 'lignite' 'gas' 'diesel' 'i_plantLife' 'i_nameplate' 'i_capFacTech'
+  'i_peakContribution', 'i_NWpeakContribution' 'i_UnitLargestProp' 'i_baseload' 'i_offlineReserve' 'i_FixComYr' 'i_EarlyComYr' 'i_ExogenousRetireYr'
+  'i_refurbDecisionYear', 'i_fof' 'i_heatrate' 'i_PumpedHydroMonth' 'i_PumpedHydroEffic' 'i_minHydroCapFact' 'i_maxHydroCapFact' 'i_fixedOM' 'i_varOM'
+  'i_varFuelDeliveryCosts', 'i_fixedFuelDeliveryCosts' 'i_capitalCost' 'i_connectionCost' 'i_HVDCshr' 'refurbish' 'i_refurbishmentLife' 'i_retireOffsetYrs'
+  'i_refurbcapitalcost' 'i_refurbDecisionYear' ;
+loop((g,k,f,i,o)$( mapgenplant(g,k,i,o) * mapf_k(f,k) ),
+  put / g.tl, k.tl, f.tl, i.tl, o.tl, exist(g), schedHydroUpg(g), cogen(k), peaker(k), hydroSched(k), hydroPumped(k), wind(k), renew(k), thermalTech(k)
+  demandGen(k), coal(f), lignite(f), gas(f), diesel(f), i_plantLife(k), i_nameplate(g), i_capFacTech(k), i_peakContribution(k), i_NWpeakContribution(k)
+  i_UnitLargestProp(g), i_baseload(g), i_offlineReserve(g), i_FixComYr(g), i_EarlyComYr(g), i_ExogenousRetireYr(g), i_refurbDecisionYear(g), i_fof(g)
+  i_heatrate(g), i_PumpedHydroMonth(g), i_PumpedHydroEffic(g), i_minHydroCapFact(g), i_maxHydroCapFact(g), i_fixedOM(g), i_varOM(g), i_varFuelDeliveryCosts(g)
+  i_fixedFuelDeliveryCosts(g), i_capitalCost(g), i_connectionCost(g), i_HVDCshr(o) ;
+  if( (exist(g) * refurbish(k) * i_refurbcapitalcost(g) * i_refurbDecisionYear(g) ),
+    put refurbish(k), i_refurbishmentLife(k), i_retireOffsetYrs(k), i_refurbCapitalCost(g), i_refurbDecisionYear(g) else put '-' '-' '-' '-' '-' ;
+  ) ;
+) ;
+put // 'Data defined by year'  / '' loop(y, put y.tl ) ;
+put /  'Fuel prices, $/GJ'          loop(f$sum(y, i_fuelPrices(f,y)),     put / f.tl loop(y, put i_fuelPrices(f,y)) ) ; 
+put /  'Fuel quantity, GJ'          loop(f$sum(y, i_fuelQuantities(f,y)), put / f.tl loop(y, put i_fuelQuantities(f,y)) ) ; 
+put // 'CO2 tax, $/t CO2e'          loop(y, put i_co2tax(y) ) ; 
+put /  'i_HVDClevy, $/kW'           loop(y, put i_HVDClevy(y) ) ; 
+put /  'i_inflation'                loop(y, put i_inflation(y):5:3 ) ; 
+put /  'i_fkNI, MW'                 loop(y, put i_fkNI(y) ) ; 
+put /  'i_largestGenerator, MW'     loop(y, put i_largestGenerator(y) ) ; 
+put /  'i_smallestPole, MW'         loop(y, put i_smallestPole(y) ) ; 
+put /  'i_winterCapacityMargin, MW' loop(y, put i_winterCapacityMargin(y) ) ; 
+put /  'i_P200ratioNZ'              loop(y, put i_P200ratioNZ(y) ) ; 
+put /  'i_P200ratioNI'              loop(y, put i_P200ratioNI(y) ) ; 
+
+** Complete creation of this file. Add transmission, group stuff in a sensible order. Check that output is reliable.
 
 
 
@@ -177,7 +223,7 @@ loop(maplocations(i,r,e,ild),
 mapAggR_r('nz',r) = yes ;
 mapAggR_r('ni',r) = yes$sum(mapild_r('ni',r), 1) ;
 mapAggR_r('si',r) = yes$sum(mapild_r('si',r), 1) ;
-* Figure out if there are just 2 regions and if their names are identical to the island names.
+* Figure out if there are just 2 regions and whether their names are identical to the names of the 2 islands.
 loop(mapild_r(ild,r)$( sameas(r,'ni') or sameas(r,'si') ), isIldEqReg(ild,r) = yes ) ;
 isIldEqReg(ild,r)$( card(isIldEqReg) <> 2 ) = no ;
 * Generation plant mappings
@@ -561,7 +607,7 @@ loop(stp$( ord(stp) > 1),
 pNFresvCap(swd,stp)$( ord(stp) = card(stp) ) = bigswd(swd) ;
 pNFresvCap(nwd,stp)$( ord(stp) = card(stp) ) = bignwd(nwd) ;
 
-* Figure out costs by step - note that this cost function is entirely fabricated but it gives seemingly reasonable values.
+* Figure out costs by step - increment by $5/MWh each step.
 pNFresvCost(paths(r,rr),stp)$( (ord(stp) = 1 ) and (nwd(paths) or swd(paths)) ) = 5 ;
 loop(stp$( ord(stp) > 1),
   pNFresvCost(paths(r,rr),stp)$( ord(stp) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCost(paths,stp-1) + 5 ;
@@ -663,11 +709,11 @@ $offtext
 
 * Declare input data summary files.
 Files
-  stochasticSummary / "%OutPath%%runName%\Input data checks\Stochastic summary - %runName%_%runVersionName%.txt" /
-  plantData         / "%OutPath%%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
-  capexStats        / "%OutPath%%runName%\Input data checks\Capex, MW and GWh summaries - %runName%_%runVersionName%.txt" /
-  loadSummary       / "%OutPath%%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
-  lrmc_inData       / "%OutPath%%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" /
+  stochasticSummary / "%OutPath%\%runName%\Input data checks\Stochastic summary - %runName%_%runVersionName%.txt" /
+  plantData         / "%OutPath%\%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
+  capexStats        / "%OutPath%\%runName%\Input data checks\Capex, MW and GWh summaries - %runName%_%runVersionName%.txt" /
+  loadSummary       / "%OutPath%\%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
+  lrmc_inData       / "%OutPath%\%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" /
   ;
 
 stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;
@@ -760,7 +806,7 @@ put plantData, 'Plant data summarised (default scenario only) - based on user-su
   'VoLL plant (note that VoLL plant are not counted with generating plant)' /
   'VoLL plant count:'                   @38 (sum(s$i_VOLLcap(s), 1)):<4:0 /
   'Average VoLL plant capacity, MW:'    @38 (sum(s, i_VOLLcap(s))  / card(s)):<4:0 /
-  'Average VoLL plant cost, $/MWh:'     @38 (sum(s, i_VOLLcost(s)) / card(s)):<4:0 //
+  'Average VoLL plant cost, $/MWh:'     @38 (sum(s, i_VOLLcost(s)) / card(s)):<5:0 //
 
   'Technologies with randomised capex:' @38 if(sum(randomiseCapex(k), 1), loop(randomiseCapex(k), put k.tl, ', ' ) else put 'There are none' ) put /
   'Randomised cost range (+/-), %:'     @38 (100 * randomCapexCostAdjuster):<5:1 //
