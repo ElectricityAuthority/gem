@@ -1,14 +1,14 @@
 $inlinecom { }
 $eolcom !
-$setglobal runName         "test"
+$setglobal runName         "testNew"
 $setglobal runVersionName  "mds3"
 $setglobal baseRunVersion  "mds3"
 
 $setglobal GEMinputGDX     "standardGEMinput9LB.gdx"
 $setglobal GEMnetworkGDX   "2RegionNetwork.gdx"
-$setglobal GEMdemandGDX    "NRG_2Region9LB_Standard.gdx"
+$setglobal GEMdemandGDX    "NRG_2Region9LB_EVdemand.gdx"
 
-$setglobal GEMoverrideGDX  "mds2_Override.gdx"
+$setglobal GEMoverrideGDX  "mds4_Override.gdx"
 
 $setglobal useOverrides     0
 $setglobal sprsGEMsolve     0
