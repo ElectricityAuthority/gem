@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 04/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 07/10/2011 (imm@ea.govt.nz)
 
 
 
@@ -163,7 +163,7 @@ Parameters
   i_fuelQuantities(runVersions,f,y)                    'Quantitative limit on availability of various fuels by year, PJ'
   i_namePlate(runVersions,g)                           'Nameplate capacity of generating plant, MW'
   i_heatrate(runVersions,g)                            'Heat rate of generating plant, GJ/GWh (default = 3600)'
-  totalFuelCost(runVersions,g,y,scen)                  'Total fuel cost - price plus fuel delivery charge all times heatrate - by plant, year and scenario, $/MWh'
+  totalFuelCost(runVersions,g,y,scen)                  'Total fuel cost - price plus fuel production and delivery charges all times heatrate - by plant, year and scenario, $/MWh'
   CO2taxByPlant(runVersions,g,y,scen)                  'CO2 tax by plant, year and scenario, $/MWh'
   SRMC(runVersions,g,y,scen)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
   i_fixedOM(runVersions,g)                             'Fixed O&M costs by plant, $/kW/year'

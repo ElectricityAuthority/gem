@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 06/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 07/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -89,8 +89,8 @@ $loaddc mapReservoirs
 $loaddc i_plantLife i_refurbishmentLife i_retireOffsetYrs i_linearBuildMW i_linearBuildYr i_depRate
 $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_maxNrgByFuel i_emissionFactors
 $load   i_fuelPrices i_fuelQuantities i_co2tax i_minUtilisation
-$loaddc i_nameplate i_UnitLargestProp i_baseload i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear i_fof i_heatrate
-$loaddc i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_varFuelDeliveryCosts i_fixedFuelDeliveryCosts
+$loaddc i_nameplate i_UnitLargestProp i_baseload i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear i_fof
+$loaddc i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_varFuelCosts i_fixedFuelCosts
 $loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_plantReservesCap i_plantReservesCost i_PltCapFact
 $loaddc i_HVDCshr
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
@@ -117,6 +117,7 @@ $load   i_NrgDemand
 * Initialise set 'n' - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
+
 * Install data overrides.
 $if %useOverrides%==0 $goto noOverrides
 ** mds1, mds2 and mds5 override 3 params: i_fuelPrices, i_fuelQuantities and i_co2tax.
@@ -137,33 +138,34 @@ $label noOverrides
 
 
 * Create a csv file of input data - unadulterated and just as imported.
-File rawData 'GEM input data' / "%OutPath%\%runName%\Input data checks\Raw GEM input data.csv" / ; rawData.pc = 5 ; rawData.pw = 999 ;
+File rawData 'GEM input data' / "%OutPath%\%runName%\Input data checks\Raw GEM input data - %runName%_%runVersionName%.csv" / ;
+rawData.pc = 5 ; rawData.pw = 999 ;
 put rawData 'Data as imported into GEMdata.gms. Sourced from:' /
   '' "%DataPath%\%GEMinputGDX%" / '' "%DataPath%\%GEMnetworkGDX%" / '' "%DataPath%\%GEMdemandGDX%" / ;
 put$(%useOverrides% <> 0) '' "%DataPath%\%GEMoverrideGDX%" / ;
-put 'Sets and parameter symbols, and units, are more fully defined in "%DataPath%GEMdeclarations.gms"' // 'Technology data' / 'k' 'f' 'fg' 'movers'
-  'refurbish' 'endogRetire' 'cogen' 'peaker' 'hydroSched' 'hydroPumped' 'wind' 'renew' 'thermalTech' 'demandGen' 'randomiseCapex' 'linearBuildTech'
-  'coal' 'lignite' 'gas' 'diesel' 'i_plantLife' 'i_refurbishmentLife' 'i_retireOffsetYrs' 'i_linearBuildMW' 'i_linearBuildYr' 'i_depRate' 'i_peakContribution'
-  'i_NWpeakContribution' 'i_capFacTech' 'i_maxNrgByFuel' 'i_emissionFactors' ;
+put 'Sets and parameter symbols, and units, are more fully defined in "%DataPath%GEMdeclarations.gms"' //
+ 'Technology and fuel data' / 'k' 'f' 'fg' 'cogen' 'peaker' 'hydroSched' 'hydroPumped' 'wind' 'renew' 'thermalTech' 'demandGen' 'coal' 'lignite' 'gas' 'diesel'
+ 'i_depRate' 'i_plantLife' 'randomiseCapex' 'linearBuildTech' 'i_linearBuildMW' 'i_linearBuildYr' 'movers' 'refurbish' 'i_refurbishmentLife' 'endogRetire'
+ 'i_retireOffsetYrs' 'i_peakContribution' 'i_NWpeakContribution' 'i_capFacTech' 'i_maxNrgByFuel' 'i_emissionFactors' ;
 loop((k,f,fg)$( mapf_k(f,k) * mapf_fg(f,fg) ),
-  put / k.tl, f.tl, fg.tl, movers(k), refurbish(k), endogRetire(k), cogen(k), peaker(k), hydroSched(k), hydroPumped(k), wind(k), renew(k), thermalTech(k)
-  demandGen(k), randomiseCapex(k), linearBuildTech(k), coal(f), lignite(f), gas(f), diesel(f), i_plantLife(k), i_refurbishmentLife(k), i_retireOffsetYrs(k)
-  i_linearBuildMW(k), i_linearBuildYr(k), i_depRate(k), i_peakContribution(k), i_NWpeakContribution(k), i_capFacTech(k), i_maxNrgByFuel(f), i_emissionFactors(f) ;
+  put / k.tl, f.tl, fg.tl, cogen(k), peaker(k), hydroSched(k), hydroPumped(k), wind(k), renew(k), thermalTech(k), demandGen(k), coal(f), lignite(f), gas(f), diesel(f)
+  i_depRate(k), i_plantLife(k), randomiseCapex(k), linearBuildTech(k), i_linearBuildMW(k), i_linearBuildYr(k), movers(k), refurbish(k), i_refurbishmentLife(k), endogRetire(k)
+  i_retireOffsetYrs(k), i_peakContribution(k), i_NWpeakContribution(k), i_capFacTech(k), i_maxNrgByFuel(f), i_emissionFactors(f) ;
 ) ;
-put // 'Generation plant data' / 'g' 'k' 'f' 'i' 'o' 'exist' 'schedHydroUpg' 'cogen' 'peaker'
-  'hydroSched' 'hydroPumped' 'wind' 'renew' 'thermalTech' 'demandGen' 'coal' 'lignite' 'gas' 'diesel' 'i_plantLife' 'i_nameplate' 'i_capFacTech'
-  'i_peakContribution', 'i_NWpeakContribution' 'i_UnitLargestProp' 'i_baseload' 'i_offlineReserve' 'i_FixComYr' 'i_EarlyComYr' 'i_ExogenousRetireYr'
-  'i_refurbDecisionYear', 'i_fof' 'i_heatrate' 'i_PumpedHydroMonth' 'i_PumpedHydroEffic' 'i_minHydroCapFact' 'i_maxHydroCapFact' 'i_fixedOM' 'i_varOM'
-  'i_varFuelDeliveryCosts', 'i_fixedFuelDeliveryCosts' 'i_capitalCost' 'i_connectionCost' 'i_HVDCshr' 'refurbish' 'i_refurbishmentLife' 'i_retireOffsetYrs'
-  'i_refurbcapitalcost' 'i_refurbDecisionYear' ;
+put // 'Generation plant data' / 'g' 'k' 'f' 'i' 'o' 'exist' 'coal' 'lignite' 'gas' 'diesel' 'cogen' 'peaker' 'hydroSched' 'hydroPumped' 'wind' 'renew'
+  'thermalTech' 'demandGen' 'schedHydroUpg' 'mapSH_Upg' 'i_nameplate' 'i_heatrate' 'i_fixedOM' 'i_varOM' 'i_varFuelCosts', 'i_fixedFuelCosts' 'i_HVDCshr'
+  'i_fof' 'i_capFacTech' 'i_peakContribution', 'i_NWpeakContribution' 'i_minHydroCapFact' 'i_maxHydroCapFact', 'i_PumpedHydroMonth' 'i_PumpedHydroEffic'
+  'i_UnitLargestProp' 'i_baseload' 'i_offlineReserve' 'i_plantLife' 'i_capitalCost' 'i_connectionCost' 'i_FixComYr' 'i_EarlyComYr' 'i_ExogenousRetireYr'
+  'refurbish' 'i_refurbishmentLife' 'i_refurbDecisionYear' 'i_refurbcapitalcost' 'i_retireOffsetYrs' ;
 loop((g,k,f,i,o)$( mapgenplant(g,k,i,o) * mapf_k(f,k) ),
-  put / g.tl, k.tl, f.tl, i.tl, o.tl, exist(g), schedHydroUpg(g), cogen(k), peaker(k), hydroSched(k), hydroPumped(k), wind(k), renew(k), thermalTech(k)
-  demandGen(k), coal(f), lignite(f), gas(f), diesel(f), i_plantLife(k), i_nameplate(g), i_capFacTech(k), i_peakContribution(k), i_NWpeakContribution(k)
-  i_UnitLargestProp(g), i_baseload(g), i_offlineReserve(g), i_FixComYr(g), i_EarlyComYr(g), i_ExogenousRetireYr(g), i_refurbDecisionYear(g), i_fof(g)
-  i_heatrate(g), i_PumpedHydroMonth(g), i_PumpedHydroEffic(g), i_minHydroCapFact(g), i_maxHydroCapFact(g), i_fixedOM(g), i_varOM(g), i_varFuelDeliveryCosts(g)
-  i_fixedFuelDeliveryCosts(g), i_capitalCost(g), i_connectionCost(g), i_HVDCshr(o) ;
+  put / g.tl, k.tl, f.tl, i.tl, o.tl, exist(g), coal(f), lignite(f), gas(f), diesel(f), cogen(k), peaker(k), hydroSched(k), hydroPumped(k), wind(k), renew(k)
+  thermalTech(k), demandGen(k), schedHydroUpg(g) ;
+  if(sum(mapSH_Upg(gg,g), 1), loop(mapSH_Upg(gg,g), put gg.tl ) else put '-' ) ;
+  put i_nameplate(g), i_heatrate(g), i_fixedOM(g), i_varOM(g), i_varFuelCosts(g), i_fixedFuelCosts(g), i_HVDCshr(o), i_fof(g), i_capFacTech(k)
+  i_peakContribution(k), i_NWpeakContribution(k), i_minHydroCapFact(g), i_maxHydroCapFact(g), i_PumpedHydroMonth(g), i_PumpedHydroEffic(g), i_UnitLargestProp(g)
+  i_baseload(g), i_offlineReserve(g), i_plantLife(k), i_capitalCost(g), i_connectionCost(g), i_FixComYr(g), i_EarlyComYr(g), i_ExogenousRetireYr(g) ;
   if( (exist(g) * refurbish(k) * i_refurbcapitalcost(g) * i_refurbDecisionYear(g) ),
-    put refurbish(k), i_refurbishmentLife(k), i_retireOffsetYrs(k), i_refurbCapitalCost(g), i_refurbDecisionYear(g) else put '-' '-' '-' '-' '-' ;
+    put refurbish(k), i_refurbishmentLife(k), i_refurbDecisionYear(g), i_refurbCapitalCost(g), i_retireOffsetYrs(k) else put '-' '-' '-' '-' '-' ;
   ) ;
 ) ;
 put // 'Data defined by year'  / '' loop(y, put y.tl ) ;
@@ -435,9 +437,8 @@ refurbCapCharge(g,y)$( yearNum(y) > i_refurbDecisionYear(g) + sum(mapg_k(g,k), i
 * Calculate reserve capability per generating plant.
 reservesCapability(g,rc)$i_plantReservesCap(g,rc) = i_nameplate(g) * i_plantReservesCap(g,rc) ;
 
-* Add any fixed costs associated with fuel delivery to the fixed OM costs by plant.
-i_fixedOM(g) = i_fixedOM(g) + i_fixedFuelDeliveryCosts(g) ;
-
+* Add any fixed costs associated with fuel production and delivery to the fixed OM costs by plant.
+i_fixedOM(g) = i_fixedOM(g) + i_fixedFuelCosts(g) * i_heatrate(g) / 1000 * 8.76 ;
 
 * e) Transmission data.
 * Let the last region declared be the slack bus (note that set r may not be ordered if users don't maintain unique set elements).
@@ -630,7 +631,7 @@ loop(scenSet,
 ) ;
 
 * Compute the short-run marginal cost (and its components) for each generating plant, $/MWh.
-totalFuelCost(g,y,scen) = 1e-3 * scenarioFuelCostFactor(scen) * i_heatrate(g) * sum(mapg_f(g,f), i_fuelPrices(f,y) + i_varFuelDeliveryCosts(g) ) ;
+totalFuelCost(g,y,scen) = 1e-3 * scenarioFuelCostFactor(scen) * i_heatrate(g) * sum(mapg_f(g,f), i_fuelPrices(f,y) + i_varFuelCosts(g) ) ;
 
 CO2taxByPlant(g,y,scen) = 1e-9 * i_heatrate(g) * sum((mapg_f(g,f),mapg_k(g,k)), i_co2tax(y) * scenarioCO2TaxFactor(scen) * i_emissionFactors(f) ) ;
 
@@ -818,9 +819,9 @@ put plantData, 'Plant data summarised (default scenario only) - based on user-su
   'varCC - the variablised connection cost component of the aforementioned capex, $/kW.' / 
   'varOM - variable O&M costs by plant, $/MWh.' /
   'avSRMC - SRMC averaged over all years for the default scenario, $/MWh.' /
-  '  NB: SRMC includes variable O&M, CO2 tax, and total fuel costs (which is made up of fuel price plus any variable fuel delivery cost).' /
-  'fixOM - fixed O&M costs by plant (as used in objective function and including any fixed fuel delivery costs), $/kW/year.' /
-  'fixFDC - fixed fuel delivery costs (included in fixOM above), $/kW/year.' /
+  '  NB: SRMC includes variable O&M, CO2 tax, and total fuel costs (which is made up of energy price plus any variable fuel prodcution/delivery cost).' /
+  'fixOM - fixed O&M costs by plant (as used in objective function and including any fixed fuel prodcution/delivery costs), $/kW/year.' /
+  'fixFDC - fixed fuel prodcution/delivery costs (converted to $/kW/year and included in fixOM above), $/GJ.' /
   'HR - heat rate of generating plant, GJ/GWh.' /
   'PkCon - contribution to peak factor - averaged over years.' /
   'FoF - forced outage factor.' /
@@ -847,7 +848,7 @@ counter = 0 ;
 loop((k,exist(g))$mapg_k(g,k),
   counter = counter + 1 ;
   put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, avgSRMC(g):7:1, i_fixedOM(g):7:1
-        i_fixedFuelDeliveryCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, i_fof(g):7:2 @102 ;
+        i_fixedFuelCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, i_fof(g):7:2 @102 ;
   if(xFoFm(g),        put 'Y' else put '-' ) put @106 ;
   put avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, avgMinUtilisation(g):7:2, @130 'Y' @136 '-' @146 ;
   if(commit(g),       put 'Y' else put '-' ) put @150 ;
@@ -866,7 +867,7 @@ put // 'Non-existing plant' @34 "%plantDataHdr1%" "%plantDataHdr2%" ;
 loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
   counter = counter + 1 ;
   put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, avgSRMC(g):7:1, i_fixedOM(g):7:1
-        i_fixedFuelDeliveryCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, i_fof(g):7:2 @102 ;
+        i_fixedFuelCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, i_fof(g):7:2 @102 ;
   if(xFoFm(g),        put 'Y' else put '-' ) put @106 ;
   put avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, avgMinUtilisation(g):7:2, @130 '-' @136 'Y' @146 ;
   if(commit(g),       put 'Y' else put '-' ) put @150 ;

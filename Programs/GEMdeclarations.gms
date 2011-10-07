@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 04/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 07/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used throughout
@@ -149,8 +149,8 @@ Parameters
   i_maxHydroCapFact(g)                          'Maximum capacity factors for selected schedulable hydro plant (default = 1)'
   i_fixedOM(g)                                  'Fixed O&M costs by plant, $/kW/year'
   i_varOM(g)                                    'Variable O&M costs by plant, $/MWh'
-  i_varFuelDeliveryCosts(g)                     'Variable fuel delivery costs (over and above cost of fuel at source), $/GJ'
-  i_fixedFuelDeliveryCosts(g)                   'Fixed fuel delivery costs (to be added to i_fixedOM), $/kW/year'
+  i_varFuelCosts(g)                             'Variable fuel production and delivery costs (over and above the energy cost of fuel at source), $/GJ'
+  i_fixedFuelCosts(g)                           'Fixed fuel production and delivery costs (to be added to i_fixedOM), $/GJ'
   i_capitalCost(g)                              'Generation plant capital cost, $/kW'
   i_connectionCost(g)                           'Capital cost for connecting generation plant to grid, $m (NZD)'
   i_refurbCapitalCost(g)                        'Generation plant refurbishment capital cost, $/kW'
@@ -418,7 +418,7 @@ Parameters
   txDeptCRecFac(y)                              'Recovery factor for just the depreciation tax credit portion of txcaprecfac'
 * Fuel prices and quantity limits.
   SRMC(g,y,scenarios)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
-  totalFuelCost(g,y,scenarios)                  'Total fuel cost - price plus fuel delivery charge all times heatrate - by plant, year and scenario, $/MWh'
+  totalFuelCost(g,y,scenarios)                  'Total fuel cost - price plus fuel production and delivery charges all times heatrate - by plant, year and scenario, $/MWh'
   CO2taxByPlant(g,y,scenarios)                  'CO2 tax by plant, year and scenario, $/MWh'
 * Generation data.
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'
