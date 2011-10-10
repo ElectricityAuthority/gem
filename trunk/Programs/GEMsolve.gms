@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 04/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -15,15 +15,15 @@
 
 $ontext
  This program continues sequentially from GEMdata. The GEMdata work file must be called
- at invocation. Note that GEMdata was invoked by restarting from the GEMGEMdeclarations
- work file. This program is followed by GEMreports.
+ at invocation. Note that GEMdata was invoked by restarting from the GEMdeclarations work
+ file. This program is followed by another invocation of GEMsolve or by runMergeGDXs and
+ and then GEMreports.
 
  Code sections:
   1. Take care of preliminaries.
   2. Set bounds, initial levels and, in some cases, fix variables to a specified level.
   3. Loop through all the solves
-  4. Prepare results to pass along to GEMreports in the form of a GDX file. 
-  5. Dump results out to GDX files and rename/relocate certain output files.
+  4. Dump results out to GDX files and rename/relocate certain output files.
 
   x. Move MIPtrace files to output directory and generate miptrace.bat.
   x. Create an awk script, which when executed, will produce a file containing the number of integer solutions per MIP model.
@@ -80,6 +80,12 @@ loop(solveGoal(goal),
 * Turn on the following to use the GAMSCHK routines.
 *option MIP=GAMSCHK ;
 
+* Include a 'GR' investment schedule if one is specified.
+$if %GRscheduleRead%==0 $goto noGRschedule1
+$if not exist "%GRscheduleFile%" $error Specified investment schedule does not exist
+$if     exist "%GRscheduleFile%" $include "%GRscheduleFile%"
+$label noGRschedule1
+
 
 
 *===============================================================================================
@@ -93,11 +99,11 @@ BGEN.up(g,y) = 1 ;     BGEN.fx(g,y)$( yearNum(y) >= cGenYr ) = 0 ;
 REFURBCOST.fx(g,y)$( yearNum(y) < i_refurbDecisionYear(g) ) = 0 ;
 
 * Restrict generation:
-* Don't allow generation unless the unit is in validYrOperate; validYrOperate embodies the appropriate date for existing, committed, and new units.
+* Don't allow generation unless the unit is in validYrOperate (validYrOperate embodies the appropriate dates for existing, committed, and new units).
 GEN.fx(g,y,t,lb,scen)$( not validYrOperate(g,y) ) = 0 ;
 * Force generation from the must-run plant, i.e base load (convert MW capacity to GWh for each load block).
 GEN.fx(g,y,t,lb,scen)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOperate(g,y) ) =
-1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
+  1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
 
 * Place restrictions on VOLL plants:
 VOLLGEN.up(s,y,t,lb,scen) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;  ! Respect the capacity of VOLL plants
@@ -136,12 +142,11 @@ RESV.fx(g,rc,y,t,lb,scen)$( not validYrOperate(g,y) ) = 0 ;
 *===============================================================================================
 * 3. Loop through all the solves
 
-* The solve statement is inside 3 loops
-* Outer loop: Experiments
-*   Middle loop: Steps (i.e. timing, reopt, or dispatch)
-*     Inner loop: scenarioSets
-*
-* If more than one scenario is defined in the current scenarioSet, then they're all solved simultaneously, i.e. in a single solve.
+* The solve statement is inside 3 loops:
+*   Outer loop: Experiments
+*     Middle loop: Steps, i.e. timing, reopt, or dispatch
+*       Inner loop: scenarioSets
+* If more than one scenario is mapped to the current scenarioSet, then they're all solved simultaneously, i.e. in a single solve.
 
 $set AddUpSlacks    "sum(y, ANNMWSLACK.l(y) + RENCAPSLACK.l(y) + HYDROSLACK.l(y) + MINUTILSLACK.l(y) + FUELSLACK.l(y) )"
 $set AddUpPenalties "sum((y,sc), PEAK_NZ_PENALTY.l(y,sc) + PEAK_NI_PENALTY.l(y,sc) + NOWINDPEAK_NI_PENALTY.l(y,sc) )"
@@ -165,6 +170,14 @@ loop(experiments,
   BRET.fx(g,y)$( not endogenousRetireDecisnYrs(g,y) ) = 0 ;
   ISRETIRED.lo(g) = 0 ;  ISRETIRED.up(g) = 1 ;
   ISRETIRED.fx(g)$( not possibleToEndogRetire(g) ) = 0 ;
+
+* Fix BUILD, RETIRE, BRET and ISRETIRED using the values from the specified 'GR' investment schedule.
+$ if %GRscheduleRead%==0 $goto noGRschedule2
+  BUILD.fx(g,y) = 0 ;    BUILD.fx(g,y)$fix_BUILD(g,y) = fix_BUILD(g,y) ;
+  RETIRE.fx(g,y) = 0 ;   RETIRE.fx(g,y)$fix_RETIRE(g,y) = fix_RETIRE(g,y) ;
+  BRET.fx(g,y) = 0 ;     BRET.fx(g,y)$fix_BRET(g,y) = fix_BRET(g,y) ;
+  ISRETIRED.fx(g) = 0 ;  ISRETIRED.fx(g)$fix_ISRETIRED(g) = fix_ISRETIRED(g) ;
+$ label noGRschedule2
 
 * Impose upper bound of 1 on continuous 0-1 transmission-related variables.
   TXUPGRADE.lo(r,rr,ps,pss,y) = 0 ;  TXUPGRADE.up(validTransitions(paths,ps,pss),y) = 1 ;
@@ -326,31 +339,32 @@ $     label skipThis
       '  Number of equations:'        @30 solveReport(allSolves,'Eqns'):12:0 /
       '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
       '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 /
-      '  MIP/RMIP:' @42 if(sameas(steps,'dispatch'), put "%DISPtype%" // else put "%GEMtype%" // ) ;
+      '  MIP/RMIP:' @42 if(sameas(steps,'dispatch'), put "%DISPtype%" / else put "%GEMtype%" / ) ;
+      if(%GRscheduleRead%=0, put / else put '  Fixed investment schedule:' @42 "%GRscheduleFile%" // ) ; 
 
-*     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRschedule = 1).
-$     if "%GRschedule%"==0 $goto skipGRschedule
+*     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRscheduleWrite = 1).
+$     if "%GRscheduleWrite%"==0 $goto skipGRscheduleWrite
       dummy.lw = 0 ; put dummy ;
       put_utility 'ren' / "%OutPath%\%runName%\Processed files\GRschedule - %runVersionName%_" experiments.tl '_' steps.tl '_' scenSet.tl '.gms' ;
       if(not sameas(steps,'dispatch'),
         put "Parameter fix_BUILD(g,y)   'New capacity installed by generating plant and year, MW' /" ;
-        loop((g,y)$BUILD.l(g,y),  put / "'" g.tl "'.'" y.tl "'" BUILD.l(g,y):15:8 ) put ' /;' // ;
+        loop((g,y)$BUILD.l(g,y), put /  "'" g.tl "'.'" y.tl "'" BUILD.l(g,y):15:8 ) put ' /;' // ;
         put "Parameter fix_RETIRE(g,y)  'Capacity endogenously retired by generating plant and year, MW' /" ;
         loop((g,y)$RETIRE.l(g,y), put / "'" g.tl "'.'" y.tl "'" RETIRE.l(g,y):15:8 ) put ' /;' // ;
-        put "Parameter fix_CGEN(g,y)    'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)' /" ;
-        loop((g,y)$CGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" CGEN.l(g,y):15:8 ) put ' /;' // ;
-        put "Parameter fix_BGEN(g,y)    'Binary variable to identify build year for new generation plant' /" ;
-        loop((g,y)$BGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BGEN.l(g,y):15:8 ) put ' /;' // ;
         put "Parameter fix_BRET(g,y)    'Binary variable to identify endogenous retirement year for the eligble generation plant' /" ;
         loop((g,y)$BRET.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BRET.l(g,y):15:8 ) put ' /;' // ;
         put "Parameter fix_ISRETIRED(g) 'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)' /" ;
         loop(g$ISRETIRED.l(g),    put / "'" g.tl "'" ISRETIRED.l(g):15:8 ) put ' /;' // ;
-        put "Parameter fix_CAPACITY(g,y)  'Cumulative nameplate capacity at each generating plant in each year, MW' /" ;
-        loop((g,y)$CAPACITY.l(g,y), put / "'" g.tl "'.'" y.tl "'" CAPACITY.l(g,y):15:8 ) put ' /;' // ;
-        put "Parameter fix_BTX(r,rr,ps,y) 'Binary variable indicating the current state of a transmission path' /" ;
-        loop((r,rr,ps,y)$BTX.l(r,rr,ps,y), put / "'" r.tl "'.'" rr.tl "'.'" ps.tl "'.'" y.tl "'" BTX.l(r,rr,ps,y):15:8 ) put ' /;' // ;
+*       put "Parameter fix_CGEN(g,y)    'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)' /" ;
+*       loop((g,y)$CGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" CGEN.l(g,y):15:8 ) put ' /;' // ;
+*       put "Parameter fix_BGEN(g,y)    'Binary variable to identify build year for new generation plant' /" ;
+*       loop((g,y)$BGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BGEN.l(g,y):15:8 ) put ' /;' // ;
+*       put "Parameter fix_CAPACITY(g,y)  'Cumulative nameplate capacity at each generating plant in each year, MW' /" ;
+*       loop((g,y)$CAPACITY.l(g,y), put / "'" g.tl "'.'" y.tl "'" CAPACITY.l(g,y):15:8 ) put ' /;' // ;
+*       put "Parameter fix_BTX(r,rr,ps,y) 'Binary variable indicating the current state of a transmission path' /" ;
+*       loop((r,rr,ps,y)$BTX.l(r,rr,ps,y), put / "'" r.tl "'.'" rr.tl "'.'" ps.tl "'.'" y.tl "'" BTX.l(r,rr,ps,y):15:8 ) put ' /;' // ;
       ) ;
-$     label skipGRschedule
+$     label skipGRscheduleWrite
 
 *     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
 $     if not %PlotMIPtrace%==1 $goto NoMIPTrace
