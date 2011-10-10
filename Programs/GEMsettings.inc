@@ -15,8 +15,8 @@ $setglobal SprsRenShrReo 0
 * Select 1 to suppress the renewable energy share constraint when/if solving the re-optimisation (REO) model; 0 otherwise.
 $setglobal SprsRenShrDis 1
 * Select 1 to suppress the renewable energy share constraint when/if solving the simulation (DISP) model; 0 otherwise.  
-$setglobal GRschedule 1
-* Select 1 to write out a GAMS-readable schedule of varibales to be used to fix levels in subsequent models.
+$setglobal GRscheduleWrite 1
+* Select 1 to write out a GAMS-readable schedule of variables to be used to fix levels in subsequent models.
 $setglobal LimHydYr 4
 * (default = 100) Limit the number of Hydro years to solve the DISP model over, i.e. restrict to 5, say, to get a quick turnaround.
 $setglobal calcInputLRMCs 0
@@ -44,8 +44,11 @@ Scalar cGenYr / 2025 / ;
 Scalar AnnualMWlimit / 1000 / ;
 Scalar noRetire / 2 / ;
 Scalar renNrgShrOn / 1 / ;
-Scalar penaltyViolatePeakLoad / 4000 / ;
-Scalar penaltyViolateRenNrg / 400 / ;
+*Scalar penaltyViolatePeakLoad / 4000 / ;
+*Scalar penaltyViolateRenNrg / 400 / ;
+Scalar penaltyViolatePeakLoad / 99999 / ;
+Scalar penaltyViolateRenNrg / 99999 / ;
+
 Scalar slackCost / 9999 / ;
 Scalar noVOLLblks / 0 / ;
 Scalar DCloadFlow / 0 / ;

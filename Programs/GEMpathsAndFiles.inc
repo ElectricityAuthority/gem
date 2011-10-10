@@ -1,22 +1,25 @@
 $inlinecom { }
 $eolcom !
-$setglobal runName         "testNew"
-$setglobal runVersionName  "mds3"
+$setglobal runName         "testXXX"
+$setglobal runVersionName  "mds5"
 $setglobal baseRunVersion  "mds3"
 
 $setglobal GEMinputGDX     "standardGEMinput9LB.gdx"
 $setglobal GEMnetworkGDX   "2RegionNetwork.gdx"
-$setglobal GEMdemandGDX    "NRG_2Region9LB_EVdemand.gdx"
+$setglobal GEMdemandGDX    "NRG_2Region9LB_Standard.gdx"
 
-$setglobal GEMoverrideGDX  "mds4_Override.gdx"
+$setglobal GEMoverrideGDX  "mds5_Override.gdx"
 
-$setglobal useOverrides     0
+$setglobal useOverrides     1
 $setglobal sprsGEMsolve     0
 $setglobal Mode             0
 
 
 $setglobal defaultScenario  "piAvg"
 $setglobal reportDomain     "'standardExp','timing','standardAvg'"
+
+$setglobal GRscheduleFile   "C:\a\GEM\Output\testGR\Processed files\GRschedule - mds5_standardExp_timing_standardAvg.gms"
+$setglobal GRscheduleRead   0
 
 Set runVersions "Variants or instances of the run - all stored in the 'runName' output directory" /
   mds1 '2010 Sustainable path'
