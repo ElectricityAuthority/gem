@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 10/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 11/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -415,7 +415,7 @@ $     include CollectResults.inc
   put_utility 'gdxout' / '%OutPath%\%runName%\GDX\temp\RepOut\' experiments.tl ;
   execute_unload
 * Variable levels
-  s_TOTALCOST, s_TX, s_REFURBCOST, s_BUILD, s_CAPACITY, s_TXCAPCHARGES, s_GEN, s_VOLLGEN
+  s_TOTALCOST, s_TX, s_REFURBCOST, s_BUILD, s_RETIRE s_CAPACITY, s_TXCAPCHARGES, s_GEN, s_VOLLGEN
   s_RENNRGPENALTY, s_PEAK_NZ_PENALTY, s_PEAK_NI_PENALTY, s_NOWINDPEAK_NI_PENALTY
   s_ANNMWSLACK, s_RENCAPSLACK, s_HYDROSLACK, s_MINUTILSLACK, s_FUELSLACK, s_RESV, s_RESVVIOL, s_RESVCOMPONENTS
 * Equation marginals (ignore the objective function)
@@ -454,8 +454,8 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   paths nwd swd interIsland pumpedHydroPlant wind gas diesel
   thermalFuel i_fuelQuantities renew schedHydroPlant nsegment demandGen 
   allSolves weightScenariosBySet
-* Financial, capex and cost related sets and parameters
-  taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
+* Time, financial, capex and cost related sets and parameters
+  yearNum taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
   capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost capexPlant refurbCapexPlant
   capCharge refurbCapCharge txCapCharge
   i_largestGenerator i_smallestPole i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI i_fkNI
