@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 07/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -440,6 +440,12 @@ reservesCapability(g,rc)$i_plantReservesCap(g,rc) = i_nameplate(g) * i_plantRese
 * Add any fixed costs associated with fuel production and delivery to the fixed OM costs by plant.
 i_fixedOM(g) = i_fixedOM(g) + i_fixedFuelCosts(g) * i_heatrate(g) / 1000 * 8.76 ;
 
+* Compute the marginal loss location factors by plant (reciprocal of the zonally-based location factors).
+* Also, set equal to 1 if there are more than 2 regions.
+locationFactor(g) = sum(mapg_e(g,e)$i_zonalLocFacs(e), 1 / i_zonalLocFacs(e) ) ;
+locationFactor(g)$( numreg > 2 ) = 1 ;
+
+
 * e) Transmission data.
 * Let the last region declared be the slack bus (note that set r may not be ordered if users don't maintain unique set elements).
 slackBus(r) = no ;
@@ -457,10 +463,6 @@ loop((Benmore(i),Haywards(ii)),
   nwd(r,rr)$( mapi_r(i,r) * mapi_r(ii,rr) ) = yes ;
   swd(r,rr)$( mapi_r(ii,r) * mapi_r(i,rr) ) = yes ;
 ) ;
-
-* Compute the reciprocal of the zonally-based location factors (and then set equal to 1 if more than 2 regions).
-locFac_Recip(e)$i_zonalLocFacs(e) = 1 / i_zonalLocFacs(e) ;
-locFac_Recip(e)$( numreg > 2 ) = 1 ;
 
 * Make sure intraregional capacities and line characteristics are zero.
 i_txCapacity(r,r,ps) = 0 ;
@@ -696,7 +698,7 @@ Display
   WtdAvgFOFmultiplier, reservesCapability, peakConPlant, NWpeakConPlant, maxCapFactPlant, minCapFactPlant
 * Load data.
 * Transmission data.
-  locFac_Recip, txEarlyComYr, txFixedComYr, reactanceYr, susceptanceYr, BBincidence, pCap, pLoss, bigLoss, slope, intercept
+  txEarlyComYr, txFixedComYr, reactanceYr, susceptanceYr, BBincidence, pCap, pLoss, bigLoss, slope, intercept
   txCapitalCost, txCapCharge
 * Reserve energy data.
   reservesAreas, penaltyViolateReserves, windCoverPropn, bigM

@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 07/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used throughout
@@ -167,7 +167,7 @@ Parameters
   i_distdGenFossil(y)                           'Distributed generation (fossil) installed by year, GWh'
 * 2 location
   i_substnCoordinates(i,geo)                    'Geographic coordinates for substations'
-  i_zonalLocFacs(e)                             'Zonal location factors - adjusters of SRMC'
+  i_zonalLocFacs(e)                             'Zonal location factors - used to adjust costs to account for marginal loss effects'
 * 11 transmission
   i_txCapacity(r,rr,ps)                         'Transmission path capacities (bi-directional), MW'
   i_txCapacityPO(r,rr,ps)                       'Transmission path capacities with one pole out (bi-directional, HVDC link only), MW'
@@ -423,6 +423,7 @@ Parameters
 * Generation data.
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'
   vbleConCostPlant(g)                           'Variablised capital cost of connection for new generation plant, $/MW'
+  locationFactor(g)                             'Location factors by plant - used to adjust costs to account for marginal loss effects (sourced from zonal factors)'
   capexPlant(g)                                 'Capital cost for new generation plant, $/MW'
   capCharge(g,y)                                'Annualised or levelised capital charge for new generation plant, $/MW/yr'
   refurbCapexPlant(g)                           'Capital cost for refurbishing existing generation plant, $/MW'
@@ -442,7 +443,6 @@ Parameters
   peakLoadNZ(y,scenarios)                       'Peak load for New Zealand by year, MW'
   peakLoadNI(y,scenarios)                       'Peak load for North Island by year, MW'
 * Transmission data.
-  locFac_Recip(e)                               'Reciprocal of zonally-based location factors'
   txEarlyComYr(tupg,r,rr,ps,pss)                'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
   txFixedComYr(tupg,r,rr,ps,pss)                'Fixed year in which a transmission upgrade must occur (a parameter, not a set)'
   reactanceYr(r,rr,y)                           'Reactance by year for each transmission path. Units are p.u.'
@@ -606,7 +606,6 @@ Equations
   ;
 
 
-
 *===============================================================================================
 * 4. Specify the equations and declare the models.
 
@@ -616,7 +615,7 @@ Equations
 objectivefn..
   TOTALCOST =e=
 * Add in slacks at arbitrarily high cost.
-  slackCost * ( sum(y, ANNMWSLACK(y) ) +
+  slackCost * ( sum(y$( AnnualMWlimit > 150 ), ANNMWSLACK(y) ) +
                 sum(y$i_renewCapShare(y), RENCAPSLACK(y) ) +
                 sum(y, HYDROSLACK(y) ) +
                 sum(y, MINUTILSLACK(y) ) +
@@ -628,12 +627,12 @@ objectivefn..
 * NB: The HVDC charge applies only to committed and new SI projects.
   1e-6 * sum((y,t), PVfacG(y,t) * (1 - taxRate) * (
            ( 1/card(t) ) * 1e3 * (
-           sum(g, i_fixedOM(g) * CAPACITY(g,y)) +
-           sum((g,k,o)$((not demandGen(k)) * sigen(g) * possibleToBuild(g) * mapg_k(g,k) * mapg_o(g,o)), i_HVDCshr(o) * i_HVDClevy(y) * CAPACITY(g,y))
+           sum(g, locationFactor(g) * i_fixedOM(g) * CAPACITY(g,y)) +
+           sum((g,k,o)$((not demandGen(k)) * mapg_k(g,k) * sigen(g) * possibleToBuild(g) * mapg_o(g,o)), i_HVDCshr(o) * locationFactor(g) * i_HVDClevy(y) * CAPACITY(g,y))
            )
          ) ) +
 * Generation capital expenditure - discounted
-  1e-6 * sum((y,firstPeriod(t),possibleToBuild(g)), PVfacG(y,t) * capCharge(g,y) * CAPACITY(g,y) ) +
+  1e-6 * sum((y,firstPeriod(t),possibleToBuild(g)), PVfacG(y,t) * locationFactor(g) * capCharge(g,y) * CAPACITY(g,y) ) +
 * Generation refurbishment expenditure - discounted
   1e-6 * sum((y,firstPeriod(t),PossibleToRefurbish(g))$refurbCapCharge(g,y), PVfacG(y,t) * REFURBCOST(g,y) ) +
 * Transmission capital expenditure - discounted
@@ -650,20 +649,20 @@ calc_scenarioCosts(sc)..
 * Various costs, discounted and adjusted for tax
   1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(y,t) * (
 * Lost load
-    sum(s, 1e3 * VOLLGEN(s,y,t,lb,sc) * i_VOLLcost(s) ) +
+    sum(s, 1e3 * i_VOLLcost(s) * VOLLGEN(s,y,t,lb,sc) ) +
 * Generation costs
-    sum(g$validYrOperate(g,y), 1e3 * GEN(g,y,t,lb,sc) * srmc(g,y,sc) * sum(mapg_e(g,e), locFac_Recip(e)) ) +
+    sum(g$validYrOperate(g,y), 1e3 * locationFactor(g) * srmc(g,y,sc) * GEN(g,y,t,lb,sc) ) +
 * Cost of providing reserves ($m)
-    sum((g,rc), RESV(g,rc,y,t,lb,sc) * i_plantReservesCost(g,rc) ) +
+    sum((g,rc), i_plantReservesCost(g,rc) * locationFactor(g) * RESV(g,rc,y,t,lb,sc) ) +
 *++++++++++++++++++
 * More non-free reserves code.
 * Cost of providing reserves ($m)
-    sum((paths,stp)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * RESVCOMPONENTS(paths,y,t,lb,sc,stp) * pNFresvcost(paths,stp) )
+    sum((paths,stp)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * pNFresvcost(paths,stp) * RESVCOMPONENTS(paths,y,t,lb,sc,stp) )
   ) )  ;
 
 * Calculate non-free reserve components. 
 calc_nfreserves(paths(r,rr),y,t,lb,sc)$( nwd(r,rr) or swd(r,rr) )..
-  sum(stp, RESVCOMPONENTS(r,rr,y,t,lb,sc,stp)) =g= TX(r,rr,y,t,lb,sc) - sum(allowedStates(r,rr,ps), BTX(r,rr,ps,y) * freereserves(r,rr,ps)) ;
+  sum(stp, RESVCOMPONENTS(r,rr,y,t,lb,sc,stp)) =g= TX(r,rr,y,t,lb,sc) - sum(allowedStates(r,rr,ps), freereserves(r,rr,ps) * BTX(r,rr,ps,y)) ;
 
 * Calculate and impose the relevant capacity on each step of free reserves.
 resv_capacity(paths,y,t,lb,sc,stp)$( nwd(paths) or swd(paths) )..
@@ -672,7 +671,7 @@ resv_capacity(paths,y,t,lb,sc,stp)$( nwd(paths) or swd(paths) )..
 
 * Compute the annualised generation plant refurbishment expenditure charge in each year.
 calc_refurbcost(PossibleToRefurbish(g),y)$refurbCapCharge(g,y)..
-  REFURBCOST(g,y) =e= (1 - ISRETIRED(g)) * i_nameplate(g) * refurbCapCharge(g,y) ;
+  REFURBCOST(g,y) =e= (1 - ISRETIRED(g)) * i_nameplate(g) * locationFactor(g) * refurbCapCharge(g,y) ;
 
 * Compute the cumulative annualised transmission upgrade capital expenditure charges.
 calc_txcapcharges(paths,y)..
