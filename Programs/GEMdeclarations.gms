@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 12/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 13/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used throughout
@@ -114,7 +114,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 78 parameters (again, grouped as per the navigation pane of emi).
+* Declare 77 parameters (again, grouped as per the navigation pane of emi).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -170,7 +170,7 @@ Parameters
   i_zonalLocFacs(e)                             'Zonal location factors - used to adjust costs to account for marginal loss effects'
 * 11 transmission
   i_txCapacity(r,rr,ps)                         'Transmission path capacities (bi-directional), MW'
-  i_txCapacityPO(r,rr,ps)                       'Transmission path capacities with one pole out (bi-directional, HVDC link only), MW'
+  i_txCapacityPO(r,rr,ps)                       'Transmission path capacities with largest pole out (bi-directional, HVDC link only), MW'
   i_txResistance(r,rr,ps)                       'Transmission path resistance (not really a resistance but rather a loss function coefficient), p.u. (MW)'
   i_txReactance(r,rr,ps)                        'Reactance by state of each transmission path, p.u. (MW)'
   i_txCapitalCost(r,rr,ps)                      'Transmission upgrade capital cost by path, $m'
@@ -186,7 +186,7 @@ Parameters
   i_HalfHrsPerBlk(m,lb)                         'Count of half hours per load block in each month'
   i_NrgDemand(r,y,t,lb)                         'Load by region, year, time period and load block, GWh'
   i_inflation(y)                                'Inflation rates by year'
-* 11 reserves and security
+* 10 reserves and security
   i_ReserveSwitch(rc)                           'Switch to activate reserves by reserves class'
   i_ReserveAreas(rc)                            'Number of reserves areas (Single or system-wide = 1, By island = 2)'
   i_propWindCover(rc)                           'Proportion of wind to cover by reserve class (0-1 but define only when > 0)'
@@ -194,7 +194,6 @@ Parameters
   i_reserveReqMW(y,ild,rc)                      'Reserve requirement by year, island, and class, MW'
   i_fkNI(y)                                     'Required frequency keeping in North Island by year, MW'
   i_largestGenerator(y)                         'Largest generation plant by year, MW'
-  i_smallestPole(y)                             'Delivered capacity in North Island of smallest pole on HVDC link by year, MW'
   i_winterCapacityMargin(y)                     'Required winter capacity margin, MW' 
   i_P200ratioNZ(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), New Zealand'   
   i_P200ratioNI(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), North Island'   
@@ -727,13 +726,15 @@ peak_NZ(y,sc)..
 * Ensure enough capacity to meet peak demand in NI subject to contingencies.
 peak_NI(y,sc)..
   PEAK_NI_PENALTY(y,sc) +
-  sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) + i_largestGenerator(y) + i_smallestPole(y) - i_winterCapacityMargin(y)
+  sum(nigen(g), CAPACITY(g,y) * peakConPlant(g,y) ) + i_largestGenerator(y) - i_winterCapacityMargin(y) +
+  sum(allowedStates(paths,ps)$nwd(paths), i_txCapacityPO(paths,ps) * BTX(paths,ps,y))
   =g= peakLoadNI(y,sc) ;
 
 * Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low.
 noWindPeak_NI(y,sc)..
   NOWINDPEAK_NI_PENALTY(y,sc) +
-  sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) - i_fkNI(y) + i_smallestPole(y)
+  sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) - i_fkNI(y) +
+  sum(allowedStates(paths,ps)$nwd(paths), i_txCapacityPO(paths,ps) * BTX(paths,ps,y))
   =g= peakLoadNI(y,sc) ;
 
 * Ensure generation is less than capacity times max capacity factor in each block.

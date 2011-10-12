@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 12/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 13/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -78,7 +78,7 @@ execute 'temp.bat' ;
 
 Set y  / %firstYear% * %lastYear% / ;
 
-* Load the 110 network invariant symbols from GEMinputGDX.
+* Load the 109 network invariant symbols from GEMinputGDX.
 $gdxin "%DataPath%\%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
@@ -101,7 +101,7 @@ $loaddc i_substnCoordinates i_zonalLocFacs
 $load   i_HVDClevy
 $load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
 $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
-$load   i_reserveReqMW i_fkNI i_largestGenerator i_smallestPole i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
+$load   i_reserveReqMW i_fkNI i_largestGenerator i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
 $load   i_firstHydroYear i_historicalHydroOutput
 
 * Load the 22 region/network-related symbols from GEMnetworkGDX.
@@ -179,7 +179,6 @@ put /  'i_HVDClevy, $/kW'           loop(y, put i_HVDClevy(y) ) ;
 put /  'i_inflation'                loop(y, put i_inflation(y):5:3 ) ; 
 put /  'i_fkNI, MW'                 loop(y, put i_fkNI(y) ) ; 
 put /  'i_largestGenerator, MW'     loop(y, put i_largestGenerator(y) ) ; 
-put /  'i_smallestPole, MW'         loop(y, put i_smallestPole(y) ) ; 
 put /  'i_winterCapacityMargin, MW' loop(y, put i_winterCapacityMargin(y) ) ; 
 put /  'i_P200ratioNZ'              loop(y, put i_P200ratioNZ(y) ) ; 
 put /  'i_P200ratioNI'              loop(y, put i_P200ratioNI(y) ) ; 
