@@ -23,10 +23,8 @@ $ontext
   1. Take care of preliminaries.
   2. Set bounds, initial levels and, in some cases, fix variables to a specified level.
   3. Loop through all the solves
-  4. Dump results out to GDX files and rename/relocate certain output files.
+  4. Dump selected prepared input data into a GDX file and rename/relocate a couple of log files.
 
-  x. Move MIPtrace files to output directory and generate miptrace.bat.
-  x. Create an awk script, which when executed, will produce a file containing the number of integer solutions per MIP model.
 $offtext
 
 * Track memory usage.
@@ -441,11 +439,9 @@ putclose / rep 'Run version ' "%runVersionName%" ' finished at ' system.time ///
 
 
 *===============================================================================================
-* 4. Dump results out to GDX files and rename/relocate certain output files.
+* 4. Dump selected prepared input data into a GDX file and rename/relocate a couple of log files.
+*    NB: input data is as imported from .gdx/.inc files or from intermediate steps in GEMdata.
 
-* edit above heading
-
-* x) Dump selected input data into a GDX file (as imported, or from intermediate steps in GEMdata, or what's actually used to solve the model).
 Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
   y t f k g s o lb i r e ild ps scen rc n tgc hY
@@ -493,7 +489,16 @@ execute 'temp.bat' ;
 
 
 
+
+
+* End of file.
+
+
+
 $stop
+
+
+
 *===============================================================================================
 *  x. Move MIPtrace files to output directory and generate miptrace.bat.
 
@@ -512,9 +517,7 @@ $label NoTrace
 
 
 
-*===============================================================================================
 *  x. Create an awk script which, when executed, will produce a file containing the number of integer solutions per MIP model.
-
 $if %GEMtype%=="rmip" $goto NoMIP
 $onecho > f.awk
 /Restarting execution/ {
@@ -539,7 +542,3 @@ $onecho > f.awk
 }
 $offecho
 $label NoMIP
-
-
-
-* End of file.
