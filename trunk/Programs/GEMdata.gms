@@ -5,7 +5,7 @@
 
 
 ** To do:
-** See comment on ~line #486, i.e. "Should this next line be ord or card?"
+** See comment on ~line #493, i.e. "Should this next line be ord or card?"
 ** Formalise/fix up the override stuff once we get GEM back into emi.
 
 
@@ -64,6 +64,9 @@ putclose bat
   'copy "%ProgPath%GEMpathsAndFiles.inc" "%OutPath%\%runName%\Archive\GEMpathsAndFiles - %runVersionName%.inc"' /
   'copy "%ProgPath%GEMsettings.inc"      "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
   'copy "%ProgPath%GEMstochastic.inc"    "%OutPath%\%runName%\Archive\GEMstochastic.inc"' / ;
+$if %useOverrides%==0 $goto noOverrides1
+bat.ap = 1 ; putclose bat 'copy "%DataPath%\%GEMoverrideGDX%" "%OutPath%\%runName%\Archive\"' / ; bat.ap = 0 ;
+$label noOverrides1
 execute 'temp.bat' ;
 
 
@@ -119,7 +122,7 @@ Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 
 
 * Install data overrides.
-$if %useOverrides%==0 $goto noOverrides
+$if %useOverrides%==0 $goto noOverrides2
 ** mds1, mds2 and mds5 override 3 params: i_fuelPrices, i_fuelQuantities and i_co2tax.
 ** mds4 overrides 1 params: i_co2tax.
 
@@ -134,7 +137,7 @@ $load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
 i_fuelPrices(f,y)$i_fuelPricesOvrd(f,y) = i_fuelPricesOvrd(f,y) ;              i_fuelPrices(f,y)$( i_fuelPrices(f,y) = eps ) = 0 ;
 i_fuelQuantities(f,y)$i_fuelQuantitiesOvrd(f,y) = i_fuelQuantitiesOvrd(f,y) ;  i_fuelQuantities(f,y)$( i_fuelQuantities(f,y) = eps ) = 0 ;
 i_co2tax(y)$i_co2taxOvrd(y) = i_co2taxOvrd(y) ;                                i_co2tax(y)$( i_co2tax(y) = eps ) = 0 ; 
-$label noOverrides
+$label noOverrides2
 
 
 * Create a csv file of input data - unadulterated and just as imported.

@@ -10,7 +10,7 @@ $setglobal GEMdemandGDX    "NRG_2Region9LB_Standard.gdx"
 
 $setglobal GEMoverrideGDX  "mds5_Override.gdx"
 
-$setglobal useOverrides     1
+$setglobal useOverrides     0
 $setglobal sprsGEMsolve     0
 $setglobal Mode             0
 

@@ -18,5 +18,6 @@ putclose rep "runGEMdataAndSolve has now finished..." / "Time: " system.time / "
 $ontext
 Some notes for future development of GUI:
   - The fact that runGEMdataAndSolve has finished does not mean that the model(s) were successfully solved.
-    One needs to check reports.txt and/or GEMsolve.lst and/or "A solve summary report.txt".
+    One needs to check GEMsolveReport - %runName%.txt, GEMsolveLog - %runName%_%runVersionName%.txt, and/or
+    GEMsolve.lst.
 $offtext

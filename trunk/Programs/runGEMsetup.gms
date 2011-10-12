@@ -14,10 +14,7 @@ File rep "Write a progess report"   / "runGEMsetupProgress.txt" / ; rep.lw = 0 ;
 * - archive the .gms/.g00 programs.
 putclose bat
   'if exist report.txt                     erase report.txt /q' /
-  'if exist runGEMsetupProgress.txt        erase runGEMsetupProgress.txt /q' /
-  'if exist runGEMdataAndSolveProgress.txt erase runGEMdataAndSolveProgress.txt /q' /
-  'if exist runMergeGDXsProgress.txt       erase runMergeGDXsProgress.txt /q' /
-  'if exist runGEMreportsProgress.txt      erase runGEMreportsProgress.txt /q' /
+  'if exist run*Progress.txt               erase run*Progress.txt /q' /
   'if exist "%OutPath%\%runName%"          rmdir "%OutPath%\%runName%" /s /q' /
 
   'mkdir "%OutPath%\%runName%"' /
@@ -35,6 +32,7 @@ putclose bat
   'copy "%ProgPath%\GEMsolve.gms"        "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMreports.gms"      "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMcplex.gms"        "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMlrmc.gms"         "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMgurobi.gms"       "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMxpress.gms"       "%OutPath%\%runName%\Archive\"' / ;
 
