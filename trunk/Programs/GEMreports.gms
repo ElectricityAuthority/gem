@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 12/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 17/10/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -175,7 +175,6 @@ Parameters
   SRMC(runVersions,g,y,scen)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
   i_fixedOM(runVersions,g)                             'Fixed O&M costs by plant, $/kW/year'
   locationFactor(runVersions,g)                        'Location factors by plant - used to adjust costs to account for marginal loss effects (sourced from zonal factors)'
-  i_VOLLcost(runVersions,s)                            'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
   i_HVDCshr(runVersions,o)                             'Share of HVDC charge to be incurred by plant owner'
   i_HVDClevy(runVersions,y)                            'HVDC charge levied on new South Island plant by year, $/kW'
   i_plantReservesCost(runVersions,g,rc)                'Plant-specific cost per reserve class, $/MWh'
@@ -193,7 +192,7 @@ Parameters
 
 $gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData.gdx"
 $loaddc possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate
-$loaddc i_fuelQuantities i_namePlate i_heatrate totalFuelCost CO2taxByPlant SRMC i_fixedOM locationFactor i_VOLLcost i_HVDCshr i_HVDClevy
+$loaddc i_fuelQuantities i_namePlate i_heatrate totalFuelCost CO2taxByPlant SRMC i_fixedOM locationFactor i_HVDCshr i_HVDClevy
 $loaddc i_plantReservesCost hoursPerBlock NrgDemand yearNum PVfacG PVfacT capCharge refurbCapCharge MWtoBuild penaltyViolateReserves pNFresvCost exogMWretired
 
 
@@ -273,7 +272,7 @@ loop(rvExpStepsScenSet(rv,experiments,steps,scenSet),
   objComponents(rvExpStepsScenSet,'obj_varOM')     = 1e-3 * (1 - taxRate) * sum((validYrOperate(rv,g,y),t,lb,sc), scenarioWeight(sc) * PVfacG(rv,y,t) * locationFactor(rv,g) * srmc(rv,g,y,sc) * s_GEN(rvExpStepsScenSet,g,y,t,lb,sc) ) ;
   objComponents(rvExpStepsScenSet,'obj_hvdc')      = 1e-3 * (1 - taxRate) * sum((y,t), PVfacG(rv,y,t) * ( 1/card(t) ) * (
                                                      sum((g,k,o)$((not demandGen(k)) * mapg_k(g,k) * sigen(g) * possibleToBuild(rv,g) * mapg_o(g,o)), i_HVDCshr(rv,o) * locationFactor(rv,g) * i_HVDClevy(rv,y) * s_CAPACITY(rvExpStepsScenSet,g,y)) ) ) ;
-  objComponents(rvExpStepsScenSet,'VOLLcost')      = 1e-3 * (1 - taxRate) * sum((s,y,t,lb,sc), scenarioWeight(sc) * PVfacG(rv,y,t) * s_VOLLGEN(rvExpStepsScenSet,s,y,t,lb,sc) * i_VOLLcost(rv,s) ) ;
+  objComponents(rvExpStepsScenSet,'VOLLcost')      = 1e-3 * (1 - taxRate) * VOLLcost * sum((s,y,t,lb,sc), scenarioWeight(sc) * PVfacG(rv,y,t) * s_VOLLGEN(rvExpStepsScenSet,s,y,t,lb,sc) ) ;
   objComponents(rvExpStepsScenSet,'obj_rescosts')  = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,sc), PVfacG(rv,y,t) * scenarioWeight(sc) * i_plantReservesCost(rv,g,rc) * locationFactor(rv,g) * s_RESV(rvExpStepsScenSet,g,rc,y,t,lb,sc) ) ;
 
   objComponents(rvExpStepsScenSet,'obj_resvviol')  = 1e-6 * sum((rc,ild,y,t,lb,sc), scenarioWeight(sc) * s_RESVVIOL(rvExpStepsScenSet,rc,ild,y,t,lb,sc) * penaltyViolateReserves(rv,ild,rc) ) ;

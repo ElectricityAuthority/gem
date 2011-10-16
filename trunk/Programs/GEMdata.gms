@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 13/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 17/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -104,12 +104,11 @@ $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
 $load   i_reserveReqMW i_fkNI i_largestGenerator i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
 $load   i_firstHydroYear i_historicalHydroOutput
 
-* Load the 22 region/network-related symbols from GEMnetworkGDX.
+* Load the 18 region/network-related symbols from GEMnetworkGDX.
 $gdxin "%DataPath%\%GEMnetworkGDX%"
 * Sets
-$loaddc s r p ps tupg maps_r mapLocations regionCentroid txUpgradeTransitions mapArcNode
+$loaddc r p ps tupg mapLocations regionCentroid txUpgradeTransitions mapArcNode
 * Parameters 
-$loaddc i_VOLLcap i_VOLLcost
 $loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
 $loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 
@@ -155,6 +154,7 @@ loop((k,f,fg)$( mapf_k(f,k) * mapf_fg(f,fg) ),
   i_depRate(k), i_plantLife(k), randomiseCapex(k), linearBuildTech(k), i_linearBuildMW(k), i_linearBuildYr(k), movers(k), refurbish(k), i_refurbishmentLife(k), endogRetire(k)
   i_retireOffsetYrs(k), i_peakContribution(k), i_NWpeakContribution(k), i_capFacTech(k), i_maxNrgByFuel(f), i_emissionFactors(f) ;
 ) ;
+
 put // 'Generation plant data' / 'g' 'k' 'f' 'i' 'o' 'exist' 'coal' 'lignite' 'gas' 'diesel' 'cogen' 'peaker' 'hydroSched' 'hydroPumped' 'wind' 'renew'
   'thermalTech' 'demandGen' 'schedHydroUpg' 'mapSH_Upg' 'i_nameplate' 'i_heatrate' 'i_fixedOM' 'i_varOM' 'i_varFuelCosts', 'i_fixedFuelCosts' 'i_HVDCshr'
   'i_fof' 'i_capFacTech' 'i_peakContribution', 'i_NWpeakContribution' 'i_minHydroCapFact' 'i_maxHydroCapFact', 'i_PumpedHydroMonth' 'i_PumpedHydroEffic'
@@ -171,6 +171,7 @@ loop((g,k,f,i,o)$( mapgenplant(g,k,i,o) * mapf_k(f,k) ),
     put refurbish(k), i_refurbishmentLife(k), i_refurbDecisionYear(g), i_refurbCapitalCost(g), i_retireOffsetYrs(k) else put '-' '-' '-' '-' '-' ;
   ) ;
 ) ;
+
 put // 'Data defined by year'  / '' loop(y, put y.tl ) ;
 put /  'Fuel prices, $/GJ'          loop(f$sum(y, i_fuelPrices(f,y)),     put / f.tl loop(y, put i_fuelPrices(f,y)) ) ; 
 put /  'Fuel quantity, GJ'          loop(f$sum(y, i_fuelQuantities(f,y)), put / f.tl loop(y, put i_fuelQuantities(f,y)) ) ; 
@@ -183,7 +184,17 @@ put /  'i_winterCapacityMargin, MW' loop(y, put i_winterCapacityMargin(y) ) ;
 put /  'i_P200ratioNZ'              loop(y, put i_P200ratioNZ(y) ) ; 
 put /  'i_P200ratioNI'              loop(y, put i_P200ratioNI(y) ) ; 
 
-** Complete creation of this file. Add transmission, group stuff in a sensible order. Check that output is reliable.
+put // 'Transmission data' / 'FrReg' 'ToReg' 'State' 'CapMW' 'CapPO_MW' '$m' 'Resistance' 'Reactance' 'EarlyYr' 'FixedYr' 'FrState' 'ToState' 'Upgrade' 'Upgrade description' ;
+loop((r,rr,ps)$i_txCapacity(r,rr,ps),
+  put / r.tl, rr.tl, ps.tl, i_txCapacity(r,rr,ps), i_txCapacityPO(r,rr,ps), i_txCapitalCost(r,rr,ps), i_txResistance(r,rr,ps), i_txReactance(r,rr,ps) ;
+  loop((tupg,pss)$( txUpgradeTransitions(tupg,r,rr,pss,ps) or txUpgradeTransitions(tupg,rr,r,pss,ps) ),
+    if(i_txEarlyComYr(tupg), put i_txEarlyComYr(tupg) else put '' ) ;
+    if(i_txFixedComYr(tupg), put i_txFixedComYr(tupg) else put '' ) ;
+    put pss.tl, ps.tl, tupg.tl, tupg.te(tupg) ;
+  ) ;
+) ;
+
+** Complete creation of this file. Group stuff in a sensible order. Check that output is reliable.
 
 
 
@@ -588,6 +599,11 @@ bigM(ild1,ild) =
 
 
 
+* Write out the set membership for VOLL plant - based on number of regions.
+put VOLLplant
+'Set s /'           loop(r, put / "'VOLL" r.tl "'" ) ; put '  /;' //
+'Set maps_r(s,r) /' loop(r, put / "'VOLL" r.tl "'.'" r.tl "'" ) ; put '  /;' ;
+
 
 *+++++++++++++++++++++++++
 * More code to do the non-free reserves stuff. 
@@ -808,10 +824,10 @@ put plantData, 'Plant data summarised (default scenario only) - based on user-su
   '  North Island'                      @38 put sum(mapg_ild(g,'ni')$possibleToBuild(g), i_nameplate(g)):<6:0 /
   '  South Island'                      @38 put sum(mapg_ild(g,'si')$possibleToBuild(g), i_nameplate(g)):<6:0 //
 
-  'VoLL plant (note that VoLL plant are not counted with generating plant)' /
-  'VoLL plant count:'                   @38 (sum(s$i_VOLLcap(s), 1)):<4:0 /
-  'Average VoLL plant capacity, MW:'    @38 (sum(s, i_VOLLcap(s))  / card(s)):<4:0 /
-  'Average VoLL plant cost, $/MWh:'     @38 (sum(s, i_VOLLcost(s)) / card(s)):<5:0 //
+  'VoLL plant (NB: one VOLL plant per region; not included in count of generating plant above)' /
+  'Count:'                              @38 card(r):<4:0 /
+  'Capacity, MW:'                       @38 VOLLcap:<4:0 /
+  'Cost, $/MWh:'                        @38 VOLLcost:<5:0 //
 
   'Technologies with randomised capex:' @38 if(sum(randomiseCapex(k), 1), loop(randomiseCapex(k), put k.tl, ', ' ) else put 'There are none' ) put /
   'Randomised cost range (+/-), %:'     @38 (100 * randomCapexCostAdjuster):<5:1 //
