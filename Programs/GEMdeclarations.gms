@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 13/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 17/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used throughout
@@ -43,13 +43,12 @@ Sets
   geo          'Geographic co-ordinate types'
   col          'RGB color codes' ;
 
-* 18 fundamental sets
+* 17 fundamental sets
 Sets
   k            'Generation technologies'
   f            'Fuels'
   fg           'Fuel groups'
   g            'Generation plant'
-  s            'Shortage or VOLL plants'
   o            'Owners of generating plant'
   i            'Substations'
   r            'Regions'
@@ -66,7 +65,7 @@ Sets
 
 Alias (g,gg), (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
 
-* 37 mapping sets and subsets (grouped as per the navigation pane of emi)
+* 36 mapping sets and subsets (grouped as per the navigation pane of emi)
 Sets
 * 22 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -91,12 +90,11 @@ Sets
   lignite(f)                                    'Lignite fuel'
   gas(f)                                        'Gas fuel'
   diesel(f)                                     'Diesel fuel'
-* 5 generation
+* 4 generation
   mapGenPlant(g,k,i,o)                          'Generation plant mappings'
   exist(g)                                      'Generation plant that are presently operating'
   schedHydroUpg(g)                              'New generation plant that are to be built on an existing schedulable hydro system'
   mapSH_Upg(g,gg)                               'Map existing schedulable hydro plant to what are essentially schedulable hydro upgrades'
-  maps_r(s,r)                                   'Map regions to VOLL plants'
 * 6 location
   mapLocations(i,r,e,ild)                       'Location mappings'
   Haywards(i)                                   'Haywards substation'
@@ -114,7 +112,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 77 parameters (again, grouped as per the navigation pane of emi).
+* Declare 75 parameters (again, grouped as per the navigation pane of emi).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -132,7 +130,7 @@ Parameters
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantities(f,y)                         'Quantitative limit on availability of various fuels by year, PJ'
   i_co2tax(y)                                   'CO2 tax by year, $/tonne CO2-equivalent'
-* 32 generation
+* 30 generation
   i_nameplate(g)                                'Nameplate capacity of generating plant, MW'
   i_UnitLargestProp(g)                          'Largest proportion of generating plant output carried by a single unit at the plant'
   i_baseload(g)                                 'Force plant to be baseloaded, 0/1 (1 = baseloaded)'
@@ -158,8 +156,6 @@ Parameters
   i_plantReservesCost(g,rc)                     'Plant-specific cost per reserve class, $/MWh'
   i_PltCapFact(g,m)                             'Plant-specific capacity factor (default = 1)'
   i_minUtilisation(g,y)                         'Minimum utilisation of plant by year, proportion (0-1 but only defined when > 0)'
-  i_VOLLcap(s)                                  'Nameplate capacity of VOLL plant (1 VOLL plant/region), MW'
-  i_VOLLcost(s)                                 'Value of lost load by VOLL plant (1 VOLL plant/region), $/MWh'
   i_HVDCshr(o)                                  'Share of HVDC charge to be incurred by plant owner'
   i_renewNrgShare(y)                            'Proportion of total energy to be generated from renewable sources by year (0-1 but define only when > 0)'
   i_renewCapShare(y)                            'Proportion of installed capacity that must be renewable by year (0-1 but define only when > 0)'
@@ -304,6 +300,8 @@ Parameters
   lastYear                                      'Last modelled year - as a scalar, not a set'
   noRetire                                      'Number of years following and including the first modelled year for which endogenous generation plant retirement decisions are prohibited'
   AnnualMWlimit                                 'Upper bound on total MW of new plant able to be built nationwide in any single year'
+  VOLLcap                                       'Nameplate capacity of each VOLL plant (1 VOLL plant/region), MW'
+  VOLLcost                                      'Value of lost load by each VOLL plant (1 VOLL plant/region), $/MWh'
   penaltyViolatePeakLoad                        'Penalty for failing to meet peak load constraints, $/MW'
   penaltyViolateRenNrg                          'Penalty used to make renewable energy constraint feasible, $/MWh'
   penaltyViolateReserves(ild,rc)                'Penalty for failing to meet certain reserve classes, $/MWh'
@@ -324,6 +322,9 @@ Sets
   lastYr(y)                                     'Last modelled year - as a set, not a scalar'
   allButFirstYr(y)                              'All modelled years except the first year - as a set, not a scalar'
   firstPeriod(t)                                'First time period (i.e. period within the modelled year)'
+* VOLL plant (set membership generated automatically in GEMdata)
+  s                                             'Shortage or VOLL plants'
+  maps_r(s,r)                                   'Map regions to VOLL plants'
 * Various mappings, subsets and counts.
   mapg_k(g,k)                                   'Map technology types to generating plant'
   mapg_f(g,f)                                   'Map fuel types to generating plant'
@@ -648,7 +649,7 @@ calc_scenarioCosts(sc)..
 * Various costs, discounted and adjusted for tax
   1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(y,t) * (
 * Lost load
-    sum(s, 1e3 * i_VOLLcost(s) * VOLLGEN(s,y,t,lb,sc) ) +
+    sum(s, 1e3 * VOLLcost * VOLLGEN(s,y,t,lb,sc) ) +
 * Generation costs
     sum(g$validYrOperate(g,y), 1e3 * locationFactor(g) * srmc(g,y,sc) * GEN(g,y,t,lb,sc) ) +
 * Cost of providing reserves ($m)
@@ -1132,10 +1133,12 @@ $offecho
 * 6. Declare some (but not all) output files to be created by GEMdata and GEMsolve.
 
 Files
-  rep   'Write to a solve summary report'  / Report.txt /
-  con   'Write to the console'             / con /
+  VOLLplant 'Write VOLL plant on the fly'      / VOLLplant.inc / 
+  rep       'Write to a solve summary report'  / Report.txt /
+  con       'Write to the console'             / con /
   dummy ;
 
+VOLLplant.lw = 0 ;
 rep.lw = 0 ; rep.ap = 1 ;
 con.lw = 0 ;
 

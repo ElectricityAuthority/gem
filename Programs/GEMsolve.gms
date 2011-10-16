@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 13/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 17/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -48,6 +48,8 @@ $offsymxref offsymlist
 
 *===============================================================================================
 * 1. Take care of preliminaries.
+
+$include VOLLplant.inc
 
 * Stamp run name and run version name into solve report.
 putclose rep 'Run:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / ;
@@ -104,8 +106,8 @@ GEN.fx(g,y,t,lb,scen)$( ( exist(g) or commit(g) ) * i_baseload(g) * validYrOpera
   1e-3 * hoursPerBlock(t,lb) * i_nameplate(g) * maxCapFactPlant(g,t,lb) ;
 
 * Place restrictions on VOLL plants:
-VOLLGEN.up(s,y,t,lb,scen) = 1e-3 * hoursPerBlock(t,lb) * i_VOLLcap(s) ;  ! Respect the capacity of VOLL plants
-VOLLGEN.fx(s,y,t,lb,scen)$( ord(lb) <= noVOLLblks ) = 0 ;                ! Don't allow VOLL in user-specified top load blocks 
+VOLLGEN.up(s,y,t,lb,scen) = 1e-3 * hoursPerBlock(t,lb) * VOLLcap ;   ! Respect the capacity of VOLL plants
+VOLLGEN.fx(s,y,t,lb,scen)$( ord(lb) <= noVOLLblks ) = 0 ;            ! Don't allow VOLL in user-specified top load blocks 
 
 * Fix bounds on TX according to the largest capacity allowed in any state. Lower bound must be zero if transportation formulation is being used.
 TX.lo(paths,y,t,lb,scen) = -smax(ps, i_txCapacity(paths,ps)) ;
@@ -444,7 +446,7 @@ putclose / rep 'Run version ' "%runVersionName%" ' finished at ' system.time ///
 
 Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
-  y t f k g s o lb i r e ild ps scen rc n tgc hY
+  y t f k g o lb i r e ild ps scen rc n tgc hY s
   techColor fuelColor fuelGrpColor
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r isIldEqReg firstPeriod firstYr lastYr allButFirstYr
   paths nwd swd interIsland pumpedHydroPlant wind gas diesel
@@ -460,7 +462,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   exist noExist commit new neverBuild nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
   exogMWretired possibleToEndogRetire possibleToRetire possibleToRefurbish continueAftaEndogRetire peakConPlant NWpeakConPlant
   endogenousRetireDecisnYrs endogenousRetireYrs movers i_nameplate i_heatRate initialCapacity maxCapFactPlant minCapFactPlant AnnualMWlimit
-  i_minUtilisation i_maxNrgByFuel renNrgShrOn i_renewNrgShare i_renewCapShare i_VOLLcap i_VOLLcost i_fof
+  i_minUtilisation i_maxNrgByFuel renNrgShrOn i_renewNrgShare i_renewCapShare i_fof
   i_distdGenRenew i_distdGenFossil i_pumpedHydroEffic i_PumpedHydroMonth i_UnitLargestProp MWtoBuild
 * Load and peak
   hoursPerBlock AClossFactors scenarioNRGfactor i_NrgDemand NrgDemand ldcMW scenarioPeakLoadFactor peakLoadNZ peakLoadNI

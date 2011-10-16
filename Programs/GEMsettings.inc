@@ -42,6 +42,8 @@ Scalar cGenYr / 2025 / ;
 Scalar AnnualMWlimit / 1000 / ;
 Scalar noRetire / 2 / ;
 Scalar renNrgShrOn / 1 / ;
+Scalar VOLLcap / 500 / ;
+Scalar VOLLcost / 10000 / ;
 *Scalar penaltyViolatePeakLoad / 4000 / ;
 *Scalar penaltyViolateRenNrg / 400 / ;
 Scalar penaltyViolatePeakLoad / 99999 / ;
