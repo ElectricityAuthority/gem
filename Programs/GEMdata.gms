@@ -731,6 +731,7 @@ $offtext
 * Declare input data summary files.
 Files
   stochasticSummary / "%OutPath%\%runName%\Input data checks\Stochastic summary - %runName%_%runVersionName%.txt" /
+  txData            / "%OutPath%\%runName%\Input data checks\Transmission summary - %runName%_%runVersionName%.txt" /
   plantData         / "%OutPath%\%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
   capexStats        / "%OutPath%\%runName%\Input data checks\Capex, MW and GWh summaries - %runName%_%runVersionName%.txt" /
   loadSummary       / "%OutPath%\%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
@@ -738,6 +739,7 @@ Files
   ;
 
 stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;
+txData.lw = 0 ;            txData.pw = 999 ;
 plantData.lw = 0 ;         plantData.pw = 999 ;
 capexStats.lw = 0 ;        capexStats.pw = 999 ;
 loadSummary.lw = 0 ;       loadSummary.pw = 999 ;
@@ -801,6 +803,49 @@ loop(allSolves(experiments,steps,scenSet),
     loop(mapSC_hY(scen,hY), put hY.tl:<5 ) ;
   ) ;
 );
+
+
+
+* Write the transmission data summaries.
+put txData, 'Transmission data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
+  'Network file:'            @26 "%GEMnetworkGDX%" /
+  'Number of regions:'       @26 numReg:<4:0 /
+  'Number of loss tranches:' @26 card(nSegment):<4:0 //
+  'All scenarios:'           @26 loop(scen, put scen.tl ', ' ) put /
+  'Default scenario:'        @26 loop(defaultScenario(scen), put scen.tl ) put //
+  'First modelled year:'     @26 firstYear:<4:0 /
+  'Last modelled year:'      @26 lastYear:<4:0 / @108
+  '-- Intercepts and slopes by loss tranche --' / @56 
+  '-- Capacity by upgrade state and pole out ---' @108 '   (values shown only for the To State)' / @56
+  '-- From ------ To --   -- POfrom ---- POto --' @108 '-- Intercepts --' @(108+8*%NumVertices%-1) '-- Slopes --' / @3
+  'Project' @18 'FrState' @26 'ToState' @35 'ErlyY FixYr      $m fwdMW revMW fwdMW revMW fwdMW revMW fwdMW revMW' ;
+loop(nsegment(n), put n.tl:>8 ) loop(nsegment(n), put n.tl:>8 ) ;
+loop((r,rr)$( ( ord(r) > ord(rr) ) and sum((tupg,ps,pss), transitions(tupg,r,rr,ps,pss)) ),
+  put / 'Path: ' r.tl ' <--> ' rr.tl ;
+  loop(transitions(tupg,r,rr,ps,pss),
+    put / @3 tupg.tl:<15, ps.tl:<8, pss.tl:<8, txEarlyComYr(tupg,r,rr,ps,pss):>6:0 ;
+    if(txFixedComYr(tupg,r,rr,ps,pss), put txFixedComYr(tupg,r,rr,ps,pss):>6:0 else put '   any' ) ;
+    if(bipaths(r,rr), put (2 * txCapitalCost(r,rr,pss)):>8:1 else put txCapitalCost(r,rr,pss):>8:1 ) ;
+
+    if(sameas(ps,'initial'),
+      put i_txCapacity(r,rr,ps):>6:0, i_txCapacity(rr,r,ps):>6:0, i_txCapacity(r,rr,pss):>6:0, i_txCapacity(rr,r,pss):>6:0
+          i_txCapacityPO(r,rr,ps):>6:0, i_txCapacityPO(rr,r,ps):>6:0, i_txCapacityPO(r,rr,pss):>6:0, i_txCapacityPO(rr,r,pss):>6:0
+    ) ;
+    if(not sameas(ps,'initial'),
+      put i_txCapacity(r,rr,ps):>6:0, i_txCapacity(rr,r,ps):>6:0, i_txCapacity(r,rr,pss):>6:0, i_txCapacity(rr,r,pss):>6:0
+          i_txCapacityPO(r,rr,ps):>6:0, i_txCapacityPO(rr,r,ps):>6:0, i_txCapacityPO(r,rr,pss):>6:0, i_txCapacityPO(rr,r,pss):>6:0
+    ) ;
+    loop(nsegment(n), put intercept(r,rr,pss,n):>8:1 ) ;
+    loop(nsegment(n), put slope(r,rr,pss,n):>8:3 ) ;
+    put '    ' tupg.te(tupg) ;
+  ) ;
+  put / ;
+) ;
+* Might also consider writing i_txResistance(r,rr,ps), allowedStates(r,rr,ps), notAllowedStates(r,rr,ps), biPaths(r,rr), uniPaths(r,rr)
+* upgradedStates(r,rr,ps), validTransitions(r,rr,ps,pss), reactanceYr(r,rr,y), susceptanceYr(r,rr,y), mapArcNode(p,r,rr), BBincidence(p,r),
+* validTGC(tgc), and txCapCharge(r,rr,ps,y).
+* NB: Reactance and susceptance by year assumes exogenous or fixed timing of transmission expansion decisions, otherwise it stays at
+*     the level of initial year.
 
 
 * Write the plant data summaries.
