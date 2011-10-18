@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 17/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 18/10/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -205,7 +205,7 @@ Sets
   rvExpStepsScenSet(runVersions,experiments,steps,scenSet)          'All run version-experiment-steps-scenarioSets tuples loaded into GEMreports'
   reportDomain(experiments,steps,scenSet)                           'The single experiment-steps-scenarioSets tuple to be used in summmary report'
   rvRD(runVersions)                                                 'The runVersions to be used in summmary report'
-  sc(scen)                                                          '(Dynamically) selected elements of scenarios'
+  sc(scen)                                                          '(Dynamically) selected subsets of elements of scenarios'
   existBuildOrRetire(runVersions,experiments,steps,scenSet,g,y)     'Plant and years in which any plant either exists, is built, is refurbished or is retired'
   objc                                             'Objective function components'
                                                   / obj_Check       'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'

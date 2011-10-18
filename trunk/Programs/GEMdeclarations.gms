@@ -1,14 +1,15 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 17/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 18/10/2011 (imm@ea.govt.nz)
 
 $ontext
-  This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used throughout
-  the various GEM codes - up to and including GEMsolve, the program that solves the models. Symbols required only for
-  post-solve reporting purposes are declared in GEMreports.
-  In a very few cases (a handful of sets whose memebership never changes), the symbols are intialised here as well. In
-  other words, the membership of those sets is assigned at the time of declaration. In all other cases, set membership
-  and data values are obtained from user-specified input files, or are computed using the imported data.
+  This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
+  and including GEMsolve. Some symbols declared here are also used by GEMreports. Symbols required only for post-solve
+  reporting purposes are declared in GEMreports. In a few cases (a handful of sets whose membership never changes), the
+  symbols are intialised here as well. In other words, the membership of those sets is assigned at the time of declaration.
+  In all other cases, set membership and scalar/parameter values are obtained from user-specified input files, or are
+  computed within GEMdata using the imported data.
+
   The GEMdeclarations work file is saved and used at invocation to restart GEMdata.
 
  Code sections:
@@ -35,7 +36,8 @@ $offsymxref offsymlist
 *===============================================================================================
 * 1. Declare sets and parameters - the data for which is imported from input GDX files.
 
-* First declare 5 sets with non-varying membership that does not need to come from the input GDX files.
+* First, declare without initialising five sets (with fixed membership) that are not contained in the input GDX file.
+* But some symbols in the input GDX files are defined on these 5 sets.
 Sets
   y            'Modelled calendar years'
   ild          'Islands'
@@ -63,9 +65,9 @@ Sets
   hY           'Hydrology output years'
   v            'Hydro reservoirs or river systems'  ;
 
-Alias (g,gg), (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hY1), (col,red,green,blue) ;
+Alias (g,gg), (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hYY), (col,red,green,blue) ;
 
-* 36 mapping sets and subsets (grouped as per the navigation pane of emi)
+* 36 mapping sets and subsets (grouped thematically as per the navigation pane of emi)
 Sets
 * 22 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -112,7 +114,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 75 parameters (again, grouped as per the navigation pane of emi).
+* Declare 75 parameters (again, grouped thematically as per the navigation pane of emi).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -207,7 +209,7 @@ Parameters
 *    c) Various GEM configuration sets and parameters. 
 *    d) Declare all remaining sets and parameters.
 
-* a) Hard-coded sets (non-development users have no need to change these set elements).
+* a) Hard-coded sets (non-developer users have no need to change these set elements).
 Sets
   n                                             'Piecewise linear vertices'
   ct                                            'Capital expenditure types'           / genplt     'New generation plant'
@@ -262,7 +264,7 @@ Sets
 Sets
   experiments                                   'A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps'
   scenarios                                     'The various individual stochastic scenarios, or futures, or states of uncertainty'
-  sc(scenarios)                                 '(Dynamically) selected elements of scenarios'
+  sc(scenarios)                                 '(Dynamically) selected subsets of elements of scenarios'
   scenarioSets                                  'Create sets of scenarios to be used in a solve'
   mapScenarios(scenarioSets,scenarios)          'Map the individual scenarios to an scenario set (i.e. 1 or more scenarios make up an scenario set)'
   timingSolves(experiments,scenarioSets)        'Which scenario sets are used for the timing step of each experiment?'

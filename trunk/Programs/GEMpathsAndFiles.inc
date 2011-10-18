@@ -6,12 +6,12 @@ $setglobal baseRunVersion  "mds3"
 
 $setglobal GEMinputGDX     "standardGEMinput9LB.gdx"
 $setglobal GEMnetworkGDX   "2RegionNetwork.gdx"
-$setglobal GEMdemandGDX    "NRG_2Region9LB_TiwaiGoes.gdx"
+$setglobal GEMdemandGDX    "NRG_2Region9LB_Standard.gdx"
 
 $setglobal GEMoverrideGDX  "mds5_Override.gdx"
 
 $setglobal useOverrides     0
-$setglobal sprsGEMsolve     0
+$setglobal sprsGEMsolve     1
 $setglobal Mode             0
 
 
