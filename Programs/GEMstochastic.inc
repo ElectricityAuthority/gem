@@ -1,90 +1,111 @@
-* GEMstochastic.inc (the 'old way')
+* GEMstochastic.inc
 
-* A temporary GEM input file to contain the stuff related to scenarios that will need to come from
-* a yet to be created GUI in emi.
+* A GEM input file to contain the stuff related to scenarios that will need to come from a yet to be created GUI in emi.
 
-* 'pi' denotes perfect information, i.e. no uncertainty dealt with in this configuration.
-* 'Standard' implies this version of GEMstochastic enables the following solves to occur:
+* 'h' denotes hydro
 *  - timing with average hydrology 
 *  - reoptimisation with 1932 hydrology 
 *  - dispatch with sequential hydrology - 76 times 
 
-* Sets:
 Sets
-  experiments              'A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps' /
-                            standardExp /
+  experiments  'A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps' /
+    singleExp /
 
-  scenarios                'The various individual stochastic scenarios, or futures, or states of uncertainty' /
-*                           piAvg,  piDry, pi1932*pi2007 /
-                            piAvg /
+  scenarios    'The various individual stochastic scenarios, or futures, or states of uncertainty' /
+    avgHydro /
+*   avgHydro,  dryHydro, h1990*h2003 /
+*   avgHydro,  dryHydro, h1932*h2007 /
+*   h1992, h1998, h2000, h2002, h2003 /
+*   5hAvg, 5h1932*5h2007 /
 
-  scenarioSets             'Create sets of scenarios to be used in a solve' /
-*                           standardAvg, standardDry, standard1932*standard2007 /
-                            standardAvg  /
+  scenarioSets 'Sets of scenarios to be used in the same solve' /
+    averageHydro  /
+*   averageHydro, dryYrHydro, beginSeq1990*beginSeq2003 /
+*   averageHydro, dryYrHydro, beginSeq1932*beginSeq2007 /
+*   stochastic /
+*   standard5h,   standard1932*standard2007 /
 
 * Mapping sets:
-  mapScenarios(scenarioSets,scenarios)     'Map the individual scenarios to an scenario set (i.e. 1 or more scenarios make up an scenario set)' /
+  mapScenarios(scenarioSets,scenarios) 'Map each scenario to a scenarioSet (i.e. 1 or more scenarios make up an scenario set)' /
     #scenarioSets:#scenarios  /
+*   stochastic  .(h1992,h1998,h2000,h2002,h2003) /
 
-  timingSolves(experiments,scenarioSets)   'Which scenario sets are used for the timing step of each experiment?' /
-    standardExp    .  standardAvg   /
+  timingSolves(experiments,scenarioSets) 'Identify the scenarioSet to be used for the timing step of each experiment' /
+    singleExp   . averageHydro  /
+*   singleExp   . stochastic  /
 
-*  reoptSolves(experiments,scenarioSets)   'Which scenario sets are used for the reoptimisation step of each experiment?' /
-*   standardExp    .  standardDry   /
+* reoptSolves(experiments,scenarioSets) 'Identify the scenarioSet to be used for the re-optimisation step of each experiment' /
+*   singleExp   . dryYrHydro   /
 
-*  dispatchSolves(experiments,scenarioSets) 'Which scenario sets are used for the dispatch step of each experiment?' /
-*   standardExp    .(standard1932*standard2007) /
-*   standardExp    .(standard2004*standard2007) /
+* dispatchSolves(experiments,scenarioSets) 'Identify the scenarioSet to be used for the dispatch step of each experiment' /
+*   singleExp   .(beginSeq1990*beginSeq2003) /
+*   singleExp   .(beginSeq1932*beginSeq2007) /
 
-  mapSC_hY(scenarios,hY) 'Map historical hydro output years to scenarios (compute the average if more than one hydro year is specified)' /
-    piAvg          . (1932*2007) /
-*   piDry          .  1932
-*   pi2004.2004, pi2005.2005, pi2006.2006, pi2007.2007  /
-*   pi1932.1932, pi1933.1933, pi1934.1934, pi1935.1935, pi1936.1936, pi1937.1937, pi1938.1938, pi1939.1939, pi1940.1940
-*   pi1941.1941, pi1942.1942, pi1943.1943, pi1944.1944, pi1945.1945, pi1946.1946, pi1947.1947, pi1948.1948, pi1949.1949, pi1950.1950
-*   pi1951.1951, pi1952.1952, pi1953.1953, pi1954.1954, pi1955.1955, pi1956.1956, pi1957.1957, pi1958.1958, pi1959.1959, pi1960.1960
-*   pi1961.1961, pi1962.1962, pi1963.1963, pi1964.1964, pi1965.1965, pi1966.1966, pi1967.1967, pi1968.1968, pi1969.1969, pi1970.1970
-*   pi1971.1971, pi1972.1972, pi1973.1973, pi1974.1974, pi1975.1975, pi1976.1976, pi1977.1977, pi1978.1978, pi1979.1979, pi1980.1980
-*   pi1981.1981, pi1982.1982, pi1983.1983, pi1984.1984, pi1985.1985, pi1986.1986, pi1987.1987, pi1988.1988, pi1989.1989, pi1990.1990
-*   pi1991.1991, pi1992.1992, pi1993.1993, pi1994.1994, pi1995.1995, pi1996.1996, pi1997.1997, pi1998.1998, pi1999.1999, pi2000.2000
-*   pi2001.2001, pi2002.2002, pi2003.2003, pi2004.2004, pi2005.2005, pi2006.2006, pi2007.2007  /
+  mapSC_hY(scenarios,hY) 'Map historical hydro output years to scenarios (Note that the average is computed if more than one hydro year is specified)' /
+    avgHydro    .(1932*2007) /
 
-  mapSC_hydroSeqTypes(scenarios,hydroSeqTypes) 'Map the way hydrology sequences are developed (same or sequential) to scenarios' /
-    piAvg    . Same /
-*   piDry    . Same
-*  (pi1932*pi2007).Sequential  /
-*  (pi2004*pi2007).Sequential  /
+*   avgHydro    .(1990*2003)
+*   dryHydro    . 1932
+*   h1990.1990, h1991.1991, h1992.1992, h1993.1993, h1994.1994, h1995.1995, h1996.1996, h1997.1997, h1998.1998, h1999.1999
+*   h2000.2000, h2001.2001, h2002.2002, h2003.2003 /
+
+*   avgHydro    .(1932*2007)
+*   dryHydro    . 1932
+*                           h1932.1932, h1933.1933, h1934.1934, h1935.1935, h1936.1936, h1937.1937, h1938.1938, h1939.1939
+*   h1940.1940, h1941.1941, h1942.1942, h1943.1943, h1944.1944, h1945.1945, h1946.1946, h1947.1947, h1948.1948, h1949.1949
+*   h1950.1950, h1951.1951, h1952.1952, h1953.1953, h1954.1954, h1955.1955, h1956.1956, h1957.1957, h1958.1958, h1959.1959
+*   h1960.1960, h1961.1961, h1962.1962, h1963.1963, h1964.1964, h1965.1965, h1966.1966, h1967.1967, h1968.1968, h1969.1969
+*   h1970.1970, h1971.1971, h1972.1972, h1973.1973, h1974.1974, h1975.1975, h1976.1976, h1977.1977, h1978.1978, h1979.1979
+*   h1980.1980, h1981.1981, h1982.1982, h1983.1983, h1984.1984, h1985.1985, h1986.1986, h1987.1987, h1988.1988, h1989.1989
+*   h1990.1990, h1991.1991, h1992.1992, h1993.1993, h1994.1994, h1995.1995, h1996.1996, h1997.1997, h1998.1998, h1999.1999
+*   h2000.2000, h2001.2001, h2002.2002, h2003.2003, h2004.2004, h2005.2005, h2006.2006, h2007.2007  /
+
+*   h1992.1992, h1998.1998, h2000.2000, h2002.2002, h2003.2003 /
+
+*   5h2004.2004, 5h2005.2005, 5h2006.2006, 5h2007.2007  /
+
+*                             5h1932.1932, 5h1933.1933, 5h1934.1934, 5h1935.1935, 5h1936.1936, 5h1937.1937, 5h1938.1938, 5h1939.1939
+*   5h1940.1940, 5h1941.1941, 5h1942.1942, 5h1943.1943, 5h1944.1944, 5h1945.1945, 5h1946.1946, 5h1947.1947, 5h1948.1948, 5h1949.1949
+*   5h1950.1950, 5h1951.1951, 5h1952.1952, 5h1953.1953, 5h1954.1954, 5h1955.1955, 5h1956.1956, 5h1957.1957, 5h1958.1958, 5h1959.1959
+*   5h1960.1960, 5h1961.1961, 5h1962.1962, 5h1963.1963, 5h1964.1964, 5h1965.1965, 5h1966.1966, 5h1967.1967, 5h1968.1968, 5h1969.1969
+*   5h1970.1970, 5h1971.1971, 5h1972.1972, 5h1973.1973, 5h1974.1974, 5h1975.1975, 5h1976.1976, 5h1977.1977, 5h1978.1978, 5h1979.1979
+*   5h1980.1980, 5h1981.1981, 5h1982.1982, 5h1983.1983, 5h1984.1984, 5h1985.1985, 5h1986.1986, 5h1987.1987, 5h1988.1988, 5h1989.1989
+*   5h1990.1990, 5h1991.1991, 5h1992.1992, 5h1993.1993, 5h1994.1994, 5h1995.1995, 5h1996.1996, 5h1997.1997, 5h1998.1998, 5h1999.1999
+*   5h2000.2000, 5h2001.2001, 5h2002.2002, 5h2003.2003, 5h2004.2004, 5h2005.2005, 5h2006.2006, 5h2007.2007  /
+
+  mapSC_hydroSeqTypes(scenarios,hydroSeqTypes) 'Map the way hydrology sequences are developed (same or sequential) for each scenario' /
+    avgHydro    . Same  /
+*   avgHydro    . Same
+*   dryHydro    . Same
+*  (h1990*h2003).Sequential  /
+*  (h1932*h2007).Sequential  /
+*  (h1992,h1998,h2000,h2002,h2003).same /
+*  (5h2004*5h2007).Sequential  /
+*  (5h1932*5h2007).Sequential  /
   ;
 
-* Parameters:
 Parameters
-* scenarioPeakLoadFactor(scenarios)  'Scenario-specific scaling factor for peak load data'     / perfInfAvg 1.0 /
-* scenarioCO2TaxFactor(scenarios)    'Scenario-specific scaling factor for CO2 tax data'       / perfInfAvg 1.0 /
-* scenarioFuelCostFactor(scenarios)  'Scenario-specific scaling factor for fuel cost data'     / perfInfAvg 1.0 /
-* scenarioNRGFactor(scenarios)       'Scenario-specific scaling factor for energy demand data' / perfInfAvg 1.0 /
-  scenarioPeakLoadFactor(scenarios)  'Scenario-specific scaling factor for peak load data'
-  scenarioCO2TaxFactor(scenarios)    'Scenario-specific scaling factor for CO2 tax data'
-  scenarioFuelCostFactor(scenarios)  'Scenario-specific scaling factor for fuel cost data'
-  scenarioNRGFactor(scenarios)       'Scenario-specific scaling factor for energy demand data'
-  ;
+  scenarioPeakLoadFactor(scenarios)            'Scenario-specific scaling factor for peak load data'
+  scenarioCO2TaxFactor(scenarios)              'Scenario-specific scaling factor for CO2 tax data'
+  scenarioFuelCostFactor(scenarios)            'Scenario-specific scaling factor for fuel cost data'
+  scenarioNRGFactor(scenarios)                 'Scenario-specific scaling factor for energy demand data'
+  weightScenariosBySet(scenarioSets,scenarios) 'Assign weights to the scenarios comprising each set of scenarios' ;
 
-  scenarioPeakLoadFactor(scenarios) = 1 ;
-  scenarioCO2TaxFactor(scenarios)   = 1 ;
-  scenarioFuelCostFactor(scenarios) = 1 ;
-  scenarioNRGFactor(scenarios)      = 1 ;
+scenarioPeakLoadFactor(scenarios) = 1 ;
+scenarioCO2TaxFactor(scenarios)   = 1 ;
+scenarioFuelCostFactor(scenarios) = 1 ;
+scenarioNRGFactor(scenarios)      = 1 ;
+
+weightScenariosBySet(scenarioSets,scenarios)$mapScenarios(scenarioSets,scenarios) = 1 ;
 
 *Table weightScenariosBySet(scenarioSets,scenarios) 'Assign weights to the scenarios comprising each set of scenarios'
-*                piAvg   piDry
-*  standardAvg     1       0
-*  standardDry     0       1   ;
-
-Parameter weightScenariosBySet(scenarioSets,scenarios) 'Assign weights to the scenarios comprising each set of scenarios' ;
-weightScenariosBySet(scenarioSets,scenarios)$mapScenarios(scenarioSets,scenarios) = 1 ;
+*                h1992 h1998 h2000 h2002 h2003
+*  stochastic     .08   .08   .28   .28   .28   ;
 
 
 * Collect the scenarioSet-to-experiments mappings by step into a single set (allSolves).
 Set allSolves(experiments,steps,scenarioSets) 'Scenario sets by experiment and step';
-allSolves(experiments,'timing',scenarioSets)   = timingSolves(experiments,scenarioSets) ;
+allSolves(experiments,'timing',scenarioSets)    = timingSolves(experiments,scenarioSets) ;
 *allSolves(experiments,'reopt',scenarioSets)    = reoptSolves(experiments,scenarioSets) ;
 *allSolves(experiments,'dispatch',scenarioSets) = dispatchSolves(experiments,scenarioSets) ;
 
