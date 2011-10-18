@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 17/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 18/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -14,10 +14,10 @@
 *     Parameters: i_fixedOM.
 
 $ontext
- This program continues sequentially from GEMdata. The GEMdata work file must be called
- at invocation. Note that GEMdata was invoked by restarting from the GEMdeclarations work
- file. This program is followed by another invocation of GEMsolve or by runMergeGDXs and
- and then GEMreports.
+ This program continues sequentially from GEMdata. The GEMdata work file must be called at invocation
+ of GEMsolve. Note that GEMdata was invoked by restarting from the GEMdeclarations work file. Hence,
+ GEMsolve embodies all that is declared and/or initialised within GEMdeclarations and GEMdata. GEMsolve
+ may be followed by another invocation of GEMdata/GEMsolve or by runMergeGDXs followed by GEMreports.
 
  Code sections:
   1. Take care of preliminaries.
@@ -252,16 +252,16 @@ $ label noGRschedule2
       loop(sc(scen),
         if(mapSC_hydroSeqTypes(scen,'same'),
           modelledHydroOutput(g,y,t,scen) = hydroOutputScalar *
-            sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapSC_hY(scen,hY)), historicalHydroOutput(v,hY,m)) / sum(mapSC_hY(scen,hY1), 1) ;
+            sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapSC_hY(scen,hY)), historicalHydroOutput(v,hY,m)) / sum(mapSC_hY(scen,hYY), 1) ;
 *         Capture the current mapping of hydroyears to modelled years.
-          mapHydroYearsToModelledYears(experiments,steps,scenSet,sc,y,hY)$( ord(hY) = sum(mapSC_hY(scen,hY1), 1) ) = yes ;
+          mapHydroYearsToModelledYears(experiments,steps,scenSet,sc,y,hY)$( ord(hY) = sum(mapSC_hY(scen,hYY), 1) ) = yes ;
 *         Assign hydro output to potential new plant linked to existing schedulable hydro plant.
           hydroOutputUpgrades(schedHydroUpg(gg),y,t,sc) = sum(mapSH_Upg(g,gg)$i_namePlate(g), modelledHydroOutput(g,y,t,sc) / i_namePlate(g) ) ;
           else
           loop(y,
             chooseHydroYears(hY) = no ;
-            chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scen, hY1) and ord(hY1) + ord(y) - 1            = ord(hY)), 1)) = yes ;
-            chooseHydroYears(hY)$(sum(hY1$(mapSC_hY(scen, hY1) and ord(hY1) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
+            chooseHydroYears(hY)$(sum(hYY$(mapSC_hY(scen, hYY) and ord(hYY) + ord(y) - 1            = ord(hY)), 1)) = yes ;
+            chooseHydroYears(hY)$(sum(hYY$(mapSC_hY(scen, hYY) and ord(hYY) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
             modelledHydroOutput(g,y,t,sc) =
               sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
 *           Capture the current mapping of hydroyears to modelled years. 

@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 17/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 18/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -11,16 +11,16 @@
 
 $ontext
  This program prepares the data for a single run of GEM (note that a GEM run may comprise many experiments and
- scenarios). GEMdata imports the input data from GDX files, undertakes some manipulations, transformations, and
+ scenarios). GEMdata imports the input data from GDX files, undertakes some manipulations/transformations, and
  performs integrity checks. It finishes by writing out some input data summary tables.
 
  The GEMdata invocation requires GEMdata to be restarted from the GEMdeclarations work file. The files
  called GEMpathsAndFiles.inc, GEMsettings.inc and GEMstochastic.inc are included into GEMdata. The GEMdata work
- file is saved and used to restart GEMsolve. GEMsolve is invoked immediately after GEMdata.
+ file is saved and used to start GEMsolve. GEMsolve is invoked immediately after GEMdata.
 
  Code sections:
   1. Take care of a few preliminaries.
-  2. Load input data that comes from the input GDX files (or the paths/settings include files).
+  2. Load data that comes from the 3 input GDX files and/or the override files (also from GEMsettings for set y).
   3. Initialise sets and parameters.
      a) Time/date-related sets and parameters.
      b) Various mappings, subsets and counts.
@@ -28,6 +28,7 @@ $ontext
      d) Generation data.
      e) Transmission data.
      f) Reserve energy data.
+     g) Create set of VOLL plant - one per region.
   4. Prepare the scenario-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
   5. Display sets and parameters.
   6. Create input data summaries.
@@ -48,7 +49,7 @@ option seed = 101 ;
 $include GEMpathsAndFiles.inc
 $include GEMsettings.inc
 
-* Turn the following stuff on/off as desired.
+* Turn the following on/off as desired.
 $offupper onempty inlinecom { } eolcom !
 $offuelxref offuellist	
 *$onuelxref  onuellist	
@@ -72,13 +73,13 @@ execute 'temp.bat' ;
 
 
 *===============================================================================================
-* 2. Load input data that comes from the input GDX files (or the paths/settings include files).
+* 2. Load data that comes from the 3 input GDX files and/or the override files (also from GEMsettings for set y).
 *    NB: Some symbols in the input GDX files are defined on years that may extend beyond %firstYear% and %lastYear%.
 *        Hence, those symbols must be loaded without domain checking, i.e. $load c.f. $loaddc.
 
 Set y  / %firstYear% * %lastYear% / ;
 
-* Load the 109 network invariant symbols from GEMinputGDX.
+* Load 128 symbols from 3 input GDX files: 109 from GEMinputGDX, 18 from GEMnetworkGDX, and 1 from GEMdemandGDX.
 $gdxin "%DataPath%\%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
@@ -104,7 +105,6 @@ $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
 $load   i_reserveReqMW i_fkNI i_largestGenerator i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
 $load   i_firstHydroYear i_historicalHydroOutput
 
-* Load the 18 region/network-related symbols from GEMnetworkGDX.
 $gdxin "%DataPath%\%GEMnetworkGDX%"
 * Sets
 $loaddc r p ps tupg mapLocations regionCentroid txUpgradeTransitions mapArcNode
@@ -112,7 +112,6 @@ $loaddc r p ps tupg mapLocations regionCentroid txUpgradeTransitions mapArcNode
 $loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
 $loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 
-* Load the energy demand from GEMdemandGDX.
 $gdxin "%DataPath%\%GEMdemandGDX%"
 $load   i_NrgDemand
 
@@ -215,8 +214,9 @@ yearNum(y) = firstYear + ord(y) - 1 ;
 firstPeriod(t)$( ord(t) = 1 ) = yes ;
 
 * Abort if modelled years are not a subset of data years.
-abort$( %firstYear% < i_firstDataYear ) "First modelled year precedes first data year",        i_firstDataYear, firstYr ;
-abort$( %lastYear%  > i_lastDataYear )  "Last modelled year is later than the last data year", i_lastDataYear, lastYr ;
+abort$( firstYear < i_firstDataYear ) "First modelled year precedes first data year",             i_firstDataYear, firstYear, firstYr ;
+abort$( lastYear  > i_lastDataYear )  "Last modelled year is later than the last data year",      i_lastDataYear, lastYear, lastYr ;
+abort$( firstYear > lastYear )        "First modelled year is later than the last modelled year", firstYear, firstYr, lastYear, lastYr ;
 
 * Denote each hydro year set element with a real number corresponding to that year, i.e. 1932 = 1932, 1933 = 1933,...2002 = 2002, etc.
 hydroYearNum(hY) = i_firstHydroYear + ord(hY) - 1 ;
@@ -598,8 +598,7 @@ bigM(ild1,ild) =
  smin((paths(r,rr),ps)$( mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacityPO(paths,ps) ) ;
 
 
-
-* Write out the set membership for VOLL plant - based on number of regions.
+* g) Create set of VOLL plant - one per region.
 put VOLLplant
 'Set s /'           loop(r, put / "'VOLL" r.tl "'" ) ; put '  /;' //
 'Set maps_r(s,r) /' loop(r, put / "'VOLL" r.tl "'.'" r.tl "'" ) ; put '  /;' ;
@@ -647,7 +646,6 @@ counter = 0 ;
 loop(scenSet,
   counter = sum(scen, weightScenariosBySet(scenSet,scen)) ;
   weightScenariosBySet(scenSet,scen)$counter = weightScenariosBySet(scenSet,scen) / counter ;
-  counter = 0 ;
 ) ;
 
 * Compute the short-run marginal cost (and its components) for each generating plant, $/MWh.
@@ -735,8 +733,7 @@ Files
   plantData         / "%OutPath%\%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
   capexStats        / "%OutPath%\%runName%\Input data checks\Capex, MW and GWh summaries - %runName%_%runVersionName%.txt" /
   loadSummary       / "%OutPath%\%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
-  lrmc_inData       / "%OutPath%\%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" /
-  ;
+  lrmc_inData       / "%OutPath%\%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" / ;
 
 stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;
 txData.lw = 0 ;            txData.pw = 999 ;
@@ -803,7 +800,6 @@ loop(allSolves(experiments,steps,scenSet),
     loop(mapSC_hY(scen,hY), put hY.tl:<5 ) ;
   ) ;
 );
-
 
 
 * Write the transmission data summaries.
