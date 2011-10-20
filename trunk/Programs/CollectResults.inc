@@ -9,7 +9,7 @@
 * Free Variables
   s_TOTALCOST(steps,scenarioSets)                            = TOTALCOST.l ;
   s_SCENARIO_COSTS(steps,scenarioSets,sc)                    = SCENARIO_COSTS.l(sc) ;
-  if(DCloadFlow = 1,
+  if(DCloadFlowOn,
     s_TX(steps,scenarioSets,r,rr,y,t,lb,sc)$( TX.l(r,rr,y,t,lb,sc) > 0 ) = TX.l(r,rr,y,t,lb,sc) ;
     else
     s_TX(steps,scenarioSets,r,rr,y,t,lb,sc)                  = TX.l(r,rr,y,t,lb,sc) ;

@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 18/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 20/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -111,18 +111,18 @@ VOLLGEN.fx(s,y,t,lb,scen)$( ord(lb) <= noVOLLblks ) = 0 ;            ! Don't all
 
 * Fix bounds on TX according to the largest capacity allowed in any state. Lower bound must be zero if transportation formulation is being used.
 TX.lo(paths,y,t,lb,scen) = -smax(ps, i_txCapacity(paths,ps)) ;
-TX.lo(paths,y,t,lb,scen)$(DCloadFlow = 0) = 0 ;
+TX.lo(paths,y,t,lb,scen)$(DCloadFlowOn = 0) = 0 ;
 TX.up(paths,y,t,lb,scen) = +smax(ps, i_txCapacity(paths,ps)) ;
 
 * Fix the reference bus angle to zero (only used in case of DC load flow formulation).
 THETA.fx(slackBus(r),y,t,lb,scen) = 0 ;
 
 * Fix various reserves variables to zero if they are not needed.
-RESV.fx(g,rc,y,t,lb,scen)$(            ( not useReserves ) or ( not reservesCapability(g,rc) ) ) = 0 ;
-RESVVIOL.fx(rc,ild,y,t,lb,scen)$(        not useReserves ) = 0 ;
-RESVTRFR.fx(rc,ild,ild1,y,t,lb,scen)$( ( not useReserves ) or singleReservesReqF(rc) ) = 0 ;
-RESVREQINT.fx(rc,ild,y,t,lb,scen)$(      not useReserves ) = 0 ;
-NORESVTRFR.fx(ild,ild1,y,t,lb,scen)$(    not useReserves ) = 0 ;
+RESV.fx(g,rc,y,t,lb,scen)$(            ( not reservesOn ) or ( not reservesCapability(g,rc) ) ) = 0 ;
+RESVVIOL.fx(rc,ild,y,t,lb,scen)$(        not reservesOn ) = 0 ;
+RESVTRFR.fx(rc,ild,ild1,y,t,lb,scen)$( ( not reservesOn ) or singleReservesReqF(rc) ) = 0 ;
+RESVREQINT.fx(rc,ild,y,t,lb,scen)$(      not reservesOn ) = 0 ;
+NORESVTRFR.fx(ild,ild1,y,t,lb,scen)$(    not reservesOn ) = 0 ;
 
 * Fix to zero the intra-island reserve variables.
 RESVTRFR.fx(rc,ild,ild,y,t,lb,scen) = 0 ;
@@ -132,7 +132,7 @@ NORESVTRFR.fx(ild,ild,y,t,lb,scen)  = 0 ;
 RESVREQINT.lo(rc,ild,y,t,lb,scen)$( i_reserveReqMW(y,ild,rc) > 0 ) = i_reserveReqMW(y,ild,rc) * hoursPerBlock(t,lb) ;
 
 * Reserve contribution cannot exceed the specified capability during peak or other periods.
-RESV.up(g,rc,y,t,lb,scen)$( useReserves and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
+RESV.up(g,rc,y,t,lb,scen)$( reservesOn and reservesCapability(g,rc) ) = reservesCapability(g,rc) * hoursPerBlock(t,lb) ;
 
 * Don't allow reserves from units prior to committed date or earliest allowable operation or if plant is retired.
 RESV.fx(g,rc,y,t,lb,scen)$( not validYrOperate(g,y) ) = 0 ;
@@ -388,26 +388,26 @@ $     include CollectResults.inc
   execute_unload
 *+++++++++++++++++++++++++
 * More non-free reserves code.
-  s_RESVCOMPONENTS, s_calc_nfreserves, s_resv_capacity
+  s_RESVCOMPONENTS s_calc_nfreserves s_resv_capacity
 *+++++++++++++++++++++++++
 * Free Variables
-  s_TOTALCOST, s_SCENARIO_COSTS, s_TX, s_THETA
+  s_TOTALCOST s_SCENARIO_COSTS s_TX s_THETA
 * Binary Variables
-  s_BGEN, s_BRET, s_ISRETIRED, s_BTX, s_NORESVTRFR
+  s_BGEN s_BRET s_ISRETIRED s_BTX s_NORESVTRFR
 * Positive Variables
-  s_REFURBCOST, s_GENBLDCONT, s_CGEN, s_BUILD, s_RETIRE, s_CAPACITY, s_TXCAPCHARGES, s_GEN, s_VOLLGEN, s_PUMPEDGEN, s_LOSS, s_TXPROJVAR, s_TXUPGRADE
+  s_REFURBCOST s_GENBLDCONT s_CGEN s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_PUMPEDGEN s_LOSS s_TXPROJVAR s_TXUPGRADE
 * Reserve variables
-  s_RESV, s_RESVVIOL, s_RESVTRFR, s_RESVREQINT
+  s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
 * Penalty variables
-  s_RENNRGPENALTY, s_PEAK_NZ_PENALTY, s_PEAK_NI_PENALTY, s_NOWINDPEAK_NI_PENALTY
+  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
 * Slack variables
-  s_ANNMWSLACK, s_RENCAPSLACK, s_HYDROSLACK, s_MINUTILSLACK, s_FUELSLACK
+  s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
 * Equations (ignore the objective function)
-  s_calc_scenarioCosts, s_calc_refurbcost, s_calc_txcapcharges, s_bldgenonce, s_buildcapint, s_buildcapcont, s_annnewmwcap, s_endogpltretire, s_endogretonce
-  s_balance_capacity, s_bal_supdem, s_peak_nz, s_peak_ni, s_noWindPeak_ni, s_limit_maxgen, s_limit_mingen, s_minutil, s_limit_fueluse, s_limit_nrg
-  s_minreq_rennrg, s_minreq_rencap, s_limit_hydro, s_limit_pumpgen1, s_limit_pumpgen2, s_limit_pumpgen3, s_boundtxloss, s_tx_capacity, s_tx_projectdef
-  s_tx_onestate, s_tx_upgrade, s_tx_oneupgrade, s_tx_dcflow, s_tx_dcflow0, s_equatetxloss, s_txGrpConstraint, s_resvsinglereq1, s_genmaxresv1, s_resvtrfr1
-  s_resvtrfr2, s_resvtrfr3, s_resvrequnit, s_resvreq2, s_resvreqhvdc, s_resvtrfr4, s_resvtrfrdef, s_resvoffcap, s_resvreqwind
+  s_calc_scenarioCosts s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire s_endogretonce
+  s_balance_capacity s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg
+  s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3 s_boundtxloss s_tx_capacity s_tx_projectdef
+  s_tx_onestate s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1 s_resvtrfr1
+  s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind
   ;
 
 * Repeat the output dump to a GDX file named after the experiment, but this time dump only the output required for reporting.
@@ -415,11 +415,12 @@ $     include CollectResults.inc
   put_utility 'gdxout' / '%OutPath%\%runName%\GDX\temp\RepOut\' experiments.tl ;
   execute_unload
 * Variable levels
-  s_TOTALCOST, s_TX, s_REFURBCOST, s_BUILD, s_RETIRE s_CAPACITY, s_TXCAPCHARGES, s_GEN, s_VOLLGEN
-  s_RENNRGPENALTY, s_PEAK_NZ_PENALTY, s_PEAK_NI_PENALTY, s_NOWINDPEAK_NI_PENALTY
-  s_ANNMWSLACK, s_RENCAPSLACK, s_HYDROSLACK, s_MINUTILSLACK, s_FUELSLACK, s_RESV, s_RESVVIOL, s_RESVCOMPONENTS
+  s_TOTALCOST s_TX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN
+  s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
+  s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK s_RESV s_RESVVIOL s_RESVCOMPONENTS
 * Equation marginals (ignore the objective function)
-  s_bal_supdem, s_peak_nz, s_peak_ni, s_noWindPeak_ni
+  s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_Nrg
+  s_minReq_RenNrg s_minReq_RenCap s_limit_hydro s_tx_capacity
   ;
 
 * End of experiments loop.
@@ -456,21 +457,21 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   yearNum taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
   capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost locationFactor capexPlant refurbCapexPlant
   capCharge refurbCapCharge txCapCharge
-  i_largestGenerator i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI i_fkNI
+  i_winterCapacityMargin i_SIACrisk i_fkSI i_fkNI i_HVDClossesAtMaxXfer i_largestGenerator i_P200ratioNZ i_P200ratioNI
   i_fixedOM i_HVDCshr i_HVDClevy totalFuelCost CO2taxByPlant srmc i_plantReservesCost
 * Generation plant related sets and parameters
   exist noExist commit new neverBuild nigen sigen possibleToBuild validYrBuild linearPlantBuild integerPlantBuild validYrOperate
   exogMWretired possibleToEndogRetire possibleToRetire possibleToRefurbish continueAftaEndogRetire peakConPlant NWpeakConPlant
   endogenousRetireDecisnYrs endogenousRetireYrs movers i_nameplate i_heatRate initialCapacity maxCapFactPlant minCapFactPlant AnnualMWlimit
-  i_minUtilisation i_maxNrgByFuel renNrgShrOn i_renewNrgShare i_renewCapShare i_fof
+  i_minUtilisation i_maxNrgByFuel renNrgShrOn renCapShrOn niNWpeakCnstrntOn i_renewNrgShare i_renewCapShare i_fof
   i_distdGenRenew i_distdGenFossil i_pumpedHydroEffic i_PumpedHydroMonth i_UnitLargestProp MWtoBuild
 * Load and peak
   hoursPerBlock AClossFactors scenarioNRGfactor i_NrgDemand NrgDemand ldcMW scenarioPeakLoadFactor peakLoadNZ peakLoadNI
 * Transmission and grid
-  DCloadFlow transitions validTransitions allowedStates upgradedStates i_txCapacity i_txCapacityPO
+  DCloadFlowOn transitions validTransitions allowedStates upgradedStates i_txCapacity i_txCapacityPO
   slope intercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 * Reserves
-  useReserves singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve
+  reservesOn singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve
 * Hydro related sets and parameters
   hydroOutputScalar allModelledHydroOutput allHydroOutputUpgrades mapHydroYearsToModelledYears
 * Penalties
