@@ -9,11 +9,6 @@ $setglobal GEMtype RMIP
 * Specify whether GEM is to be a MIP or an RMIP - take care to get the spelling exact (default = MIP).
 $setglobal DISPtype RMIP
 * Specify whether DISP is to be a MIP or an RMIP - take care to get the spelling exact (default = RMIP).
-$setglobal SuppressReopt 1
-* Select 1 when in GEM/DISP or GEM-only mode (i.e. RunType = 0 or 1) to skip re-optimisation of the GEM MIP; Otherwise select 0 to invoke re-optimisation.
-$setglobal SprsRenShrReo 0
-* Select 1 to suppress the renewable energy share constraint when/if solving the re-optimisation (REO) model; 0 otherwise.
-$setglobal SprsRenShrDis 1
 * Select 1 to suppress the renewable energy share constraint when/if solving the simulation (DISP) model; 0 otherwise.  
 $setglobal GRscheduleWrite 1
 * Select 1 to write out a GAMS-readable schedule of variables to be used to fix levels in subsequent models.
@@ -38,10 +33,15 @@ Scalar randomCapexCostAdjuster / 0 / ;
 
 
 *+++ GemConstraints +++
+Scalar renNrgShrOn / 0 / ;
+Scalar renCapShrOn / 0 / ;
+Scalar niNWpeakCnstrntOn / 1 / ;
+Scalar limitNrgByFuelOn / 1 / ;
+Scalar reservesOn / 0 / ;
+Scalar DCloadFlowOn / 0 / ;
 Scalar cGenYr / 2025 / ;
 Scalar AnnualMWlimit / 1000 / ;
 Scalar noRetire / 2 / ;
-Scalar renNrgShrOn / 1 / ;
 Scalar VOLLcap / 500 / ;
 Scalar VOLLcost / 10000 / ;
 *Scalar penaltyViolatePeakLoad / 4000 / ;
@@ -51,8 +51,6 @@ Scalar penaltyViolateRenNrg / 99999 / ;
 
 Scalar slackCost / 9999 / ;
 Scalar noVOLLblks / 0 / ;
-Scalar DCloadFlow / 0 / ;
-Scalar useReserves / 0 / ;
 $setglobal NumVertices 4
 * Number of vertices for piecewise linear transmission losses function (number of vertices = number of segments  + l) ;  
 

@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 18/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 20/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -114,7 +114,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 75 parameters (again, grouped thematically as per the navigation pane of emi).
+* Declare 78 parameters (again, grouped thematically as per the navigation pane of emi).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -126,7 +126,7 @@ Parameters
   i_peakContribution(k)                         'Contribution to peak by technology'
   i_NWpeakContribution(k)                       'The no wind contribution to peak by technology'
   i_capFacTech(k)                               'An assumed (rather than modelled) technology-specific capacity factor - used when computing LRMCs based on input data (i.e. prior to solving the model)'
-  i_FOFmultiplier(k,lb)                         'Forced outage factor multiplier (default = 1)'
+  i_FOFmultiplier(k,lb)                         'Forced outage factor multiplier'
   i_maxNrgByFuel(f)                             'Maximum proportion of total energy from any one fuel type (0-1)'
   i_emissionFactors(f)                          'CO2e emissions, tonnes CO2/PJ'
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
@@ -146,7 +146,7 @@ Parameters
   i_PumpedHydroMonth(g)                         'Limit on energy per month from pumped hydro plant, GWh'
   i_PumpedHydroEffic(g)                         'Efficiency of pumped energy to stored energy, MWh stored per MWh pumped < 1'
   i_minHydroCapFact(g)                          'Minimum capacity factors for selected schedulable hydro plant'
-  i_maxHydroCapFact(g)                          'Maximum capacity factors for selected schedulable hydro plant (default = 1)'
+  i_maxHydroCapFact(g)                          'Maximum capacity factors for selected schedulable hydro plant'
   i_fixedOM(g)                                  'Fixed O&M costs by plant, $/kW/year'
   i_varOM(g)                                    'Variable O&M costs by plant, $/MWh'
   i_varFuelCosts(g)                             'Variable fuel production and delivery costs (over and above the energy cost of fuel at source), $/GJ'
@@ -156,7 +156,7 @@ Parameters
   i_refurbCapitalCost(g)                        'Generation plant refurbishment capital cost, $/kW'
   i_plantReservesCap(g,rc)                      'Plant-specific capability per reserve class (0-1 but define only when > 0)'
   i_plantReservesCost(g,rc)                     'Plant-specific cost per reserve class, $/MWh'
-  i_PltCapFact(g,m)                             'Plant-specific capacity factor (default = 1)'
+  i_PltCapFact(g,m)                             'Plant-specific capacity factor'
   i_minUtilisation(g,y)                         'Minimum utilisation of plant by year, proportion (0-1 but only defined when > 0)'
   i_HVDCshr(o)                                  'Share of HVDC charge to be incurred by plant owner'
   i_renewNrgShare(y)                            'Proportion of total energy to be generated from renewable sources by year (0-1 but define only when > 0)'
@@ -184,15 +184,18 @@ Parameters
   i_HalfHrsPerBlk(m,lb)                         'Count of half hours per load block in each month'
   i_NrgDemand(r,y,t,lb)                         'Load by region, year, time period and load block, GWh'
   i_inflation(y)                                'Inflation rates by year'
-* 10 reserves and security
+* 13 reserves and security
   i_ReserveSwitch(rc)                           'Switch to activate reserves by reserves class'
   i_ReserveAreas(rc)                            'Number of reserves areas (Single or system-wide = 1, By island = 2)'
   i_propWindCover(rc)                           'Proportion of wind to cover by reserve class (0-1 but define only when > 0)'
   i_ReservePenalty(ild,rc)                      'Reserve violation penalty, $/MWh'
   i_reserveReqMW(y,ild,rc)                      'Reserve requirement by year, island, and class, MW'
-  i_fkNI(y)                                     'Required frequency keeping in North Island by year, MW'
-  i_largestGenerator(y)                         'Largest generation plant by year, MW'
   i_winterCapacityMargin(y)                     'Required winter capacity margin, MW' 
+  i_SIACrisk(y)                                 'Required cover for South Island AC risk by year, MW'
+  i_fkSI(y)                                     'Required frequency keeping in South Island by year, MW'
+  i_fkNI(y)                                     'Required frequency keeping in North Island by year, MW'
+  i_HVDClossesAtMaxXfer(y)                      'Required cover for HVDC (bi-pole) losses at maximum transfer by year, MW'
+  i_largestGenerator(y)                         'Largest generation plant by year, MW'
   i_P200ratioNZ(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), New Zealand'   
   i_P200ratioNI(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), North Island'   
 * 2 hydrology
@@ -300,6 +303,12 @@ Sets
 Parameters
   firstYear                                     'First modelled year - as a scalar, not a set'
   lastYear                                      'Last modelled year - as a scalar, not a set'
+  renNrgShrOn                                   'Switch to control usage of renewable energy share constraint (1=0n/0=off)'
+  renCapShrOn                                   'Switch to control usage of renewable capacity share constraint (1=0n/0=off)'
+  niNWpeakCnstrntOn                             'Switch to control usage of the NI no wind peak security constraint (1=0n/0=off)'
+  limitNrgByFuelOn                              'Switch to control usage of the constraint that limits energy by fuel type (1=0n for all fuels for which i_maxNrgByFuel is non-zero/0=off for all fuels)'
+  reservesOn                                    'Switch to control usage of at least one reserve class (1=at least one class in use/0=no reserve classes)'
+  DCloadFlowOn                                  'Switch to control usage of DC load flow formulation (1=DC load flow/0=transshipment)'
   noRetire                                      'Number of years following and including the first modelled year for which endogenous generation plant retirement decisions are prohibited'
   AnnualMWlimit                                 'Upper bound on total MW of new plant able to be built nationwide in any single year'
   VOLLcap                                       'Nameplate capacity of each VOLL plant (1 VOLL plant/region), MW'
@@ -307,9 +316,6 @@ Parameters
   penaltyViolatePeakLoad                        'Penalty for failing to meet peak load constraints, $/MW'
   penaltyViolateRenNrg                          'Penalty used to make renewable energy constraint feasible, $/MWh'
   penaltyViolateReserves(ild,rc)                'Penalty for failing to meet certain reserve classes, $/MWh'
-  renNrgShrOn                                   'Switch to control usage of renewable energy share constraint 0=off/1=on'
-  DCloadFlow                                    'Flag (0/1) to indicate use of either DC load flow (1) or transportation formulation (0)'
-  useReserves                                   'Global flag (0/1) to indicate use of at least one reserve class (0 = no reserves are modelled)'
   cGenYr                                        'First year in which integer generation build decisions can become continuous, i.e. CGEN or BGEN = 0 in any year'
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
   randomCapexCostAdjuster                       'Specify the bounds for a small +/- random adjustment to generation plant capital costs'
@@ -432,12 +438,12 @@ Parameters
   refurbCapCharge(g,y)                          'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
   exogMWretired(g,y)                            'Exogenously retired MW by plant and year, MW'
   continueAftaEndogRetire(g)                    'Number of years a generation plant keeps going for after the decision to endogenously retire has been made'
-  WtdAvgFOFmultiplier(k,lb)                     'FOF multiplier by technology and load block - averaged using hours in block as weights (default = 1)'
+  WtdAvgFOFmultiplier(k,lb)                     'FOF multiplier by technology and load block - averaged using hours in block as weights'
   reservesCapability(g,rc)                      'Generating plant reserve capability per reserve class, MW'
   peakConPlant(g,y)                             'Contribution to peak of each generating plant by year'
   NWpeakConPlant(g,y)                           'Contribution to peak when there is no wind of each generating plant by year'
   maxCapFactPlant(g,t,lb)                       'Maximum capacity factor by plant - incorporates forced outage rates'
-  minCapFactPlant(g,y,t)                        'Minimum capacity factor - only defined for schedulable hydro and wind at this stage'
+  minCapFactPlant(g,y,t)                        'Minimum capacity factor - only defined for schedulable hydro (and non-meaningfully for) wind at this stage'
 * Load data.
   AClossFactors(ild)                            'Upwards adjustment to load to account for AC (or intraregional) losses'
   NrgDemand(r,y,t,lb,scenarios)                 'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
@@ -713,9 +719,9 @@ bal_supdem(r,y,t,lb,sc)..
   sum(mapg_r(g,r)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) +
 * Transmission and losses with transportation formulation
  (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,sc) - LOSS(rr,r,y,t,lb,sc) ) * hoursPerBlock(t,lb) * 0.001 ) ) -
-  sum(rr$paths(r,rr),   ( TX(r,rr,y,t,lb,sc) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 0 ) +
+  sum(rr$paths(r,rr),   ( TX(r,rr,y,t,lb,sc) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlowOn = 0 ) +
 * Transmission and losses with DC load flow formulation
- (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,sc) - 0.5 * LOSS(rr,r,y,t,lb,sc) ) * hoursPerBlock(t,lb) * 0.001 ) ) )$( DCloadFlow = 1 )
+ (sum(rr$paths(rr,r), ( ( TX(rr,r,y,t,lb,sc) - 0.5 * LOSS(rr,r,y,t,lb,sc) ) * hoursPerBlock(t,lb) * 0.001 ) ) )$DCloadFlowOn
   =g=
   ldcMW(r,y,t,lb,sc) * hoursPerBlock(t,lb) * 0.001 +
   sum(g$( mapg_r(g,r) * pumpedHydroPlant(g) * validYrOperate(g,y) ), PUMPEDGEN(g,y,t,lb,sc)) ;
@@ -723,7 +729,7 @@ bal_supdem(r,y,t,lb,sc)..
 * Ensure enough capacity to meet peak demand and the winter capacity margin in NZ.
 peak_NZ(y,sc)..
   PEAK_NZ_PENALTY(y,sc) +
-  sum(g, CAPACITY(g,y) * peakConPlant(g,y) ) - i_winterCapacityMargin(y)
+  sum(g, CAPACITY(g,y) * peakConPlant(g,y) ) - i_winterCapacityMargin(y) - i_SIACrisk(y) - i_fkSI(y) - i_HVDClossesAtMaxXfer(y)
   =g= peakLoadNZ(y,sc) ;
 
 * Ensure enough capacity to meet peak demand in NI subject to contingencies.
@@ -734,14 +740,14 @@ peak_NI(y,sc)..
   =g= peakLoadNI(y,sc) ;
 
 * Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low.
-noWindPeak_NI(y,sc)..
+noWindPeak_NI(y,sc)$niNWpeakCnstrntOn..
   NOWINDPEAK_NI_PENALTY(y,sc) +
   sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), CAPACITY(g,y) * NWpeakConPlant(g,y) ) - i_fkNI(y) +
   sum(allowedStates(paths,ps)$nwd(paths), i_txCapacityPO(paths,ps) * BTX(paths,ps,y))
   =g= peakLoadNI(y,sc) ;
 
 * Ensure generation is less than capacity times max capacity factor in each block.
-limit_maxgen(validYrOperate(g,y),t,lb,sc)$( ( exist(g) or possibleToBuild(g) ) * ( not useReserves ) )..
+limit_maxgen(validYrOperate(g,y),t,lb,sc)$( ( exist(g) or possibleToBuild(g) ) * ( not reservesOn ) )..
   GEN(g,y,t,lb,sc) =l= 1e-3 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Ensure generation is greater than capacity times min capacity factor in each block.
@@ -757,7 +763,7 @@ limit_fueluse(thermalfuel(f),y,sc)$( ( gas(f) * (i_fuelQuantities(f,y) > 0) * (i
   1e-6 * sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y) ), i_heatrate(g) * GEN(g,y,t,lb,sc) ) =l= i_fuelQuantities(f,y) + FUELSLACK(y) ;
 
 * Impose a limit on total energy generated from any one fuel type.
-limit_Nrg(f,y,sc)$i_maxNrgByFuel(f)..
+limit_Nrg(f,y,sc)$( limitNrgByFuelOn * i_maxNrgByFuel(f) )..
   sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y) ), GEN(g,y,t,lb,sc)) =l= i_maxNrgByFuel(f) * sum((g,t,lb)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) ;
 
 * Impose a minimum requirement on total energy generated from all renewable sources.
@@ -767,7 +773,7 @@ minReq_RenNrg(y,sc)$renNrgShrOn..
   RENNRGPENALTY(y) ;
 
 * Impose a minimum requirement on installed renewable capacity.
-minReq_RenCap(y)$i_renewCapShare(y)..
+minReq_RenCap(y)$renCapShrOn..
   i_renewCapShare(y) * sum(possibleToBuild(g), 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ) =l=
   sum((g,k)$( possibleToBuild(g) * mapg_k(g,k) * renew(k) ), 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ) +
   RENCAPSLACK(y) ;
@@ -815,80 +821,80 @@ tx_oneupgrade(paths,y)..
   sum(upgradedStates(paths,ps), sum(validTransitions(paths,pss,ps), TXUPGRADE(paths,pss,ps,y) )) =l= 1 ;
 
 * DC load flow equation for all paths.
-tx_dcflow(r,rr,y,t,lb,sc)$( DCloadFlow * susceptanceYr(r,rr,y) * regLower(r,rr) )..
+tx_dcflow(r,rr,y,t,lb,sc)$( DCloadFlowOn * susceptanceYr(r,rr,y) * regLower(r,rr) )..
   TX(r,rr,y,t,lb,sc) =e= susceptanceYr(r,rr,y) * ( THETA(r,y,t,lb,sc) - THETA(rr,y,t,lb,sc) ) ;
 
 * Ensure that for flow on links without reactance the flow from r to rr = - flow from rr to r
-tx_dcflow0(r,rr,y,t,lb,sc)$( DCloadFlow * paths(r,rr) * regLower(r,rr) )..
+tx_dcflow0(r,rr,y,t,lb,sc)$( DCloadFlowOn * paths(r,rr) * regLower(r,rr) )..
   TX(r,rr,y,t,lb,sc) + TX(rr,r,y,t,lb,sc) =e= 0 ;
 
 * Ensure equality of losses in both directions for the DC load flow representation
 * NB: No need for this constraint if the maximum losses on a link = 0 since then the loss variable is fixed in GEMsolve
-equatetxloss(r,rr,y,t,lb,sc)$( DCloadFlow * paths(r,rr) * regLower(r,rr) * sum(ps, bigloss(r,rr,ps)) )..
+equatetxloss(r,rr,y,t,lb,sc)$( DCloadFlowOn * paths(r,rr) * regLower(r,rr) * sum(ps, bigloss(r,rr,ps)) )..
   LOSS(r,rr,y,t,lb,sc) =e= LOSS(rr,r,y,t,lb,sc) ;
 
 * Transmission group constraints, i.e. in addition to individual branch limits. Use to cater for contingencies, stability limits, etc.
 ***txGrpConstraint(validTGC,y,t,lb,sc)$txconstraintactive(y,t,validTGC)..
-txGrpConstraint(validTGC,y,t,lb,sc)$DCloadFlow..
+txGrpConstraint(validTGC,y,t,lb,sc)$DCloadFlowOn..
   sum((p,paths(r,rr))$( (bbincidence(p,r) = 1) * (bbincidence(p,rr) = -1) ), i_txGrpConstraintsLHS(validTGC,p) * TX(paths,y,t,lb,sc) )
   =l= i_txGrpConstraintsRHS(validTGC) ;
 
 * Meet the single reserve requirement.
-resvsinglereq1(rc,ild,y,t,lb,sc)$( useReserves * singleReservesReqF(rc) )..
+resvsinglereq1(rc,ild,y,t,lb,sc)$( reservesOn * singleReservesReqF(rc) )..
   sum(g, RESV(g,rc,y,t,lb,sc)) + RESVVIOL(rc,ild,y,t,lb,sc) =g= RESVREQINT(rc,ild,y,t,lb,sc) ;
 
 * Generator energy constraint - substitute for limit_maxgen when reserves are used.
-genmaxresv1(validYrOperate(g,y),t,lb,sc)$( useReserves * ( exist(g) or possibleToBuild(g) ) )..
+genmaxresv1(validYrOperate(g,y),t,lb,sc)$( reservesOn * ( exist(g) or possibleToBuild(g) ) )..
   1000 * GEN(g,y,t,lb,sc) + sum(rc, RESV(g,rc,y,t,lb,sc)) =l= CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Reserve transfers - Constraint 1.
-resvtrfr1(ild1,ild,y,t,lb,sc)$( useReserves * interIsland(ild1,ild) )..
+resvtrfr1(ild1,ild,y,t,lb,sc)$( reservesOn * interIsland(ild1,ild) )..
   sum( rc, RESVTRFR(rc,ild1,ild,y,t,lb,sc) ) +
   hoursPerBlock(t,lb) * sum((r,rr)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr)), TX(r,rr,y,t,lb,sc) )
   =l= hoursPerBlock(t,lb) * sum((r,rr,ps)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacity(r,rr,ps) * BTX(r,rr,ps,y) ) ;
 
 * Reserve transfers - Constraint 2.
-resvtrfr2(rc,ild1,ild,y,t,lb,sc)$( useReserves * interIsland(ild1,ild) * ( not singleReservesReqF(rc) ) )..
+resvtrfr2(rc,ild1,ild,y,t,lb,sc)$( reservesOn * interIsland(ild1,ild) * ( not singleReservesReqF(rc) ) )..
   RESVTRFR(rc,ild1,ild,y,t,lb,sc)
   =l= hoursPerBlock(t,lb) * sum((r,rr,ps)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), i_maxReservesTrnsfr(r,rr,ps,rc) * BTX(r,rr,ps,y) ) ;
 
 * Reserve transfers - Constraint 3.
-resvtrfr3(rc,ild1,ild,y,t,lb,sc)$( useReserves * interIsland(ild1,ild) * ( not singleReservesReqF(rc) ) )..
+resvtrfr3(rc,ild1,ild,y,t,lb,sc)$( reservesOn * interIsland(ild1,ild) * ( not singleReservesReqF(rc) ) )..
   RESVTRFR(rc,ild1,ild,y,t,lb,sc) =l= sum(mapg_ild(g,ild1), RESV(g,rc,y,t,lb,sc) ) ;
 
 * Internal reserve requirement determined by the largest dispatched unit during each period.
-resvrequnit(g,rc,ild,y,t,lb,sc)$( useReserves *
+resvrequnit(g,rc,ild,y,t,lb,sc)$( reservesOn *
   validYrOperate(g,y) * ( exist(g) or possibleToBuild(g) ) * mapg_ild(g,ild) * ( (i_reserveReqMW(y,ild,rc) = -1) or (i_reserveReqMW(y,ild,rc) = -3) )  )..
   RESVREQINT(rc,ild,y,t,lb,sc) =g= 1000 * GEN(g,y,t,lb,sc) * i_UnitLargestProp(g) ;
 
 * Internal island reserve requirement.
-resvreq2(rc,ild,y,t,lb,sc)$( useReserves * ( not singleReservesReqF(rc) ) )..
+resvreq2(rc,ild,y,t,lb,sc)$( reservesOn * ( not singleReservesReqF(rc) ) )..
   sum(mapg_ild(g,ild), RESV(g,rc,y,t,lb,sc) ) + sum(interIsland(ild1,ild), RESVTRFR(rc,ild1,ild,y,t,lb,sc) ) +
   RESVVIOL(rc,ild,y,t,lb,sc) =g= RESVREQINT(rc,ild,y,t,lb,sc) ;
 
 * Internal reserve requirement determined by the HVDC transfer taking into account self-cover.
-resvreqhvdc(rc,ild,y,t,lb,sc)$( useReserves * ( not singleReservesReqF(rc) ) )..
+resvreqhvdc(rc,ild,y,t,lb,sc)$( reservesOn * ( not singleReservesReqF(rc) ) )..
   RESVREQINT(rc,ild,y,t,lb,sc) =g=
   hoursPerBlock(t,lb) * sum((r,rr,ild1)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) * interIsland(ild,ild1) ), TX(r,rr,y,t,lb,sc) ) -
   hoursPerBlock(t,lb) * sum((r,rr,ps,ild1)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) * interIsland(ild,ild1) ), i_txCapacityPO(r,rr,ps) * BTX(r,rr,ps,y) ) ;
 
 * Reserve energy transfer - Constraint 4.
-resvtrfr4(interIsland(ild1,ild),y,t,lb,sc)$useReserves..
+resvtrfr4(interIsland(ild1,ild),y,t,lb,sc)$reservesOn..
   sum(rc, RESVTRFR(rc,ild1,ild,y,t,lb,sc) )
   =l= hoursPerBlock(t,lb) * sum((r,rr,ps)$(paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr)) , i_txCapacity(r,rr,ps)) * ( 1 - NORESVTRFR(ild1,ild,y,t,lb,sc) ) ;
 
 * Constraint that defines the reserve transfer capability.
-resvtrfrdef(interIsland(ild1,ild),y,t,lb,sc)$useReserves..
+resvtrfrdef(interIsland(ild1,ild),y,t,lb,sc)$reservesOn..
   sum((r,rr)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), TX(r,rr,y,t,lb,sc) ) -
   sum((r,rr,ps)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacityPO(r,rr,ps) * BTX(r,rr,ps,y) )
   =l= NORESVTRFR(ild1,ild,y,t,lb,sc) * bigm(ild1,ild) ;
 
 * Constraint to define the offline reserve capability.
-resvoffcap(validYrOperate(g,y),t,lb,sc)$( useReserves * ( exist(g) or possibleToBuild(g) ) * (sum(rc, reservesCapability(g,rc))) * ( not i_offlineReserve(g) ) )..
+resvoffcap(validYrOperate(g,y),t,lb,sc)$( reservesOn * ( exist(g) or possibleToBuild(g) ) * (sum(rc, reservesCapability(g,rc))) * ( not i_offlineReserve(g) ) )..
   sum(rc, RESV(g,rc,y,t,lb,sc)) =l= 1000 * GEN(g,y,t,lb,sc) ;
 
 * Constraint to ensure that reserves cover a certain proportion of wind generation.
-resvreqwind(rc,ild,y,t,lb,sc)$( useReserves * ( (i_reserveReqMW(y,ild,rc) = -2) or (i_reserveReqMW(y,ild,rc) = -3) ) * windCoverPropn(rc) )..
+resvreqwind(rc,ild,y,t,lb,sc)$( reservesOn * ( (i_reserveReqMW(y,ild,rc) = -2) or (i_reserveReqMW(y,ild,rc) = -3) ) * windCoverPropn(rc) )..
   RESVREQINT(rc,ild,y,t,lb,sc)
   =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y) ), 1000 * GEN(g,y,t,lb,sc) ) ;
 
@@ -1031,7 +1037,7 @@ $onecho > CollectResults.inc
 * Free Variables
   s_TOTALCOST(steps,scenarioSets)                            = TOTALCOST.l ;
   s_SCENARIO_COSTS(steps,scenarioSets,sc)                    = SCENARIO_COSTS.l(sc) ;
-  if(DCloadFlow = 1,
+  if(DCloadFlowOn,
     s_TX(steps,scenarioSets,r,rr,y,t,lb,sc)$( TX.l(r,rr,y,t,lb,sc) > 0 ) = TX.l(r,rr,y,t,lb,sc) ;
     else
     s_TX(steps,scenarioSets,r,rr,y,t,lb,sc)                  = TX.l(r,rr,y,t,lb,sc) ;

@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 18/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 20/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -79,7 +79,7 @@ execute 'temp.bat' ;
 
 Set y  / %firstYear% * %lastYear% / ;
 
-* Load 128 symbols from 3 input GDX files: 109 from GEMinputGDX, 18 from GEMnetworkGDX, and 1 from GEMdemandGDX.
+* Load 131 symbols from 3 input GDX files: 112 from GEMinputGDX, 18 from GEMnetworkGDX, and 1 from GEMdemandGDX.
 $gdxin "%DataPath%\%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
@@ -102,7 +102,7 @@ $loaddc i_substnCoordinates i_zonalLocFacs
 $load   i_HVDClevy
 $load   i_firstDataYear i_lastDataYear i_HalfHrsPerBlk i_inflation
 $loaddc i_ReserveSwitch i_ReserveAreas i_propWindCover i_ReservePenalty
-$load   i_reserveReqMW i_fkNI i_largestGenerator i_winterCapacityMargin i_P200ratioNZ i_P200ratioNI
+$load   i_reserveReqMW i_winterCapacityMargin i_SIACrisk i_fkSI i_fkNI i_HVDClossesAtMaxXfer i_largestGenerator i_P200ratioNZ i_P200ratioNI
 $load   i_firstHydroYear i_historicalHydroOutput
 
 $gdxin "%DataPath%\%GEMnetworkGDX%"
@@ -174,18 +174,21 @@ loop((g,k,f,i,o)$( mapgenplant(g,k,i,o) * mapf_k(f,k) ),
 put // 'Data defined by year'  / '' loop(y, put y.tl ) ;
 put /  'Fuel prices, $/GJ'          loop(f$sum(y, i_fuelPrices(f,y)),     put / f.tl loop(y, put i_fuelPrices(f,y)) ) ; 
 put /  'Fuel quantity, GJ'          loop(f$sum(y, i_fuelQuantities(f,y)), put / f.tl loop(y, put i_fuelQuantities(f,y)) ) ; 
-put // 'CO2 tax, $/t CO2e'          loop(y, put i_co2tax(y) ) ; 
-put /  'i_HVDClevy, $/kW'           loop(y, put i_HVDClevy(y) ) ; 
-put /  'i_inflation'                loop(y, put i_inflation(y):5:3 ) ; 
+put // 'CO2 tax, $/t CO2e'          loop(y, put i_co2tax(y) ) ;
+put /  'i_HVDClevy, $/kW'           loop(y, put i_HVDClevy(y) ) ;
+put /  'i_inflation'                loop(y, put i_inflation(y):5:3 ) ;
+put /  'i_winterCapacityMargin, MW' loop(y, put i_winterCapacityMargin(y) ) ;
+put /  'i_SIACrisk, MW'             loop(y, put i_SIACrisk(y) ) ;
+put /  'i_fkSI, MW'                 loop(y, put i_fkSI(y) ) ;
 put /  'i_fkNI, MW'                 loop(y, put i_fkNI(y) ) ; 
+put /  'i_HVDClossesAtMaxXfer, MW'  loop(y, put i_HVDClossesAtMaxXfer(y) ) ;
 put /  'i_largestGenerator, MW'     loop(y, put i_largestGenerator(y) ) ; 
-put /  'i_winterCapacityMargin, MW' loop(y, put i_winterCapacityMargin(y) ) ; 
 put /  'i_P200ratioNZ'              loop(y, put i_P200ratioNZ(y) ) ; 
 put /  'i_P200ratioNI'              loop(y, put i_P200ratioNI(y) ) ; 
 
 put // 'Transmission data' / 'FrReg' 'ToReg' 'State' 'CapMW' 'CapPO_MW' '$m' 'Resistance' 'Reactance' 'EarlyYr' 'FixedYr' 'FrState' 'ToState' 'Upgrade' 'Upgrade description' ;
 loop((r,rr,ps)$i_txCapacity(r,rr,ps),
-  put / r.tl, rr.tl, ps.tl, i_txCapacity(r,rr,ps), i_txCapacityPO(r,rr,ps), i_txCapitalCost(r,rr,ps), i_txResistance(r,rr,ps), i_txReactance(r,rr,ps) ;
+  put / r.tl, rr.tl, ps.tl, i_txCapacity(r,rr,ps), i_txCapacityPO(r,rr,ps), i_txCapitalCost(r,rr,ps), i_txResistance(r,rr,ps):9:7, i_txReactance(r,rr,ps):6:4 ;
   loop((tupg,pss)$( txUpgradeTransitions(tupg,r,rr,pss,ps) or txUpgradeTransitions(tupg,rr,r,pss,ps) ),
     if(i_txEarlyComYr(tupg), put i_txEarlyComYr(tupg) else put '' ) ;
     if(i_txFixedComYr(tupg), put i_txFixedComYr(tupg) else put '' ) ;
