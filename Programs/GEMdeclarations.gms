@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 20/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 25/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -303,6 +303,7 @@ Sets
 Parameters
   firstYear                                     'First modelled year - as a scalar, not a set'
   lastYear                                      'Last modelled year - as a scalar, not a set'
+  V2GtechnologyOn                               'Switch to control usage of the V2G technology (1=0n/0=namePlate MW set to zero for all V2G plant)'
   renNrgShrOn                                   'Switch to control usage of renewable energy share constraint (1=0n/0=off)'
   renCapShrOn                                   'Switch to control usage of renewable capacity share constraint (1=0n/0=off)'
   niNWpeakCnstrntOn                             'Switch to control usage of the NI no wind peak security constraint (1=0n/0=off)'

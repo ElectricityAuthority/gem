@@ -1,11 +1,10 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 20/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 25/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
-** See comment on ~line #493, i.e. "Should this next line be ord or card?"
 ** Formalise/fix up the override stuff once we get GEM back into emi.
 
 
@@ -313,49 +312,52 @@ if(depType = 0,
 
 * d) Generation data.
 * Derive various generating plant subsets.
-* i) Existing plant - remove any plant where i_nameplate(g) = 0 from exist(g).
+* i) Set the V2G plant capacities to zero when the V2GtechnologyOn flag is zero (this takes those plant out of the pick list).
+if(not V2GtechnologyOn, i_nameplate(g)$sum(mapg_k(g,k)$sameas(k,'V2G'), 1) = 0 ) ;
+
+* ii) Existing plant - remove any plant where i_nameplate(g) = 0 from exist(g).
 exist(g)$( i_nameplate(g) = 0 ) = no ;
 
-* ii) A plant is not an existing plant if it hasn't been defined to be existing - remove any plant where i_nameplate(g) = 0 from noExist(g).
+* iii) A plant is not an existing plant if it hasn't been defined to be existing - remove any plant where i_nameplate(g) = 0 from noExist(g).
 noExist(g)$( not exist(g) ) = yes ;
 noExist(g)$( i_nameplate(g) = 0 ) = no ;
 
-* iii) Define plant that are never able to be built. A plant is never to be built if it already exists, if (i_fixComYr or i_EarlyComYr) > lastYear,
+* iv) Define plant that are never able to be built. A plant is never to be built if it already exists, if (i_fixComYr or i_EarlyComYr) > lastYear,
 * or if i_nameplate <= 0.
 neverBuild(noExist(g))$( (i_fixComYr(g) > lastYear) or (i_EarlyComYr(g) > lastYear) ) = yes ;
 neverBuild(g)$( i_nameplate(g) <= 0 ) = yes ;
 
-* iv) Define committed plant. To be a committed plant, the plant must not exist, it must not be in the neverBuild set, and
+* v) Define committed plant. To be a committed plant, the plant must not exist, it must not be in the neverBuild set, and
 * it must have a fixed commissioning year that is greater than or equal to the first modelled year.
 commit(noExist(g))$( (i_fixComYr(g) >= firstYear) * (not neverBuild(g)) ) = yes ;
 
-* v) Define new plant. A plant is (potentially) new if it is not existing, not committed, and not a member of the neverBuild set.
+* vi) Define new plant. A plant is (potentially) new if it is not existing, not committed, and not a member of the neverBuild set.
 new(noExist(g))$( not ( commit(g) or neverBuild(g) ) ) = yes ;
 
-* vi) Define the years in which it is valid for a generating plant to be built. The plant must either be committed or (potentially)
+* vii) Define the years in which it is valid for a generating plant to be built. The plant must either be committed or (potentially)
 * new, and the plant can't be a member of the neverBuild set
 validYrBuild(commit(g),y)$( yearNum(y) = i_fixComYr(g) ) = yes ;
 validYrBuild(new(g),y)$( yearNum(y) >= i_EarlyComYr(g) ) = yes ;
 validYrBuild(neverBuild(g),y) = no ;
 
-* vii) Identify the plant that may be built, i.e. it doesn't already exist or it is not otherwise prevented from being built.
+* viii) Identify the plant that may be built, i.e. it doesn't already exist or it is not otherwise prevented from being built.
 possibleToBuild(g)$sum(y$validYrBuild(g,y), 1) = yes ;
 
-* viii) Identify generation plant that can be linearly or incrementally built.
+* ix) Identify generation plant that can be linearly or incrementally built.
 loop((g,k)$( noExist(g) * linearBuildTech(k) * mapg_k(g,k) * ( not i_fixComYr(g) ) ),
   linearPlantBuild(g)$( i_nameplate(g) >= i_linearBuildMW(k) ) = yes ;
   linearPlantBuild(g)$( i_EarlyComYr(g) >= i_linearBuildYr(k) ) = yes ;
 ) ;
 
-* ix) Identify generation plant that must be integer build (must be integer if not linear).
+* x) Identify generation plant that must be integer build (must be integer if not linear).
 integerPlantBuild(noExist(g))$( not linearPlantBuild(g) ) = yes ;
 integerPlantBuild(neverBuild(g)) = no ;
 
-* x) Identify exceptions to the technology-determined list of plant movers, i.e. if user fixes build year to a legitimate value, then
+* xi) Identify exceptions to the technology-determined list of plant movers, i.e. if user fixes build year to a legitimate value, then
 * don't allow the plant to be a mover.
 loop(movers(k), moverExceptions(noExist(g))$( mapg_k(g,k) * ( i_fixComYr(g) >= firstYear ) * ( i_fixComYr(g) <= lastYear ) ) = yes ) ;
 
-* xi) Define the years in which it is valid for a generating plant to operate. The plant must exist; if plant is committed, it is valid to
+* xii) Define the years in which it is valid for a generating plant to operate. The plant must exist; if plant is committed, it is valid to
 * operate it in any year beginning with the year in which it is commissioned; if plant is new, it is valid to operate it in any year beginning
 * with the earliest year in which it may be commissioned; it is not valid to operate any plant that has come to the end of its refurbished life
 * (i.e. can't repeatedly refurbish); it is not valid to operate any plant that has been exogenously retired, or decommissioned; and it is not
@@ -367,7 +369,7 @@ validYrOperate(g,y)$( i_refurbDecisionYear(g) * ( yearNum(y) > i_refurbDecisionY
 validYrOperate(g,y)$( i_ExogenousRetireYr(g) * ( yearNum(y) >= i_ExogenousRetireYr(g) ) ) = no ;
 validYrOperate(neverBuild(g),y) = no ;
 
-* xii) North and South Island plant
+* xiii) North and South Island plant
 nigen(g)$mapg_ild(g,'ni') = yes ;  nigen(neverBuild(g)) = no ;
 sigen(g)$mapg_ild(g,'si') = yes ;  sigen(neverBuild(g)) = no ;
 
@@ -481,17 +483,15 @@ loop((Benmore(i),Haywards(ii)),
 ) ;
 
 * Make sure intraregional capacities and line characteristics are zero.
-i_txCapacity(r,r,ps) = 0 ;
-i_txCapacityPO(r,r,ps) = 0 ;
-i_txResistance(r,r,ps) = 0 ;
-i_txReactance(r,r,ps) = 0 ;
+i_txCapacity(r,r,ps) = 0 ;    i_txCapacityPO(r,r,ps) = 0 ;
+i_txResistance(r,r,ps) = 0 ;  i_txReactance(r,r,ps) = 0 ;
 
 * Assign allowable transitions from one transmission state to another.
 transitions(tupg,r,rr,ps,pss) = txUpgradeTransitions(tupg,r,rr,ps,pss) ;
 transitions(tupg,rr,r,ps,pss)$txUpgradeTransitions(tupg,r,rr,ps,pss) = txUpgradeTransitions(tupg,r,rr,ps,pss) ;
 * Now remove any illegitimate values from transitions.
+transitions(tupg,r,rr,ps,pss)$( i_txFixedComYr(tupg) >= 3333 ) = no ;
 transitions(tupg,r,rr,ps,pss)$( i_txCapacity(r,rr,pss) = 0 )  = no ;
-transitions(tupg,r,rr,ps,pss)$( sameas(tupg,'exist') and (i_txCapacity(r,rr,ps) = 0) )  = no ;
 transitions(tupg,r,rr,ps,pss)$sameas(tupg,'exist') = no ;
 transitions(tupg,r,rr,ps,pss)$sameas(pss,'initial') = no ;
 transitions(tupg,r,r,ps,pss) = no ;
@@ -502,7 +502,6 @@ transitions(tupg,r,rr,ps,ps) = no ;
 allowedStates(r,rr,'initial')$i_txCapacity(r,rr,'initial') = yes ;
 counter = 0 ;
 repeat
-*** Should this next line be ord or card?
   counter = card(allowedStates) ;
   allowedStates(r,rr,pss)$sum(transitions(tupg,r,rr,ps,pss)$allowedStates(r,rr,ps), 1 ) = yes ;
 until counter = card(allowedStates) ;
@@ -510,6 +509,10 @@ until counter = card(allowedStates) ;
 * Identify all r-rr-ps tuples not in allowedStates.
 notAllowedStates(r,rr,ps) = yes ;
 notAllowedStates(allowedStates) = no ;
+
+* Zero out transmission capacities for states not allowed.
+i_txCapacity(notAllowedStates) = 0 ;
+i_txCapacityPO(notAllowedStates) = 0 ;
 
 * Identify all existing or potential interregional transmission paths. Then identify the ones that are uni- versus bi-directional.
 paths(r,rr)$sum(allowedStates(r,rr,ps), 1 ) = yes ;
@@ -677,6 +680,39 @@ peakLoadNI(y,scen) = scenarioPeakLoadFactor(scen) * i_P200ratioNI(y) * ( 1 / 8.7
 
 * Transfer hydro output for all hydro years from i_historicalHydroOutput to historicalHydroOutput (no scenario-specific adjustment factors at this time).
 historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
+
+
+
+$ontext
+** A temporary overwrite to do the uncapacitated/free transmission upgrade runs while maintaining the capacitated loss functions.
+** The last loss tranche keeps the same loss function and the same cost for non-free reserves, but the capacity is increased by 15 times,
+** i.e. i_txCapacity, i_txCapacityPO, and pNFresvCap are all multiplied by 15 for the last allowed upgrade state.
+
+Option allowedStates:0:0:1, intercept:3:0:1, slope:3:0:1, i_txCapacity:0:0:1, i_txCapacityPO:0:0:1, pNFresvCap:0:0:1, pNFresvCost:0:0:1 ;
+Display 'Before overwite', tupg, allowedStates, intercept, slope, i_txCapacity, i_txCapacityPO, pNFresvCap, pNFresvCost ;
+
+Set        theLastAllowedState(r,rr,ps) 'The last allowed transmission upgrade state' ;
+Parameter  countAllowedStates(r,rr)      'Count of allowed states for each active path' ;
+
+countAllowedStates(r,rr) = sum(ps$allowedStates(r,rr,ps), 1 ) ;
+counter = 0 ;
+loop(paths(r,rr),
+  loop(allowedStates(paths,ps),
+    counter = counter + 1 ;
+    theLastAllowedState(allowedStates)$( countAllowedStates(paths) = counter ) = yes ;
+  ) ;
+  counter = 0 ;
+) ;
+
+i_txCapacity(theLastAllowedState)   = 15 * i_txCapacity(theLastAllowedState) ;
+i_txCapacityPO(theLastAllowedState) = 15 * i_txCapacityPO(theLastAllowedState) ;
+pNFresvCap(swd,stp)$( ord(stp) = card(stp) ) = 15 * bigswd(swd) ;
+pNFresvCap(nwd,stp)$( ord(stp) = card(stp) ) = 15 * bignwd(nwd) ;
+
+Option countAllowedStates:0:0:1, theLastAllowedState:0:0:1 ;
+Display 'After overwite', i_txCapacity, i_txCapacityPO, pNFresvCap, theLastAllowedState, countAllowedStates ;
+$offtext
+
 
 
 
