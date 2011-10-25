@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 20/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 25/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -11,7 +11,7 @@
 
 * NB: The following symbols from input data file may have been changed in GEMdata:
 *     Sets: y and exist.
-*     Parameters: i_fixedOM.
+*     Parameters: i_fixedOM, i_txCapacity and i_txCapacityPO.
 
 $ontext
  This program continues sequentially from GEMdata. The GEMdata work file must be called at invocation
