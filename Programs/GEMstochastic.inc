@@ -9,7 +9,7 @@
 
 Sets
   experiments  'A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps' /
-    singleExp /
+    singleExp   /
 
   scenarios    'The various individual stochastic scenarios, or futures, or states of uncertainty' /
     avgHydro /
@@ -31,7 +31,7 @@ Sets
 *   stochastic  .(h1992,h1998,h2000,h2002,h2003) /
 
   timingSolves(experiments,scenarioSets) 'Identify the scenarioSet to be used for the timing step of each experiment' /
-    singleExp   . averageHydro  /
+    singleExp   . averageHydro /
 *   singleExp   . stochastic  /
 
 * reoptSolves(experiments,scenarioSets) 'Identify the scenarioSet to be used for the re-optimisation step of each experiment' /

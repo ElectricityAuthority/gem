@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 25/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 27/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -62,8 +62,8 @@ putclose bat
   'copy "%DataPath%\%GEMnetworkGDX%"     "%OutPath%\%runName%\Archive\"' /
   'copy "%DataPath%\%GEMdemandGDX%"      "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%GEMpathsAndFiles.inc" "%OutPath%\%runName%\Archive\GEMpathsAndFiles - %runVersionName%.inc"' /
-  'copy "%ProgPath%GEMsettings.inc"      "%OutPath%\%runName%\Archive\GEMsettings.inc"' /
-  'copy "%ProgPath%GEMstochastic.inc"    "%OutPath%\%runName%\Archive\GEMstochastic.inc"' / ;
+  'copy "%ProgPath%GEMsettings.inc"      "%OutPath%\%runName%\Archive\GEMsettings - %runVersionName%.inc"' /
+  'copy "%ProgPath%GEMstochastic.inc"    "%OutPath%\%runName%\Archive\GEMstochastic - %runVersionName%.inc"' / ;
 $if %useOverrides%==0 $goto noOverrides1
 bat.ap = 1 ; putclose bat 'copy "%DataPath%\%GEMoverrideGDX%" "%OutPath%\%runName%\Archive\"' / ; bat.ap = 0 ;
 $label noOverrides1
@@ -473,14 +473,18 @@ slackBus(r)$( ord(r) = card(r) ) = yes ;
 regLower(r,rr) = no ;
 regLower(r,rr)$( ord(r) > ord(rr) ) = yes ;
 
-* Define interisland flows.
-interIsland(ild,ild1)$( ord(ild) <> ord(ild1) ) = yes ;
-
 * Define regions at each end of NI-SI HVDC link.
 loop((Benmore(i),Haywards(ii)),
   nwd(r,rr)$( mapi_r(i,r) * mapi_r(ii,rr) ) = yes ;
   swd(r,rr)$( mapi_r(ii,r) * mapi_r(i,rr) ) = yes ;
 ) ;
+
+* Define interisland pairings.
+interIsland(ild,ild1)$( ord(ild) <> ord(ild1) ) = yes ;
+interIslandRegions(r,rr)$( nwd(r,rr) or swd(r,rr) ) = yes ;
+
+* Make sure i_txCapacityPO is not specified for anything but the current HVDC link.
+i_txCapacityPO(r,rr,ps)$( not (nwd(r,rr) or swd(r,rr)) ) = 0 ;
 
 * Make sure intraregional capacities and line characteristics are zero.
 i_txCapacity(r,r,ps) = 0 ;    i_txCapacityPO(r,r,ps) = 0 ;
@@ -688,13 +692,14 @@ $ontext
 ** The last loss tranche keeps the same loss function and the same cost for non-free reserves, but the capacity is increased by 15 times,
 ** i.e. i_txCapacity, i_txCapacityPO, and pNFresvCap are all multiplied by 15 for the last allowed upgrade state.
 
-Option allowedStates:0:0:1, intercept:3:0:1, slope:3:0:1, i_txCapacity:0:0:1, i_txCapacityPO:0:0:1, pNFresvCap:0:0:1, pNFresvCost:0:0:1 ;
-Display 'Before overwite', tupg, allowedStates, intercept, slope, i_txCapacity, i_txCapacityPO, pNFresvCap, pNFresvCost ;
+Option allowedStates:0:0:1, intercept:3:0:1, slope:3:0:1, txCapitalCost:0:0:1, i_txCapacity:0:0:1, i_txCapacityPO:0:0:1, pNFresvCap:0:0:1, pNFresvCost:0:0:1 ;
+Display 'Before overwite', tupg, allowedStates, intercept, slope, txCapitalCost, i_txCapacity, i_txCapacityPO, pNFresvCap, pNFresvCost ;
 
-Set        theLastAllowedState(r,rr,ps) 'The last allowed transmission upgrade state' ;
+Set        theLastAllowedState(r,rr,ps)  'The last allowed transmission upgrade state' ;
 Parameter  countAllowedStates(r,rr)      'Count of allowed states for each active path' ;
 
 countAllowedStates(r,rr) = sum(ps$allowedStates(r,rr,ps), 1 ) ;
+
 counter = 0 ;
 loop(paths(r,rr),
   loop(allowedStates(paths,ps),
@@ -704,16 +709,17 @@ loop(paths(r,rr),
   counter = 0 ;
 ) ;
 
-i_txCapacity(theLastAllowedState)   = 15 * i_txCapacity(theLastAllowedState) ;
-i_txCapacityPO(theLastAllowedState) = 15 * i_txCapacityPO(theLastAllowedState) ;
-pNFresvCap(swd,stp)$( ord(stp) = card(stp) ) = 15 * bigswd(swd) ;
-pNFresvCap(nwd,stp)$( ord(stp) = card(stp) ) = 15 * bignwd(nwd) ;
+*i_txCapacity(theLastAllowedState(r,rr,ps))$( not (nwd(r,rr) or swd(r,rr)) ) = 15 * i_txCapacity(theLastAllowedState) ;
+i_txCapacity(r,rr,ps)$( not (nwd(r,rr) or swd(r,rr)) ) = 15 * i_txCapacity(r,rr,ps) ;
+i_txCapacity(r,rr,ps)$( (not (nwd(r,rr) or swd(r,rr))) and (not sameas(ps,'initial')) ) = 0 ;
+i_txCapacity('akld','nshr','initial') = 1067 ; i_txCapacity('nshr','akld','initial') = 1004 ;
+i_txCapacity('akld','nshr','upgr1') = 1556 ;   i_txCapacity('nshr','akld','upgr1') = 1556 ;
+i_txCapacity('waik','akld','initial') = 2588 ; i_txCapacity('akld','waik','initial') = 2588 ;
+i_txCapacity('waik','akld','upgr1') = 3420 ;   i_txCapacity('akld','waik','upgr1') = 3420 ;
 
 Option countAllowedStates:0:0:1, theLastAllowedState:0:0:1 ;
-Display 'After overwite', i_txCapacity, i_txCapacityPO, pNFresvCap, theLastAllowedState, countAllowedStates ;
+Display 'After overwite', i_txCapacity, theLastAllowedState, countAllowedStates ;
 $offtext
-
-
 
 
 *===============================================================================================
@@ -767,22 +773,27 @@ $offtext
 
 * Declare input data summary files.
 Files
-  stochasticSummary / "%OutPath%\%runName%\Input data checks\Stochastic summary - %runName%_%runVersionName%.txt" /
-  txData            / "%OutPath%\%runName%\Input data checks\Transmission summary - %runName%_%runVersionName%.txt" /
-  plantData         / "%OutPath%\%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
-  capexStats        / "%OutPath%\%runName%\Input data checks\Capex, MW and GWh summaries - %runName%_%runVersionName%.txt" /
-  loadSummary       / "%OutPath%\%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
-  lrmc_inData       / "%OutPath%\%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" / ;
+  runConfig      / "%OutPath%\%runName%\Input data checks\Run configuration summary - %runName%_%runVersionName%.txt" /
+  txData         / "%OutPath%\%runName%\Input data checks\Transmission summary - %runName%_%runVersionName%.txt" /
+  plantData      / "%OutPath%\%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
+  capexStats     / "%OutPath%\%runName%\Input data checks\Capex, MW and GWh summaries - %runName%_%runVersionName%.txt" /
+  loadSummary    / "%OutPath%\%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
+  lrmc_inData    / "%OutPath%\%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" / ;
 
-stochasticSummary.lw = 0 ; stochasticSummary.pw = 999 ;
-txData.lw = 0 ;            txData.pw = 999 ;
-plantData.lw = 0 ;         plantData.pw = 999 ;
-capexStats.lw = 0 ;        capexStats.pw = 999 ;
-loadSummary.lw = 0 ;       loadSummary.pw = 999 ;
-lrmc_inData.pc = 5 ;       lrmc_inData.nd = 1 ;
+runConfig.lw = 0 ;      runConfig.pw = 999 ;
+txData.lw = 0 ;         txData.pw = 999 ;
+plantData.lw = 0 ;      plantData.pw = 999 ;
+capexStats.lw = 0 ;     capexStats.pw = 999 ;
+loadSummary.lw = 0 ;    loadSummary.pw = 999 ;
+lrmc_inData.pc = 5 ;    lrmc_inData.nd = 1 ;
 
 
 * Do the calculations.
+numExperiments  = sum(experiments$sum(allSolves(experiments,steps,scenSet), 1), 1) ;
+numSteps        = sum(steps$sum(allSolves(experiments,steps,scenSet), 1), 1) ;
+numScenarioSets = sum(scenSet$sum(allSolves(experiments,steps,scenSet), 1), 1) ;
+numScenarios    = sum(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1), 1) ;
+
 loop(lb,
   xFoFm(g)$( sum(mapg_k(g,k), WtdAvgFOFmultiplier(k,lb)) > 1.5 ) = yes ;
   xFoFm(g)$( sum(mapg_k(g,k), WtdAvgFOFmultiplier(k,lb)) < 0.5 ) = yes ;
@@ -824,21 +835,127 @@ capexStatistics(k,aggR,'stdDev') = sqrt(capexStatistics(k,aggR,'variance')) ;
 capexStatistics(k,aggR,'stdDev%')$capexStatistics(k,aggR,'mean') = 100 * capexStatistics(k,aggR,'stdDev') / capexStatistics(k,aggR,'mean') ;
 
 
-* Write the experiment-scenarioSets-scenarios summary.
-put stochasticSummary 'Summary of mappings, weights and factors relating to experiments, scenarioSets, and scenarios.' // @61 'Scenario' @71
-  'Scenario factors:' @110 'Same => averaged over the listed hydro years; Sequential => listed hydro year maps to first modelled year.' /
-  'Experiments' @18 'Steps' @28 'scenarioSets' @45 'Scenarios' @61 'Weight' @71 'PeakLoad' @81 'Co2' @91 'FuelCost' @101 'Energy' @110
-  'SeqType' @121 'Hydro years' ;
+* Write the run configuration summary.
+put runConfig 'Run name:' @26 "%runName%" / 'Run version:' @26 "%runVersionName%" / 'Initiated at:' @26 system.time ' on ' system.date //
+  'Main input GDX:' @26 "%DataPath%\%GEMinputGDX%" / 'Region/network GDX:' @26 "%DataPath%\%GEMnetworkGDX%" / 'Demand GDX:' @26 "%DataPath%\%GEMdemandGDX%" / 
+$ if %useOverrides%==0 $goto noOverrides3
+  'Override GDX:' @26 "%DataPath%\%GEMoverrideGDX%" / 
+$ label noOverrides3
+$ if %GRscheduleRead%==0 $goto noGRschedule
+  'Build schedule file:' @26 "%GRscheduleFile%" / 
+$ label noGRschedule
+ /'Number of experiments:'   @26 numExperiments:<3:0  '-- ' loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put experiments.tl ' ' ) put /
+  'Number of steps:'         @26 numSteps:<3:0        '-- ' loop(steps$sum(allSolves(experiments,steps,scenSet), 1),       put steps.tl ' ' ) put /
+  'Number of scenario sets:' @26 numScenarioSets:<3:0 '-- ' loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1),     put scenSet.tl ' ' ) put /
+  'Number of scenarios:'     @26 numScenarios:<3:0    '-- ' loop(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1), put scen.tl ' ' ) put /
+  'Number of solves:'        @26 card(allSolves):<6:0 'Scenarios are mapped to the experiment-step-scenarioSet groupings as follows:' / @32
+  'Experiments' @45 'Steps'  @53 'scenarioSets' @71 'Scenarios' ;
+  counter = 0 ;
+  loop(allSolves(experiments,steps,scenSet),
+    counter = counter + 1 ;
+    put / @29 counter:<3:0 experiments.tl @45 steps.tl @53 scenSet.tl @67 '<-- ' ;
+    loop(scen$mapScenarios(scenSet,scen), put scen.tl ' ' )
+  ) ; put //
+  'Default scenario:'        @26 "%defaultScenario%"  ' - only used for input data reporting' /
+  'Report domain:'           @26 put "%reportDomain%" ' - only used for reporting an output summary' //
+  'Switches' /
+  'Use V2G generation plant:'            @40 if(V2GtechnologyOn,   put 'yes' else put 'no' ) put /
+  'Renewable energy share constraint:'   @40 if(renNrgShrOn,       put 'on'  else put 'off' ) put /
+  'Renewable capacity share constraint:' @40 if(renCapShrOn,       put 'on'  else put 'off' ) put /
+  "NI 'no wind' peak constraint:"        @40 if(niNWpeakCnstrntOn, put 'on'  else put 'off' ) put /
+  'Limit energy by fuel constraint:'     @40 if(limitNrgByFuelOn,  put 'on'  else put 'off' ) put /
+  'Full-blown reserves formulation:'     @40 if(reservesOn,        put 'on'  else put 'off' ) put /
+  'DC load flow formulation:'            @40 if(DCloadFlowOn,      put 'on'  else put 'off' ) put /
+  'Write out a GR build schedule:'       @40 if(GRscheduleWrite,   put 'yes' else put 'no' ) put //
+  'Miscellaneous parameters' /
+  'Generation WACC:'                     @40 (100 * WACCg):<4:1 /
+  'Transmission WACC:'                   @40 (100 * WACCt):<4:1 /
+  'Corporate tax rate:'                  @40 (100 * taxRate):<4:1 / ;
+
+put  /// 'Scenario weights and factors by experiment.' / @54 'Scenario' @66 'Scenario factors:' /
+'Experiments' @15 'Steps' @24 'scenarioSets' @40 'Scenarios' @55 'Weight' @66 'PeakLoad' @76 'Co2' @86 'FuelCost' @96 'Energy' ;
 loop(allSolves(experiments,steps,scenSet),
-  put / experiments.tl @18 steps.tl @28 scenSet.tl @45
+  put / experiments.tl @15 steps.tl @24 scenSet.tl @40
   loop(mapScenarios(scenSet,scen),
-    put scen.tl @56 weightScenariosBySet(scenSet,scen):10:3, scenarioPeakLoadFactor(scen):10:3
-      scenarioCO2TaxFactor(scen):10:3, scenarioFuelCostFactor(scen):10:3, scenarioNRGFactor(scen):10:3
-    put @110 ;
-    loop(mapSC_hydroSeqTypes(scen,hydroSeqTypes), put hydroSeqTypes.tl:<11 ) ;
-    loop(mapSC_hY(scen,hY), put hY.tl:<5 ) ;
+    put scen.tl @50 weightScenariosBySet(scenSet,scen):10:2, scenarioPeakLoadFactor(scen):10:2
+      scenarioCO2TaxFactor(scen):10:2, scenarioFuelCostFactor(scen):10:2, scenarioNRGFactor(scen):10:2 ;
   ) ;
-);
+) ;
+
+put //// 'Hydrology mappings to scenarios and type of sequence development (Same => averaged over the listed hydro years; Sequential => listed hydro year maps to first modelled year).' /
+'Experiments' @15 'Steps' @24 'scenarioSets' @40 'Scenarios' @56 'SeqType' @66 'Hydro years' ;
+loop(allSolves(experiments,steps,scenSet),
+  put / experiments.tl @15 steps.tl @24 scenSet.tl @40
+  loop(mapScenarios(scenSet,scen),
+    put scen.tl @56 loop(mapSC_hydroSeqTypes(scen,hydroSeqTypes), put hydroSeqTypes.tl:<10 ) loop(mapSC_hY(scen,hY), put hY.tl:<5 ) ;
+  ) ;
+) ;
+
+put //// 'Alternative view of scenario mappings to experiment-step-scenarioSet groups' / 'Experiments' @15 'Steps' @24 'Scenario sets'
+loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
+  put / experiments.tl ;
+  loop(steps$sum(allSolves(experiments,steps,scenSet), 1),
+    put / @15 steps.tl ;
+    loop(allSolves(experiments,steps,scenSet),
+      put / @24 scenSet.tl ' <-- ' loop(scen$mapScenarios(scenSet,scen), put scen.tl ' ' ) ;
+    ) ;
+  ) ;
+) ;
+
+* Other GEMsettings stuff not yet written out.
+*$setglobal firstYear 2012
+*$setglobal lastYear 2025
+*$setglobal RunType 1
+*$setglobal GEMtype RMIP
+*$setglobal DISPtype RMIP
+
+*$setglobal calcInputLRMCs 0
+
+*+++ Hydrology +++
+*Scalar hydroOutputScalar / .97 / ;
+
+*+++ CapitalExpenditure +++
+*Scalar discRateLow  / .04 / ;
+*Scalar discRateMed  / .07 / ;
+*Scalar discRateHigh / .10 / ;
+*Scalar depType / 1 / ;
+*Scalar txPlantLife / 60 / ;
+*Scalar txDepRate / .06 / ;
+*Scalar randomCapexCostAdjuster / 0 / ;
+
+*+++ GemConstraints +++
+*Scalar cGenYr / 2025 / ;
+*Scalar AnnualMWlimit / 1000 / ;
+*Scalar noRetire / 2 / ;
+*Scalar VOLLcap / 500 / ;
+*Scalar VOLLcost / 10000 / ;
+*Scalar penaltyViolatePeakLoad / 99999 / ;
+*Scalar penaltyViolateRenNrg / 99999 / ;
+
+*Scalar slackCost / 9999 / ;
+*Scalar noVOLLblks / 0 / ;
+*$setglobal NumVertices 4
+
+*+++ Load +++
+*$setglobal AClossesNI 0.0
+*$setglobal AClossesSI 0.0
+
+*+++ Solver +++
+*$setglobal Solver Cplex
+*$setglobal SolveGoal QDsol
+*$setglobal QDoptCr .0075
+*$setglobal QDsolSecs 20000
+*$setglobal VGsolSecs 7200
+*$setglobal Threads 4
+*$setglobal MinGapSecs 10800
+*$setglobal limitOutput 0
+
+*+++ Plots +++
+*$setglobal MexOrMat 1
+*$setglobal PlotInFigures 0
+*$setglobal PlotOutFigures 0
+*$setglobal PlotMIPtrace 0
+*$setglobal FigureTitles 0
 
 
 * Write the transmission data summaries.
@@ -1041,7 +1158,6 @@ loop(y, put / @2 y.tl @14  loop(aggR, put peakLoadByYearAggR(y,aggR):>10:0 ) ) ;
 $if %calcInputLRMCs%==0 $goto noLRMC
 $include GEMlrmc.gms
 $label noLRMC
-
 
 
 
