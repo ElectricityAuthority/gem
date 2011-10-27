@@ -9,10 +9,9 @@ $setglobal GEMtype RMIP
 * Specify whether GEM is to be a MIP or an RMIP - take care to get the spelling exact (default = MIP).
 $setglobal DISPtype RMIP
 * Specify whether DISP is to be a MIP or an RMIP - take care to get the spelling exact (default = RMIP).
-* Select 1 to suppress the renewable energy share constraint when/if solving the simulation (DISP) model; 0 otherwise.  
-$setglobal GRscheduleWrite 1
-* Select 1 to write out a GAMS-readable schedule of variables to be used to fix levels in subsequent models.
+
 $setglobal calcInputLRMCs 0
+Scalar GRscheduleWrite / 1 / ;
 
 
 *+++ Hydrology +++
@@ -33,7 +32,7 @@ Scalar randomCapexCostAdjuster / 0 / ;
 
 
 *+++ GemConstraints +++
-Scalar V2GtechnologyOn / 1 / ;
+Scalar V2GtechnologyOn / 0 / ;
 Scalar renNrgShrOn / 0 / ;
 Scalar renCapShrOn / 0 / ;
 Scalar niNWpeakCnstrntOn / 1 / ;

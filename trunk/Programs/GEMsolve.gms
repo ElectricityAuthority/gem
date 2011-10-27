@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 25/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 27/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -343,28 +343,28 @@ $     label skipThis
       if(%GRscheduleRead%=0, put / else put '  Fixed investment schedule:' @42 "%GRscheduleFile%" // ) ; 
 
 *     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRscheduleWrite = 1).
-$     if "%GRscheduleWrite%"==0 $goto skipGRscheduleWrite
-      dummy.lw = 0 ; put dummy ;
-      put_utility 'ren' / "%OutPath%\%runName%\Processed files\GRschedule - %runVersionName%_" experiments.tl '_' steps.tl '_' scenSet.tl '.gms' ;
-      if(not sameas(steps,'dispatch'),
-        put "Parameter fix_BUILD(g,y)   'New capacity installed by generating plant and year, MW' /" ;
-        loop((g,y)$BUILD.l(g,y), put /  "'" g.tl "'.'" y.tl "'" BUILD.l(g,y):15:8 ) put ' /;' // ;
-        put "Parameter fix_RETIRE(g,y)  'Capacity endogenously retired by generating plant and year, MW' /" ;
-        loop((g,y)$RETIRE.l(g,y), put / "'" g.tl "'.'" y.tl "'" RETIRE.l(g,y):15:8 ) put ' /;' // ;
-        put "Parameter fix_BRET(g,y)    'Binary variable to identify endogenous retirement year for the eligble generation plant' /" ;
-        loop((g,y)$BRET.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BRET.l(g,y):15:8 ) put ' /;' // ;
-        put "Parameter fix_ISRETIRED(g) 'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)' /" ;
-        loop(g$ISRETIRED.l(g),    put / "'" g.tl "'" ISRETIRED.l(g):15:8 ) put ' /;' // ;
-*       put "Parameter fix_CGEN(g,y)    'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)' /" ;
-*       loop((g,y)$CGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" CGEN.l(g,y):15:8 ) put ' /;' // ;
-*       put "Parameter fix_BGEN(g,y)    'Binary variable to identify build year for new generation plant' /" ;
-*       loop((g,y)$BGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BGEN.l(g,y):15:8 ) put ' /;' // ;
-*       put "Parameter fix_CAPACITY(g,y)  'Cumulative nameplate capacity at each generating plant in each year, MW' /" ;
-*       loop((g,y)$CAPACITY.l(g,y), put / "'" g.tl "'.'" y.tl "'" CAPACITY.l(g,y):15:8 ) put ' /;' // ;
-*       put "Parameter fix_BTX(r,rr,ps,y) 'Binary variable indicating the current state of a transmission path' /" ;
-*       loop((r,rr,ps,y)$BTX.l(r,rr,ps,y), put / "'" r.tl "'.'" rr.tl "'.'" ps.tl "'.'" y.tl "'" BTX.l(r,rr,ps,y):15:8 ) put ' /;' // ;
+      if(GRscheduleWrite,
+        dummy.lw = 0 ; put dummy ;
+        put_utility 'ren' / "%OutPath%\%runName%\Processed files\GRschedule - %runVersionName%_" experiments.tl '_' steps.tl '_' scenSet.tl '.gms' ;
+        if(not sameas(steps,'dispatch'),
+          put "Parameter fix_BUILD(g,y)   'New capacity installed by generating plant and year, MW' /" ;
+          loop((g,y)$BUILD.l(g,y), put /  "'" g.tl "'.'" y.tl "'" BUILD.l(g,y):15:8 ) put ' /;' // ;
+          put "Parameter fix_RETIRE(g,y)  'Capacity endogenously retired by generating plant and year, MW' /" ;
+          loop((g,y)$RETIRE.l(g,y), put / "'" g.tl "'.'" y.tl "'" RETIRE.l(g,y):15:8 ) put ' /;' // ;
+          put "Parameter fix_BRET(g,y)    'Binary variable to identify endogenous retirement year for the eligble generation plant' /" ;
+          loop((g,y)$BRET.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BRET.l(g,y):15:8 ) put ' /;' // ;
+          put "Parameter fix_ISRETIRED(g) 'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)' /" ;
+          loop(g$ISRETIRED.l(g),    put / "'" g.tl "'" ISRETIRED.l(g):15:8 ) put ' /;' // ;
+*         put "Parameter fix_CGEN(g,y)    'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)' /" ;
+*         loop((g,y)$CGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" CGEN.l(g,y):15:8 ) put ' /;' // ;
+*         put "Parameter fix_BGEN(g,y)    'Binary variable to identify build year for new generation plant' /" ;
+*         loop((g,y)$BGEN.l(g,y),   put / "'" g.tl "'.'" y.tl "'" BGEN.l(g,y):15:8 ) put ' /;' // ;
+*         put "Parameter fix_CAPACITY(g,y)  'Cumulative nameplate capacity at each generating plant in each year, MW' /" ;
+*         loop((g,y)$CAPACITY.l(g,y), put / "'" g.tl "'.'" y.tl "'" CAPACITY.l(g,y):15:8 ) put ' /;' // ;
+*         put "Parameter fix_BTX(r,rr,ps,y) 'Binary variable indicating the current state of a transmission path' /" ;
+*         loop((r,rr,ps,y)$BTX.l(r,rr,ps,y), put / "'" r.tl "'.'" rr.tl "'.'" ps.tl "'.'" y.tl "'" BTX.l(r,rr,ps,y):15:8 ) put ' /;' // ;
+        ) ;
       ) ;
-$     label skipGRscheduleWrite
 
 *     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
 $     if not %PlotMIPtrace%==1 $goto NoMIPTrace
@@ -414,6 +414,7 @@ $     include CollectResults.inc
   put dummy ;
   put_utility 'gdxout' / '%OutPath%\%runName%\GDX\temp\RepOut\' experiments.tl ;
   execute_unload
+  solveReport
 * Variable levels
   s_TOTALCOST s_TX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN
   s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
@@ -452,7 +453,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r isIldEqReg firstPeriod firstYr lastYr allButFirstYr
   paths nwd swd interIsland pumpedHydroPlant wind gas diesel
   thermalFuel i_fuelQuantities renew schedHydroPlant nsegment demandGen 
-  allSolves weightScenariosBySet
+  allSolves weightScenariosBySet numExperiments numSteps numScenarioSets numScenarios
 * Time, financial, capex and cost related sets and parameters
   yearNum taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
   capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost locationFactor capexPlant refurbCapexPlant

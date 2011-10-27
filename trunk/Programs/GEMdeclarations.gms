@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 25/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 27/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -375,7 +375,8 @@ Sets
 * Transmission data.
   slackBus(r)                                   'Designate a region to be the slack or reference bus'
   regLower(r,rr)                                'The lower triangular part of region-region matrix, i.e. where ord(r) > ord(rr)'
-  interIsland(ild,ild1)                         'Interisland island pairings (excludes intra-island)'
+  interIsland(ild,ild1)                         'Bilateral interisland island pairings - based on the Benmore-Haywards ends of the current HVDC link'
+  interIslandRegions(r,rr)                      'Bilateral interisland region pairings - based on the Benmore-Haywards ends of the current HVDC link'
   nwd(r,rr)                                     'Northward direction of flow on Benmore-Haywards HVDC'
   swd(r,rr)                                     'Southward direction of flow on Benmore-Haywards HVDC'
   paths(r,rr)                                   'All valid transmission paths'
@@ -473,6 +474,10 @@ Parameters
   historicalHydroOutput(v,hY,m)                 'Historical hydro output sequences by reservoir and month, GWh'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
 * Input data summaries
+  numExperiments                                'Number of active experiments'
+  numSteps                                      'Number of active steps in the solve process'
+  numScenarioSets                               'Number of active sets of scenarios'
+  numScenarios                                  'Number of active scenarios'
   xFoFm(g)                                      'eXceptional forced outage factor multipliers, i.e. at least one load block less than 0.5 or greater than 1.5'
   avgSRMC(g)                                    'Short run marginal cost of each generation project - averaged over years for the default scenario, $/MWh'
   avgPeakCon(g)                                 'Contribution to peak factor - averaged over years for each plant'
