@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 27/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 31/10/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -58,16 +58,18 @@ $offsymxref offsymlist
 * Create and execute a batch file to archive/save selected files.
 File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
 putclose bat
-  'copy "%DataPath%\%GEMinputGDX%"       "%OutPath%\%runName%\Archive\"' /
-  'copy "%DataPath%\%GEMnetworkGDX%"     "%OutPath%\%runName%\Archive\"' /
-  'copy "%DataPath%\%GEMdemandGDX%"      "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%GEMpathsAndFiles.inc" "%OutPath%\%runName%\Archive\GEMpathsAndFiles - %runVersionName%.inc"' /
-  'copy "%ProgPath%GEMsettings.inc"      "%OutPath%\%runName%\Archive\GEMsettings - %runVersionName%.inc"' /
-  'copy "%ProgPath%GEMstochastic.inc"    "%OutPath%\%runName%\Archive\GEMstochastic - %runVersionName%.inc"' / ;
-$if %useOverrides%==0 $goto noOverrides1
-bat.ap = 1 ; putclose bat 'copy "%DataPath%\%GEMoverrideGDX%" "%OutPath%\%runName%\Archive\"' / ; bat.ap = 0 ;
-$label noOverrides1
+  'copy "%DataPath%\%GEMinputGDX%"        "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%\%GEMnetworkGDX%"      "%OutPath%\%runName%\Archive\"' /
+  'copy "%DataPath%\%GEMdemandGDX%"       "%OutPath%\%runName%\Archive\"' /
+  'copy "%ProgPath%\GEMpathsAndFiles.inc" "%OutPath%\%runName%\Archive\GEMpathsAndFiles - %runVersionName%.inc"' /
+  'copy "%ProgPath%\GEMsettings.inc"      "%OutPath%\%runName%\Archive\GEMsettings - %runVersionName%.inc"' /
+  'copy "%ProgPath%\GEMstochastic.inc"    "%OutPath%\%runName%\Archive\GEMstochastic - %runVersionName%.inc"' / ;
+$ if %useOverrides%==0 $goto noOverrides1
+  bat.ap = 1 ; putclose bat
+  'copy "%DataPath%\%GEMoverrideGDX%"     "%OutPath%\%runName%\Archive\"' / ;
+$ label noOverrides1
 execute 'temp.bat' ;
+bat.ap = 0 ;
 
 
 
@@ -108,8 +110,8 @@ $gdxin "%DataPath%\%GEMnetworkGDX%"
 * Sets
 $loaddc r p ps tupg mapLocations regionCentroid txUpgradeTransitions mapArcNode
 * Parameters 
-$loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_txCapitalCost i_maxReservesTrnsfr
-$loaddc i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
+$loaddc i_txCapacity i_txCapacityPO i_txResistance i_txReactance i_maxReservesTrnsfr
+$loaddc i_txCapitalCost i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 
 $gdxin "%DataPath%\%GEMdemandGDX%"
 $load   i_NrgDemand
@@ -137,7 +139,17 @@ i_co2tax(y)$i_co2taxOvrd(y) = i_co2taxOvrd(y) ;                                i
 $label noOverrides2
 
 
-* Create a csv file of input data - unadulterated and just as imported.
+** Another temporary TPR override
+*i_txEarlyComYr(tupg)$( not sameas(tupg,'exist') ) = 3333 ;
+*i_txEarlyComYr('PEN_ALB220a') = 2012 ;
+*i_txEarlyComYr('WKM_OTA40022') = 2012 ;
+*i_txEarlyComYr('NewPole1') = 2012 ;
+*i_txEarlyComYr('NewPole2') = 2014 ;
+*i_txEarlyComYr('NewPole3') = 2016 ;
+**
+
+
+* Create a csv file of input data, including overrides - unadulterated and just as imported.
 File rawData 'GEM input data' / "%OutPath%\%runName%\Input data checks\Raw GEM input data - %runName%_%runVersionName%.csv" / ;
 rawData.pc = 5 ; rawData.pw = 999 ;
 put rawData 'Data as imported into GEMdata.gms. Sourced from:' /
@@ -185,12 +197,13 @@ put /  'i_largestGenerator, MW'     loop(y, put i_largestGenerator(y) ) ;
 put /  'i_P200ratioNZ'              loop(y, put i_P200ratioNZ(y) ) ; 
 put /  'i_P200ratioNI'              loop(y, put i_P200ratioNI(y) ) ; 
 
-put // 'Transmission data' / 'FrReg' 'ToReg' 'State' 'CapMW' 'CapPO_MW' '$m' 'Resistance' 'Reactance' 'EarlyYr' 'FixedYr' 'FrState' 'ToState' 'Upgrade' 'Upgrade description' ;
+put // 'Transmission data' / 'FrReg' 'ToReg' 'State' 'CapMW' 'CapPO_MW' 'Resistance' 'Reactance' '$m' 'EarlyYr' 'FixedYr' 'FrState' 'ToState' 'Upgrade' 'Upgrade description' ;
 loop((r,rr,ps)$i_txCapacity(r,rr,ps),
-  put / r.tl, rr.tl, ps.tl, i_txCapacity(r,rr,ps), i_txCapacityPO(r,rr,ps), i_txCapitalCost(r,rr,ps), i_txResistance(r,rr,ps):9:7, i_txReactance(r,rr,ps):6:4 ;
+  put / r.tl, rr.tl, ps.tl, i_txCapacity(r,rr,ps), i_txCapacityPO(r,rr,ps), i_txResistance(r,rr,ps):9:7, i_txReactance(r,rr,ps):6:4 ;
   loop((tupg,pss)$( txUpgradeTransitions(tupg,r,rr,pss,ps) or txUpgradeTransitions(tupg,rr,r,pss,ps) ),
-    if(i_txEarlyComYr(tupg), put i_txEarlyComYr(tupg) else put '' ) ;
-    if(i_txFixedComYr(tupg), put i_txFixedComYr(tupg) else put '' ) ;
+    if(i_txCapitalCost(tupg), put ( i_txCapitalCost(tupg) * i_txCapacity(r,rr,ps) / ( i_txCapacity(r,rr,ps) + i_txCapacity(rr,r,ps)) ) else put '' ) ;
+    if(i_txEarlyComYr(tupg),  put i_txEarlyComYr(tupg) else put '' ) ;
+    if(i_txFixedComYr(tupg),  put i_txFixedComYr(tupg) else put '' ) ;
     put pss.tl, ps.tl, tupg.tl, tupg.te(tupg) ;
   ) ;
 ) ;
@@ -486,6 +499,10 @@ interIslandRegions(r,rr)$( nwd(r,rr) or swd(r,rr) ) = yes ;
 * Make sure i_txCapacityPO is not specified for anything but the current HVDC link.
 i_txCapacityPO(r,rr,ps)$( not (nwd(r,rr) or swd(r,rr)) ) = 0 ;
 
+* Make sure i_txEarlyComYr equals the first modelled year if it isn't already defined 
+i_txEarlyComYr(tupg)$( i_txEarlyComYr(tupg) = 0 ) = firstYear ;
+i_txEarlyComYr(tupg)$sameas(tupg,'exist') = 0 ;
+
 * Make sure intraregional capacities and line characteristics are zero.
 i_txCapacity(r,r,ps) = 0 ;    i_txCapacityPO(r,r,ps) = 0 ;
 i_txResistance(r,r,ps) = 0 ;  i_txReactance(r,r,ps) = 0 ;
@@ -495,6 +512,7 @@ transitions(tupg,r,rr,ps,pss) = txUpgradeTransitions(tupg,r,rr,ps,pss) ;
 transitions(tupg,rr,r,ps,pss)$txUpgradeTransitions(tupg,r,rr,ps,pss) = txUpgradeTransitions(tupg,r,rr,ps,pss) ;
 * Now remove any illegitimate values from transitions.
 transitions(tupg,r,rr,ps,pss)$( i_txFixedComYr(tupg) >= 3333 ) = no ;
+transitions(tupg,r,rr,ps,pss)$( i_txEarlyComYr(tupg) >= 3333 ) = no ;
 transitions(tupg,r,rr,ps,pss)$( i_txCapacity(r,rr,pss) = 0 )  = no ;
 transitions(tupg,r,rr,ps,pss)$sameas(tupg,'exist') = no ;
 transitions(tupg,r,rr,ps,pss)$sameas(pss,'initial') = no ;
@@ -510,41 +528,51 @@ repeat
   allowedStates(r,rr,pss)$sum(transitions(tupg,r,rr,ps,pss)$allowedStates(r,rr,ps), 1 ) = yes ;
 until counter = card(allowedStates) ;
 
+* Count the allowed upgrade states for each active path.
+numAllowedStates(r,rr) = sum(ps$allowedStates(r,rr,ps), 1 ) ;
+
 * Identify all r-rr-ps tuples not in allowedStates.
 notAllowedStates(r,rr,ps) = yes ;
 notAllowedStates(allowedStates) = no ;
 
-* Zero out transmission capacities for states not allowed.
+* Zero out transmission capacities for states not allowed (i.e. something other than capacity may have resulted in a null transition above).
 i_txCapacity(notAllowedStates) = 0 ;
 i_txCapacityPO(notAllowedStates) = 0 ;
 
-* Identify all existing or potential interregional transmission paths. Then identify the ones that are uni- versus bi-directional.
+* Identify all existing or potential interregional transmission paths.
 paths(r,rr)$sum(allowedStates(r,rr,ps), 1 ) = yes ;
-biPaths(r,rr)$( paths(r,rr) * paths(rr,r) ) = yes ;
-uniPaths(paths) = yes ;
-uniPaths(biPaths) = no ;
 
-* Identify all upgrade states on all transmission paths.
-upgradedStates(allowedStates(r,rr,ps))$( not sameas(ps,'initial') ) = yes ;
+* Identify all allowable states of upgrade on each path.
+upgradeableStates(allowedStates(r,rr,ps))$( not sameas(ps,'initial') ) = yes ;
+
+* Identify the last allowed transmission upgrade state on each path.
+counter = 0 ;
+loop(paths(r,rr),
+  loop(allowedStates(paths,ps), counter = counter + 1 ; lastAllowedState(allowedStates)$( numAllowedStates(paths) = counter ) = yes ) ;
+  counter = 0 ;
+) ;
 
 * Identify the allowable upgrade transition sequence for each valid transmission path.
 validTransitions(paths(r,rr),ps,pss)$sum(transitions(tupg,r,rr,ps,pss), 1 ) = yes ;
 
 * Assign earliest and fixed transmission upgrade years (let earliest year be the first year if no earliest year is specified).
-txEarlyComYr(tupg,paths(r,rr),ps,pss)$i_txEarlyComYr(tupg) = i_txEarlyComYr(tupg) ;
-txEarlyComYr(tupg,paths(rr,r),ps,pss)$txEarlyComYr(tupg,r,rr,ps,pss) = txEarlyComYr(tupg,r,rr,ps,pss) ;
+txEarlyComYr(transitions(tupg,r,rr,ps,pss))$i_txEarlyComYr(tupg) = i_txEarlyComYr(tupg) ;
+txEarlyComYr(transitions(tupg,rr,r,ps,pss))$txEarlyComYr(tupg,r,rr,ps,pss) = txEarlyComYr(tupg,r,rr,ps,pss) ;
 txEarlyComYr(transitions)$( not txEarlyComYr(transitions) ) = firstYear ;
 txEarlyComYr(tupg,paths,ps,pss)$( not transitions(tupg,paths,ps,pss) ) = 0 ;
 
-txFixedComYr(tupg,paths(r,rr),ps,pss)$i_txFixedComYr(tupg) = i_txFixedComYr(tupg) ;
-txFixedComYr(tupg,paths(rr,r),ps,pss)$txFixedComYr(tupg,r,rr,ps,pss) = txFixedComYr(tupg,r,rr,ps,pss) ;
+txFixedComYr(transitions(tupg,r,rr,ps,pss))$i_txFixedComYr(tupg) = i_txFixedComYr(tupg) ;
+txFixedComYr(transitions(tupg,rr,r,ps,pss))$txFixedComYr(tupg,r,rr,ps,pss) = txFixedComYr(tupg,r,rr,ps,pss) ;
 txFixedComYr(tupg,paths,ps,pss)$( not transitions(tupg,paths,ps,pss) ) = 0 ;
 
-* Represent early and fixed transmission investment years as sets.
-txEarlyComYrSet(transitions,y)$( yearNum(y) < txEarlyComYr(transitions) ) = yes ;
-** Can this next line be right?
-txEarlyComYrSet(transitions,y)$( txFixedComYr(transitions) > lastYear ) = yes ;
-txFixedComYrSet(transitions,y)$( txFixedComYr(transitions) = yearNum(y) ) = yes ;
+* Transfer transmission capital cost from a project basis (tupg) to path (r-rr) basis. Apportion cost to each direction based on
+* pre-rated transmission capcity in each direction. Convert the lumpy txCapitalCost ($m) to levelised TxCapCharge ($m/yr).
+txCapitalCost(r,rr,ps) = sum(transitions(tupg,r,rr,pss,ps)$( i_txCapacity(r,rr,ps) or i_txCapacity(rr,r,ps) ),
+                         i_txCapitalCost(tupg) * i_txCapacity(r,rr,ps) / ( i_txCapacity(r,rr,ps) + i_txCapacity(rr,r,ps) ) ) ;
+txCapCharge(r,rr,ps,y) = txCapitalCost(r,rr,ps) * txCapRecFac(y) ;
+
+* Identify transmission group constraints as valid if LHS and RHS coefficients are non-zero. 
+validTGC(tgc)$( sum(p$i_txGrpConstraintsLHS(tgc,p), 1) * i_txGrpConstraintsRHS(tgc) ) = yes ;
 
 * Calculate reactance and susceptance by year - this assumes exogenous or fixed timing of transmission expansion
 * decisions, otherwise it stays at the level of initial year.
@@ -560,9 +588,6 @@ loop(mapArcNode(p,r,rr),
   BBincidence(p,r)  =  1 ;
   BBincidence(p,rr) = -1 ;
 ) ;
-
-* Identify transmission group constraints as valid if LHS and RHS coefficients are non-zero. 
-validTGC(tgc)$( sum(p$i_txGrpConstraintsLHS(tgc,p), 1) * i_txGrpConstraintsRHS(tgc) ) = yes ;
 
 * Initialise the line segment set (i.e. number segments = number of vertices - 1).
 nsegment(n)$( ord(n) < card(n) ) = yes ;
@@ -583,15 +608,6 @@ slope(paths(r,rr),ps,nsegment(n))$[ (pCap(paths,ps,n+1) - pCap(paths,ps,n)) > ep
 
 intercept(paths(r,rr),ps,nsegment(n)) = pLoss(paths,ps,n) - slope(paths,ps,n) * pCap(paths,ps,n) ;
 
-* Assign transmission upgrade capital costs.
-* For sake of clarity, associate half of the cost with each direction, unless the path is unidirectional.
-txCapitalCost(r,rr,ps)$bipaths(r,rr) = 0.5 * i_txCapitalCost(r,rr,ps) ;
-txCapitalCost(rr,r,ps)$txCapitalCost(r,rr,ps) = 0.5 * i_txCapitalCost(r,rr,ps) ;
-txCapitalCost(r,rr,ps)$unipaths(r,rr) = i_txCapitalCost(r,rr,ps) ;
-txCapitalCost(r,rr,ps)$( unipaths(r,rr) and (txCapitalCost(r,rr,ps) = 0) ) = i_txCapitalCost(rr,r,ps) ;
-
-* Convert lumpy txCapitalCost ($m) to levelised TxCapCharge ($m/yr).
-txCapCharge(r,rr,ps,y) = txCapitalCost(r,rr,ps) * txCapRecFac(y) ;
 
 
 * f) Reserve energy data.
@@ -690,24 +706,7 @@ historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 $ontext
 ** A temporary overwrite to do the uncapacitated/free transmission upgrade runs while maintaining the capacitated loss functions.
 ** The last loss tranche keeps the same loss function and the same cost for non-free reserves, but the capacity is increased by 15 times,
-** i.e. i_txCapacity, i_txCapacityPO, and pNFresvCap are all multiplied by 15 for the last allowed upgrade state.
-
-Option allowedStates:0:0:1, intercept:3:0:1, slope:3:0:1, txCapitalCost:0:0:1, i_txCapacity:0:0:1, i_txCapacityPO:0:0:1, pNFresvCap:0:0:1, pNFresvCost:0:0:1 ;
-Display 'Before overwite', tupg, allowedStates, intercept, slope, txCapitalCost, i_txCapacity, i_txCapacityPO, pNFresvCap, pNFresvCost ;
-
-Set        theLastAllowedState(r,rr,ps)  'The last allowed transmission upgrade state' ;
-Parameter  countAllowedStates(r,rr)      'Count of allowed states for each active path' ;
-
-countAllowedStates(r,rr) = sum(ps$allowedStates(r,rr,ps), 1 ) ;
-
-counter = 0 ;
-loop(paths(r,rr),
-  loop(allowedStates(paths,ps),
-    counter = counter + 1 ;
-    theLastAllowedState(allowedStates)$( countAllowedStates(paths) = counter ) = yes ;
-  ) ;
-  counter = 0 ;
-) ;
+** i.e. i_txCapacity is  multiplied by 15 for the last allowed upgrade state.
 
 *i_txCapacity(theLastAllowedState(r,rr,ps))$( not (nwd(r,rr) or swd(r,rr)) ) = 15 * i_txCapacity(theLastAllowedState) ;
 i_txCapacity(r,rr,ps)$( not (nwd(r,rr) or swd(r,rr)) ) = 15 * i_txCapacity(r,rr,ps) ;
@@ -717,9 +716,9 @@ i_txCapacity('akld','nshr','upgr1') = 1556 ;   i_txCapacity('nshr','akld','upgr1
 i_txCapacity('waik','akld','initial') = 2588 ; i_txCapacity('akld','waik','initial') = 2588 ;
 i_txCapacity('waik','akld','upgr1') = 3420 ;   i_txCapacity('akld','waik','upgr1') = 3420 ;
 
-Option countAllowedStates:0:0:1, theLastAllowedState:0:0:1 ;
-Display 'After overwite', i_txCapacity, theLastAllowedState, countAllowedStates ;
+Display 'After temporary overwite', i_txCapacity ;
 $offtext
+
 
 
 *===============================================================================================
@@ -742,8 +741,8 @@ Display
   possibleToBuild, possibleToRefurbish, possibleToEndogRetire, possibleToRetire, endogenousRetireDecisnYrs, endogenousRetireYrs, validYrOperate
 * Load data.
 * Transmission data.
-  slackBus, regLower, interIsland, nwd, swd, paths, uniPaths, biPaths, transitions, validTransitions, allowedStates, notAllowedStates
-  upgradedStates, txEarlyComYrSet, txFixedComYrSet, validTGC, nSegment,
+  slackBus, regLower, interIsland, nwd, swd, paths, transitions, validTransitions, allowedStates, notAllowedStates
+  upgradeableStates, validTGC, nSegment,
 * Reserve energy data.
 * Parameters
 * Time/date-related sets and parameters.
@@ -859,18 +858,29 @@ $ label noGRschedule
   'Default scenario:'        @26 "%defaultScenario%"  ' - only used for input data reporting' /
   'Report domain:'           @26 put "%reportDomain%" ' - only used for reporting an output summary' //
   'Switches' /
-  'Use V2G generation plant:'            @40 if(V2GtechnologyOn,   put 'yes' else put 'no' ) put /
-  'Renewable energy share constraint:'   @40 if(renNrgShrOn,       put 'on'  else put 'off' ) put /
-  'Renewable capacity share constraint:' @40 if(renCapShrOn,       put 'on'  else put 'off' ) put /
-  "NI 'no wind' peak constraint:"        @40 if(niNWpeakCnstrntOn, put 'on'  else put 'off' ) put /
-  'Limit energy by fuel constraint:'     @40 if(limitNrgByFuelOn,  put 'on'  else put 'off' ) put /
-  'Full-blown reserves formulation:'     @40 if(reservesOn,        put 'on'  else put 'off' ) put /
-  'DC load flow formulation:'            @40 if(DCloadFlowOn,      put 'on'  else put 'off' ) put /
-  'Write out a GR build schedule:'       @40 if(GRscheduleWrite,   put 'yes' else put 'no' ) put //
+  'Use V2G generation plant:'            @40 if(V2GtechnologyOn,      put 'yes' else put 'no' ) put /
+  'Renewable energy share constraint:'   @40 if(renNrgShrOn,          put 'on'  else put 'off' ) put /
+  'Renewable capacity share constraint:' @40 if(renCapShrOn,          put 'on'  else put 'off' ) put /
+  "NI 'no wind' peak constraint:"        @40 if(niNWpeakCnstrntOn,    put 'on'  else put 'off' ) put /
+  'Limit energy by fuel constraint:'     @40 if(limitNrgByFuelOn,     put 'on'  else put 'off' ) put /
+  'Full-blown reserves formulation:'     @40 if(reservesOn,           put 'on'  else put 'off' ) put /
+  'DC load flow formulation:'            @40 if(DCloadFlowOn,         put 'on'  else put 'off' ) put /
+  'Write out a GR build schedule:'       @40 if(GRscheduleWrite,      put 'yes' else put 'no' ) put /
+  'Read/enforce a GR build schedule:'    @40 if(%GRscheduleRead% = 0, put 'no'  else put 'yes' ) put /
+  'Compute LRMCs from input data:'       @40 if(%calcInputLRMCs% = 0, put 'no'  else put 'yes' ) put //
   'Miscellaneous parameters' /
   'Generation WACC:'                     @40 (100 * WACCg):<4:1 /
   'Transmission WACC:'                   @40 (100 * WACCt):<4:1 /
-  'Corporate tax rate:'                  @40 (100 * taxRate):<4:1 / ;
+  'Corporate tax rate:'                  @40 (100 * taxRate):<4:1 /
+  'Annual MW build limit:'               @40 AnnualMWlimit:<5:0 /
+  'Number of VOLL plant:'                @40 (card(r)):<3:0 /
+  'Capacity of all VOLL plant, MW:'      @40 VOLLcap:<5:0 /
+  'Cost of all VOLL plant, $/MWh:'       @40 VOLLcost:<6:0 /
+  'Number of loss tranches:'             @40 (%NumVertices% - 1 ):<3:0 //
+  'Penalties' /
+  'Violate peak constraints, $/MW??:'    @40 penaltyViolatePeakLoad:<7:0 /
+  'Violate renewable NRG target, $/MWh:' @40 penaltyViolateRenNrg:<7:0 /
+  ;
 
 put  /// 'Scenario weights and factors by experiment.' / @54 'Scenario' @66 'Scenario factors:' /
 'Experiments' @15 'Steps' @24 'scenarioSets' @40 'Scenarios' @55 'Weight' @66 'PeakLoad' @76 'Co2' @86 'FuelCost' @96 'Energy' ;
@@ -909,8 +919,6 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 *$setglobal GEMtype RMIP
 *$setglobal DISPtype RMIP
 
-*$setglobal calcInputLRMCs 0
-
 *+++ Hydrology +++
 *Scalar hydroOutputScalar / .97 / ;
 
@@ -925,16 +933,9 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 
 *+++ GemConstraints +++
 *Scalar cGenYr / 2025 / ;
-*Scalar AnnualMWlimit / 1000 / ;
 *Scalar noRetire / 2 / ;
-*Scalar VOLLcap / 500 / ;
-*Scalar VOLLcost / 10000 / ;
-*Scalar penaltyViolatePeakLoad / 99999 / ;
-*Scalar penaltyViolateRenNrg / 99999 / ;
-
 *Scalar slackCost / 9999 / ;
 *Scalar noVOLLblks / 0 / ;
-*$setglobal NumVertices 4
 
 *+++ Load +++
 *$setglobal AClossesNI 0.0
@@ -977,13 +978,13 @@ loop((r,rr)$( ( ord(r) > ord(rr) ) and sum((tupg,ps,pss), transitions(tupg,r,rr,
   loop(transitions(tupg,r,rr,ps,pss),
     put / @3 tupg.tl:<15, ps.tl:<8, pss.tl:<8, txEarlyComYr(tupg,r,rr,ps,pss):>6:0 ;
     if(txFixedComYr(tupg,r,rr,ps,pss), put txFixedComYr(tupg,r,rr,ps,pss):>6:0 else put '   any' ) ;
-    if(bipaths(r,rr), put (2 * txCapitalCost(r,rr,pss)):>8:1 else put txCapitalCost(r,rr,pss):>8:1 ) ;
-
+    put (txCapitalCost(r,rr,pss) + txCapitalCost(rr,r,pss) ):>8:1 ;
     if(sameas(ps,'initial'),
       put i_txCapacity(r,rr,ps):>6:0, i_txCapacity(rr,r,ps):>6:0, i_txCapacity(r,rr,pss):>6:0, i_txCapacity(rr,r,pss):>6:0
           i_txCapacityPO(r,rr,ps):>6:0, i_txCapacityPO(rr,r,ps):>6:0, i_txCapacityPO(r,rr,pss):>6:0, i_txCapacityPO(rr,r,pss):>6:0
-    ) ;
-    if(not sameas(ps,'initial'),
+    else
+*    ) ;
+*    if(not sameas(ps,'initial'),
       put i_txCapacity(r,rr,ps):>6:0, i_txCapacity(rr,r,ps):>6:0, i_txCapacity(r,rr,pss):>6:0, i_txCapacity(rr,r,pss):>6:0
           i_txCapacityPO(r,rr,ps):>6:0, i_txCapacityPO(rr,r,ps):>6:0, i_txCapacityPO(r,rr,pss):>6:0, i_txCapacityPO(rr,r,pss):>6:0
     ) ;
@@ -993,8 +994,8 @@ loop((r,rr)$( ( ord(r) > ord(rr) ) and sum((tupg,ps,pss), transitions(tupg,r,rr,
   ) ;
   put / ;
 ) ;
-* Might also consider writing i_txResistance(r,rr,ps), allowedStates(r,rr,ps), notAllowedStates(r,rr,ps), biPaths(r,rr), uniPaths(r,rr)
-* upgradedStates(r,rr,ps), validTransitions(r,rr,ps,pss), reactanceYr(r,rr,y), susceptanceYr(r,rr,y), mapArcNode(p,r,rr), BBincidence(p,r),
+* Might also consider writing i_txResistance(r,rr,ps), allowedStates(r,rr,ps), notAllowedStates(r,rr,ps),
+* upgradeableStates(r,rr,ps), validTransitions(r,rr,ps,pss), reactanceYr(r,rr,y), susceptanceYr(r,rr,y), mapArcNode(p,r,rr), BBincidence(p,r),
 * validTGC(tgc), and txCapCharge(r,rr,ps,y).
 * NB: Reactance and susceptance by year assumes exogenous or fixed timing of transmission expansion decisions, otherwise it stays at
 *     the level of initial year.

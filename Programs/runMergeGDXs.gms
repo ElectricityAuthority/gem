@@ -21,7 +21,7 @@ putclose bat
   'copy "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_mds5.gdx" mds5.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds2.gdx mds3.gdx mds4.gdx mds5.gdx output=allRV_SelectedInputData.gdx big=100000'
+execute 'gdxmerge mds1.gdx mds2.gdx mds3.gdx mds4.gdx mds5.gdx output="allRV_SelectedInputData_%runName%.gdx" big=100000'
 
 
 * 2. Create and execute a batch file to:
@@ -34,22 +34,22 @@ putclose bat
   'del mds3.gdx /q' /
   'del mds4.gdx /q' /
   'del mds5.gdx /q' /
-  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds1.gdx" mds1.gdx' /
-  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds2.gdx" mds2.gdx' /
-  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds3.gdx" mds3.gdx' /
-  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds4.gdx" mds4.gdx' /
-  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - mds5.gdx" mds5.gdx' /
+  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runName%_mds1.gdx" mds1.gdx' /
+  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runName%_mds2.gdx" mds2.gdx' /
+  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runName%_mds3.gdx" mds3.gdx' /
+  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runName%_mds4.gdx" mds4.gdx' /
+  'copy "%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runName%_mds5.gdx" mds5.gdx' /
   ;
 execute 'temp.bat' ;
-execute 'gdxmerge mds1.gdx mds2.gdx mds3.gdx mds4.gdx mds5.gdx output=allRV_ReportOutput.gdx big=100000'
+execute 'gdxmerge mds1.gdx mds2.gdx mds3.gdx mds4.gdx mds5.gdx output="allRV_ReportOutput_%runName%.gdx" big=100000'
 
 
 * 3. Create and execute a batch file to:
 *    - copy the merged GDX files to their respective locations.
 *    - delete the temp directory in the GDX folder, which contained the various 'experiment' GDX files.
 putclose bat
-  'copy allRV_SelectedInputData.gdx     "%OutPath%\%runName%\Input data checks\"' /
-  'copy allRV_ReportOutput.gdx          "%OutPath%\%runName%\GDX\"' / ;
+  'copy "allRV_SelectedInputData_%runName%.gdx" "%OutPath%\%runName%\Input data checks\"' /
+  'copy "allRV_ReportOutput_%runName%.gdx"      "%OutPath%\%runName%\GDX\"' / ;
 execute 'temp.bat' ;
 
 

@@ -35,7 +35,7 @@ Scalar randomCapexCostAdjuster / 0 / ;
 Scalar V2GtechnologyOn / 0 / ;
 Scalar renNrgShrOn / 0 / ;
 Scalar renCapShrOn / 0 / ;
-Scalar niNWpeakCnstrntOn / 1 / ;
+Scalar niNWpeakCnstrntOn / 0 / ;
 Scalar limitNrgByFuelOn / 1 / ;
 Scalar reservesOn / 0 / ;
 Scalar DCloadFlowOn / 0 / ;

@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 27/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 31/10/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -11,7 +11,7 @@
 
 * NB: The following symbols from input data file may have been changed in GEMdata:
 *     Sets: y and exist.
-*     Parameters: i_fixedOM, i_txCapacity and i_txCapacityPO.
+*     Parameters: i_fixedOM, i_txCapacity, i_txCapacityPO and i_txEarlyComYr.
 
 $ontext
  This program continues sequentially from GEMdata. The GEMdata work file must be called at invocation
@@ -183,13 +183,13 @@ $ label noGRschedule2
   TXUPGRADE.lo(r,rr,ps,pss,y) = 0 ;  TXUPGRADE.up(validTransitions(paths,ps,pss),y) = 1 ;
   TXPROJVAR.lo(tupg,y) = 0 ;         TXPROJVAR.up(tupg,y) = 1 ;
 
-* Force transmission upgrades in the user-specified year (do this in either endogogenous or exogenous investment mode).
-  loop((transitions(tupg,r,rr,ps,pss),y)$txFixedComYrSet(tupg,r,rr,ps,pss,y),
+* Force transmission upgrades to occur in the user-specified year (do this in either endogogenous or exogenous investment mode).
+  loop((transitions(tupg,r,rr,ps,pss),y)$( txFixedComYr(transitions) = yearNum(y) ),
     TXUPGRADE.fx(r,rr,ps,pss,y) = 1 ;
   ) ;
 
-* Fix the years prior to earliest year at zero for either exogenous or endogenous transmission investment.
-  loop((transitions(tupg,r,rr,ps,pss),y)$txEarlyComYrSet(tupg,r,rr,ps,pss,y),
+* Fix all years prior to earliest year at zero for either exogenous or endogenous transmission investment.
+  loop((transitions(tupg,r,rr,ps,pss),y)$( yearNum(y) < txEarlyComYr(transitions) ),
     TXUPGRADE.fx(r,rr,ps,pss,y) = 0 ;
   ) ;
 
@@ -416,7 +416,7 @@ $     include CollectResults.inc
   execute_unload
   solveReport
 * Variable levels
-  s_TOTALCOST s_TX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN
+  s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN
   s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
   s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK s_RESV s_RESVVIOL s_RESVCOMPONENTS
 * Equation marginals (ignore the objective function)
@@ -428,9 +428,9 @@ $     include CollectResults.inc
 ) ;
 
 
-* Merge the GDX files from each experiment into a single GDX file called 'allExperimentsXXX.gdx'.
-execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\AllOut\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsAllOutput - %runVersionName%.gdx" big=100000'
-execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\RepOut\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runVersionName%.gdx" big=100000'
+* Merge the GDX files from each experiment into a single GDX - one for all output and once for the 'report only' output. Call the files 'allExperimentsXXX.gdx'.
+execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\AllOut\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsAllOutput - %runName%_%runVersionName%.gdx" big=100000'
+execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\RepOut\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsReportOutput - %runName%_%runVersionName%.gdx" big=100000'
 
 * NB: The big parameter is used to specify a cutoff for symbols that will be written one at a time. Each symbol
 * that exceeds the size will be processed by reading each gdx file and only process the data for that symbol. This
@@ -469,7 +469,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
 * Load and peak
   hoursPerBlock AClossFactors scenarioNRGfactor i_NrgDemand NrgDemand ldcMW scenarioPeakLoadFactor peakLoadNZ peakLoadNI
 * Transmission and grid
-  DCloadFlowOn transitions validTransitions allowedStates upgradedStates i_txCapacity i_txCapacityPO
+  DCloadFlowOn transitions validTransitions allowedStates upgradeableStates i_txCapacity i_txCapacityPO
   slope intercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 * Reserves
   reservesOn singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve
@@ -483,14 +483,11 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
 *+++++++++++++++++++++++++
   ;
 
-
 bat.ap = 0 ;
 putclose bat
   'copy "GEMsolve.log" "%OutPath%\%runName%\Processed files\GEMsolveLog - %runName%_%runVersionName%.txt"' /
   'copy "Report.txt"   "%OutPath%\%runName%\GEMsolveReport - %runName%.txt"' / ;
 execute 'temp.bat' ;
-
-
 
 
 
