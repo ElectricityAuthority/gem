@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 27/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 31/10/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -171,8 +171,8 @@ Parameters
   i_txCapacityPO(r,rr,ps)                       'Transmission path capacities with largest pole out (bi-directional, HVDC link only), MW'
   i_txResistance(r,rr,ps)                       'Transmission path resistance (not really a resistance but rather a loss function coefficient), p.u. (MW)'
   i_txReactance(r,rr,ps)                        'Reactance by state of each transmission path, p.u. (MW)'
-  i_txCapitalCost(r,rr,ps)                      'Transmission upgrade capital cost by path, $m'
   i_maxReservesTrnsfr(r,rr,ps,rc)               'Maximum reserves transfer capability in the direction of MW flow on the HCDC link, MW'
+  i_txCapitalCost(tupg)                         'Transmission upgrade capital cost by upgrade project, $m'
   i_txEarlyComYr(tupg)                          'Earliest year that a transmission upgrade can occur (this is a parameter, not a set)'
   i_txFixedComYr(tupg)                          'Fixed year in which a transmission upgrade must occur (this is a parameter, not a set)'
   i_txGrpConstraintsLHS(tgc,p)                  'Coefficients for left hand side of transmission group constraints'
@@ -380,15 +380,12 @@ Sets
   nwd(r,rr)                                     'Northward direction of flow on Benmore-Haywards HVDC'
   swd(r,rr)                                     'Southward direction of flow on Benmore-Haywards HVDC'
   paths(r,rr)                                   'All valid transmission paths'
-  uniPaths(r,rr)                                'Valid unidirectional transmission paths'
-  biPaths(r,rr)                                 'Valid bidirectional transmission paths'
   transitions(tupg,r,rr,ps,pss)                 'For all transmission paths, define the allowable transitions from one upgrade state to another'
   validTransitions(r,rr,ps,pss)                 'All allowed upgrade transitions on each valid path'
   allowedStates(r,rr,ps)                        'All of the allowed states (initial and upgraded) for each active path'
   notAllowedStates(r,rr,ps)                     'All r-rr-ps tuples not in the set called allowedStates'
-  upgradedStates(r,rr,ps)                       'All allowed upgraded states on each path'
-  txEarlyComYrSet(tupg,r,rr,ps,pss,y)           'Years prior to the earliest year in which a particular upgrade can occur - a set form of txEarlyComYr'
-  txFixedComYrSet(tupg,r,rr,ps,pss,y)           'Fixed year in which a particular upgrade must occur - set form of txFixedComYr'
+  upgradeableStates(r,rr,ps)                    'Identify all allowable states of upgrade on each path'
+  lastAllowedState(r,rr,ps)                     'Identify the last allowed transmission upgrade state on each path'
   validTGC(tgc)                                 'Valid transmission group constraints'
   nSegment(n)                                   'Line segments for piecewise linear transmission losses function (number of segments = number of vertices - l)'
 * Reserve energy data.
@@ -453,6 +450,7 @@ Parameters
   peakLoadNZ(y,scenarios)                       'Peak load for New Zealand by year, MW'
   peakLoadNI(y,scenarios)                       'Peak load for North Island by year, MW'
 * Transmission data.
+  numAllowedStates(r,rr)                        'Number of allowed upgrade states for each active path'
   txEarlyComYr(tupg,r,rr,ps,pss)                'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
   txFixedComYr(tupg,r,rr,ps,pss)                'Fixed year in which a transmission upgrade must occur (a parameter, not a set)'
   reactanceYr(r,rr,y)                           'Reactance by year for each transmission path. Units are p.u.'
@@ -818,13 +816,13 @@ tx_onestate(paths,y)..
   sum(allowedStates(paths,ps), BTX(paths,ps,y)) =e= 1 ;
 
 * Make sure the upgrade of a link corresponds to a legitimate state-to-state transition.
-tx_upgrade(paths,ps,y)$upgradedStates(paths,ps)..
+tx_upgrade(paths,ps,y)$upgradeableStates(paths,ps)..
   sum(validTransitions(paths,pss,ps), TXUPGRADE(paths,pss,ps,y)) - sum(validTransitions(paths,ps,pss), TXUPGRADE(paths,ps,pss,y) ) =e=
   BTX(paths,ps,y) - BTX(paths,ps,y-1) ;
 
 * Only one upgrade per path in a single year.
 tx_oneupgrade(paths,y)..
-  sum(upgradedStates(paths,ps), sum(validTransitions(paths,pss,ps), TXUPGRADE(paths,pss,ps,y) )) =l= 1 ;
+  sum(upgradeableStates(paths,ps), sum(validTransitions(paths,pss,ps), TXUPGRADE(paths,pss,ps,y) )) =l= 1 ;
 
 * DC load flow equation for all paths.
 tx_dcflow(r,rr,y,t,lb,sc)$( DCloadFlowOn * susceptanceYr(r,rr,y) * regLower(r,rr) )..

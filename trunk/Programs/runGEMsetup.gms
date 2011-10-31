@@ -20,6 +20,7 @@ putclose bat
   'mkdir "%OutPath%\%runName%"' /
   'mkdir "%OutPath%\%runName%\Archive"' /
   'mkdir "%OutPath%\%runName%\GDX"' /
+  'mkdir "%OutPath%\%runName%\Figures"' /
   'mkdir "%OutPath%\%runName%\GDX\temp\AllOut"' /
   'mkdir "%OutPath%\%runName%\GDX\temp\RepOut"' /
   'mkdir "%OutPath%\%runName%\Processed files"' /

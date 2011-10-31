@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 21/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 28/10/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -35,6 +35,7 @@ Files
   expandSchedule / "%OutPath%\%runName%\Capacity expansion by year - %runName%.csv" /
   capacityPlant  / "%OutPath%\%runName%\Processed files\Capacity by plant and year (net of retirements) - %runName%.csv" /
   genPlant       / "%OutPath%\%runName%\Processed files\Generation and utilisation by plant - %runName%.csv" /
+  tempTX         / "%OutPath%\%runName%\Processed files\Transmission build - %runName%.csv" /
   genPlantYear   / "%OutPath%\%runName%\Processed files\Generation and utilisation by plant (annually) - %runName%.csv" /
   variousAnnual  / "%OutPath%\%runName%\Processed files\Various annual results - %runName%.csv" /
   ;
@@ -45,6 +46,7 @@ summaryResults.pc = 5 ;  summaryResults.pw = 999 ;
 expandSchedule.pc = 5 ;  expandSchedule.pw = 999 ;
 capacityPlant.pc = 5 ;   capacityPlant.pw = 999 ;
 genPlant.pc = 5 ;        genPlant.pw = 999 ;
+tempTX.pc = 5 ;          tempTX.pw = 999 ;
 genPlantYear.pc = 5 ;    genPlantYear.pw = 999 ;
 variousAnnual.pc = 5 ;   variousAnnual.pw = 999 ;
 
@@ -81,6 +83,7 @@ Sets
   i                 'Substations'
   r                 'Regions'
   e                 'Zones'
+  ps                'Transmission path states (state of upgrade)'
   t                 'Time periods (within a year)'
   lb                'Load blocks'
   rc                'Reserve classes'
@@ -112,7 +115,7 @@ Sets
 
 * Load set membership from the GDX file containing the default or base case run version.
 $gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%baseRunVersion%.gdx"
-$loaddc k f g s o i r e t lb rc hY
+$loaddc k f g s o i r e ps t lb rc hY
 $loaddc firstYr firstPeriod thermalFuel nwd swd paths mapg_k mapg_f mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen exist sigen
 $loaddc techColor
 * fuelColor fuelGrpColor
@@ -128,6 +131,7 @@ Alias(scenarios,scen), (scenarioSets,scenSet) ;
 Parameters
   s_TOTALCOST(runVersions,experiments,steps,scenSet)                           'Discounted total system costs over all modelled years, $m (objective function value)'
   s_TX(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s_BTX(runVersions,experiments,steps,scenSet,r,rr,ps,y)                       'Binary variable indicating the current state of a transmission path'
   s_REFURBCOST(runVersions,experiments,steps,scenSet,g,y)                      'Annualised generation plant refurbishment expenditure charge, $'
   s_BUILD(runVersions,experiments,steps,scenSet,g,y)                           'New capacity installed by generating plant and year, MW'
   s_RETIRE(runVersions,experiments,steps,scenSet,g,y)                          'Capacity endogenously retired by generating plant and year, MW'
@@ -161,8 +165,8 @@ Parameters
   s_limit_hydro(runVersions,experiments,steps,scenSet,g,y,t,scen)              'Limit hydro generation according to inflows'
   s_tx_capacity(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)        'Calculate the relevant transmission capacity' ;
 
-$gdxin "%OutPath%\%runName%\GDX\allRV_ReportOutput.gdx"
-$loaddc s_TOTALCOST s_TX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_RESV s_RESVVIOL s_RESVCOMPONENTS
+$gdxin "%OutPath%\%runName%\GDX\allRV_ReportOutput_%runName%.gdx"
+$loaddc s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_RESV s_RESVVIOL s_RESVCOMPONENTS
 $loaddc s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
 $loaddc s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
 $loaddc s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_Nrg
@@ -201,7 +205,7 @@ Parameters
   pNFresvCost(runVersions,r,rr,stp)                    'Constant cost of each non-free piece (or step) of function, $/MWh'
   exogMWretired(runVersions,g,y)                       'Exogenously retired MW by plant and year, MW' ;
 
-$gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData.gdx"
+$gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData_%runName%.gdx"
 $loaddc possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate
 $loaddc i_fuelQuantities i_namePlate i_heatrate totalFuelCost CO2taxByPlant SRMC i_fixedOM locationFactor i_HVDCshr i_HVDClevy
 $loaddc i_plantReservesCost hoursPerBlock NrgDemand yearNum PVfacG PVfacT capCharge refurbCapCharge MWtoBuild penaltyViolateReserves pNFresvCost exogMWretired
@@ -557,6 +561,14 @@ put genPlantYear 'Annual generation (GWh) and utilisation (percent) by plant' /
 loop((rvExpStepsScenSet(rv,experiments,steps,scenSet),g,y,scen)$sum((t,lb), s_GEN(rvExpStepsScenSet,g,y,t,lb,scen)),
   put / rv.tl, experiments.tl, steps.tl, scenSet.tl, g.tl, y.tl, scen.tl, sum((t,lb), s_GEN(rvExpStepsScenSet,g,y,t,lb,scen)) ;
   put ( 100 * sum((t,lb), s_GEN(rvExpStepsScenSet,g,y,t,lb,scen)) / ( 8.76 * i_namePlate(rv,g) ) ) ;
+) ;
+
+
+** Temporary TX
+put tempTX 'Transmission build' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'FromReg' 'ToReg' 'UpgState' 'Year' ;
+loop((rvExpStepsScenSet(rv,experiments,steps,scenSet),r,rr,ps,y)$s_BTX(rvExpStepsScenSet,r,rr,ps,y),
+  put / rv.tl, experiments.tl, steps.tl, scenSet.tl, r.tl, rr.tl, ps.tl, y.tl, s_BTX(rvExpStepsScenSet,r,rr,ps,y) ;
 ) ;
 
 
