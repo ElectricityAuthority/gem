@@ -44,15 +44,13 @@ Scalar AnnualMWlimit / 1000 / ;
 Scalar noRetire / 2 / ;
 Scalar VOLLcap / 500 / ;
 Scalar VOLLcost / 10000 / ;
-*Scalar penaltyViolatePeakLoad / 4000 / ;
-*Scalar penaltyViolateRenNrg / 400 / ;
 Scalar penaltyViolatePeakLoad / 99999 / ;
 Scalar penaltyViolateRenNrg / 99999 / ;
 
 Scalar slackCost / 9999 / ;
 Scalar noVOLLblks / 0 / ;
 $setglobal NumVertices 4
-* Number of vertices for piecewise linear transmission losses function (number of vertices = number of segments  + l) ;  
+* Number of vertices in piecewise linear transmission loss functions (number of vertices = number of tranches + l) ;  
 
 
 *+++ Load +++
