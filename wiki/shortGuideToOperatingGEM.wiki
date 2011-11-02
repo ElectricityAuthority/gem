@@ -7,10 +7,11 @@ GEM has been designed to be operated through the emi user interface (see http://
 It is assumed that users have downloaded the two zip files containing:
   * the GEM codes, and
   * the GDX input files.
+
 Moreover, it is assumed that GEM is located in a directory structure as follows:
-..\GEM\Data
-..\GEM\Output
-..\GEM\Programs
+  * ..\GEM\Data
+  * ..\GEM\Output
+  * ..\GEM\Programs
 The GEM codes should be unpacked into the GEM programs directory and the GEM input files should be unpacked into the GEM data directory. It does not matter where on your computer the GEM directory is located but it is probably advisable not to run large GEM jobs over a network.
 Finally, the GEM programs directory ought to be placed on the Windows path environment variable. 
 = Four "runGEM" scripts =
