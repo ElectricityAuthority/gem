@@ -1,7 +1,7 @@
 * GEMlrmc.gms
 
 
-* Last modified by Dr Phil Bishop, 04/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 02/11/2011 (imm@ea.govt.nz)
 
 
 * This program takes the GEM input data and computes the LRMC by plant.
@@ -43,7 +43,7 @@ loop((noExist(g),z)$( ( ord(z) > 1 ) and ( ord(z) <= plantLifeYears(g) ) ),
 
 * Convert costs from modelled years (y) to sequential years (z), from $/MWh to $m, and collect into a parameter called totalCosts.
 loop((noExist(g),z,y)$( ( ord(z) <= plantLifeYears(g) ) and ( ord(z) = ord(y) ) ),
-  totalCosts(g,z)$possibleToBuild(g) = 1e-6 * ( 1e3 * assumedGWh(g) * sum(defaultScenario(scen), SRMC(g,y,scen)) + i_nameplate(g) * i_fixedOM(g) ) ;
+  totalCosts(g,z)$possibleToBuild(g) = 1e-3 * ( assumedGWh(g) * sum(defaultScenario(scen), SRMC(g,y,scen)) + i_nameplate(g) * i_fixedOM(g) ) ;
 ) ;
 
 * Complete the series for sequential years up to the number of plant life years.

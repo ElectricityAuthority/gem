@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 31/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 02/11/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -116,14 +116,13 @@ $loaddc i_txCapitalCost i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_tx
 $gdxin "%DataPath%\%GEMdemandGDX%"
 $load   i_NrgDemand
 
-* Initialise set 'n' - data comes from GEMsettings.inc.
+* Initialise set 'n' and record the number of loss tranches - data comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
-
+numT = %NumVertices% - 1 ; ;
 
 * Install data overrides.
+** mds1, mds2 and mds5 override 3 params: i_fuelPrices, i_fuelQuantities and i_co2tax. mds4 overrides just 1 param: i_co2tax.
 $if %useOverrides%==0 $goto noOverrides2
-** mds1, mds2 and mds5 override 3 params: i_fuelPrices, i_fuelQuantities and i_co2tax.
-** mds4 overrides 1 params: i_co2tax.
 
 Parameters
   i_fuelPricesOvrd(f,y)           'Fuel prices by fuel type and year, $/GJ'
@@ -139,7 +138,7 @@ i_co2tax(y)$i_co2taxOvrd(y) = i_co2taxOvrd(y) ;                                i
 $label noOverrides2
 
 
-** Another temporary TPR override
+** A temporary TPR override
 *i_txEarlyComYr(tupg)$( not sameas(tupg,'exist') ) = 3333 ;
 *i_txEarlyComYr('PEN_ALB220a') = 2012 ;
 *i_txEarlyComYr('WKM_OTA40022') = 2012 ;
@@ -511,8 +510,8 @@ i_txResistance(r,r,ps) = 0 ;  i_txReactance(r,r,ps) = 0 ;
 transitions(tupg,r,rr,ps,pss) = txUpgradeTransitions(tupg,r,rr,ps,pss) ;
 transitions(tupg,rr,r,ps,pss)$txUpgradeTransitions(tupg,r,rr,ps,pss) = txUpgradeTransitions(tupg,r,rr,ps,pss) ;
 * Now remove any illegitimate values from transitions.
-transitions(tupg,r,rr,ps,pss)$( i_txFixedComYr(tupg) >= 3333 ) = no ;
-transitions(tupg,r,rr,ps,pss)$( i_txEarlyComYr(tupg) >= 3333 ) = no ;
+transitions(tupg,r,rr,ps,pss)$( i_txFixedComYr(tupg) > lastYear ) = no ;
+transitions(tupg,r,rr,ps,pss)$( i_txEarlyComYr(tupg) > lastYear ) = no ;
 transitions(tupg,r,rr,ps,pss)$( i_txCapacity(r,rr,pss) = 0 )  = no ;
 transitions(tupg,r,rr,ps,pss)$sameas(tupg,'exist') = no ;
 transitions(tupg,r,rr,ps,pss)$sameas(pss,'initial') = no ;
@@ -589,8 +588,8 @@ loop(mapArcNode(p,r,rr),
   BBincidence(p,rr) = -1 ;
 ) ;
 
-* Initialise the line segment set (i.e. number segments = number of vertices - 1).
-nsegment(n)$( ord(n) < card(n) ) = yes ;
+* Initialise the loss tranches set (i.e. number tranches = card(n) - 1).
+trnch(n)$( ord(n) < card(n) ) = yes ;
 
 * Determine capacity of each segment, i.e. uniform between 0 and i_txCapacity(r,rr,ps). Note that there is no
 * special reason why the segments must be of uniform sizes.
@@ -603,10 +602,10 @@ pLoss(paths(r,rr),ps,n) = i_txResistance(paths,ps) * ( pCap(paths,ps,n)**2 ) ;
 bigLoss(paths,ps) = smax(n, pLoss(paths,ps,n) ) ;
 
 * Now compute the slope and intercept terms to be used in the loss functions in GEM.
-slope(paths(r,rr),ps,nsegment(n))$[ (pCap(paths,ps,n+1) - pCap(paths,ps,n)) > eps ] =
+slope(paths(r,rr),ps,trnch(n))$[ (pCap(paths,ps,n+1) - pCap(paths,ps,n)) > eps ] =
   [pLoss(paths,ps,n+1) - pLoss(paths,ps,n)] / [pCap(paths,ps,n+1) - pCap(paths,ps,n)] ;
 
-intercept(paths(r,rr),ps,nsegment(n)) = pLoss(paths,ps,n) - slope(paths,ps,n) * pCap(paths,ps,n) ;
+intercept(paths(r,rr),ps,trnch(n)) = pLoss(paths,ps,n) - slope(paths,ps,n) * pCap(paths,ps,n) ;
 
 
 
@@ -716,7 +715,8 @@ i_txCapacity('akld','nshr','upgr1') = 1556 ;   i_txCapacity('nshr','akld','upgr1
 i_txCapacity('waik','akld','initial') = 2588 ; i_txCapacity('akld','waik','initial') = 2588 ;
 i_txCapacity('waik','akld','upgr1') = 3420 ;   i_txCapacity('akld','waik','upgr1') = 3420 ;
 
-Display 'After temporary overwite', i_txCapacity ;
+option transitions:0:0:1, i_txCapacity:0:0:1 ;
+Display 'After temporary overwite', i_txCapacity, transitions ;
 $offtext
 
 
@@ -742,7 +742,7 @@ Display
 * Load data.
 * Transmission data.
   slackBus, regLower, interIsland, nwd, swd, paths, transitions, validTransitions, allowedStates, notAllowedStates
-  upgradeableStates, validTGC, nSegment,
+  upgradeableStates, validTGC, trnch,
 * Reserve energy data.
 * Parameters
 * Time/date-related sets and parameters.
@@ -869,14 +869,19 @@ $ label noGRschedule
   'Read/enforce a GR build schedule:'    @40 if(%GRscheduleRead% = 0, put 'no'  else put 'yes' ) put /
   'Compute LRMCs from input data:'       @40 if(%calcInputLRMCs% = 0, put 'no'  else put 'yes' ) put //
   'Miscellaneous parameters' /
+  'Modelled time horizon:'               @40 firstYear:<4:0 '-' lastYear:<4:0 /
+  'Corporate tax rate:'                  @40 (100 * taxRate):<4:1 /
   'Generation WACC:'                     @40 (100 * WACCg):<4:1 /
   'Transmission WACC:'                   @40 (100 * WACCt):<4:1 /
-  'Corporate tax rate:'                  @40 (100 * taxRate):<4:1 /
+  'Depreciation rate for Tx kit:        '@40 (100 * txDepRate):<4:1 /
+  'Life of transmission kit, years:'     @40 txPlantLife:<3:0 /
   'Annual MW build limit:'               @40 AnnualMWlimit:<5:0 /
   'Number of VOLL plant:'                @40 (card(r)):<3:0 /
   'Capacity of all VOLL plant, MW:'      @40 VOLLcap:<5:0 /
   'Cost of all VOLL plant, $/MWh:'       @40 VOLLcost:<6:0 /
-  'Number of loss tranches:'             @40 (%NumVertices% - 1 ):<3:0 //
+  'Number of loss tranches:'             @40 numT:<3:0 /
+  'AC loss adjustment (to load), NI:'    @40 (100 * %AClossesNI%):<5:2 /
+  'AC loss adjustment (to load), SI:'    @40 (100 * %AClossesSI%):<5:2 //
   'Penalties' /
   'Violate peak constraints, $/MW??:'    @40 penaltyViolatePeakLoad:<7:0 /
   'Violate renewable NRG target, $/MWh:' @40 penaltyViolateRenNrg:<7:0 /
@@ -911,36 +916,23 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
     ) ;
   ) ;
 ) ;
-
 * Other GEMsettings stuff not yet written out.
-*$setglobal firstYear 2012
-*$setglobal lastYear 2025
 *$setglobal RunType 1
 *$setglobal GEMtype RMIP
 *$setglobal DISPtype RMIP
-
 *+++ Hydrology +++
 *Scalar hydroOutputScalar / .97 / ;
-
 *+++ CapitalExpenditure +++
 *Scalar discRateLow  / .04 / ;
 *Scalar discRateMed  / .07 / ;
 *Scalar discRateHigh / .10 / ;
 *Scalar depType / 1 / ;
-*Scalar txPlantLife / 60 / ;
-*Scalar txDepRate / .06 / ;
 *Scalar randomCapexCostAdjuster / 0 / ;
-
 *+++ GemConstraints +++
 *Scalar cGenYr / 2025 / ;
 *Scalar noRetire / 2 / ;
 *Scalar slackCost / 9999 / ;
 *Scalar noVOLLblks / 0 / ;
-
-*+++ Load +++
-*$setglobal AClossesNI 0.0
-*$setglobal AClossesSI 0.0
-
 *+++ Solver +++
 *$setglobal Solver Cplex
 *$setglobal SolveGoal QDsol
@@ -950,7 +942,6 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 *$setglobal Threads 4
 *$setglobal MinGapSecs 10800
 *$setglobal limitOutput 0
-
 *+++ Plots +++
 *$setglobal MexOrMat 1
 *$setglobal PlotInFigures 0
@@ -961,44 +952,50 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 
 * Write the transmission data summaries.
 put txData, 'Transmission data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
-  'Network file:'            @26 "%GEMnetworkGDX%" /
-  'Number of regions:'       @26 numReg:<4:0 /
-  'Number of loss tranches:' @26 card(nSegment):<4:0 //
-  'All scenarios:'           @26 loop(scen, put scen.tl ', ' ) put /
-  'Default scenario:'        @26 loop(defaultScenario(scen), put scen.tl ) put //
-  'First modelled year:'     @26 firstYear:<4:0 /
-  'Last modelled year:'      @26 lastYear:<4:0 / @108
-  '-- Intercepts and slopes by loss tranche --' / @56 
-  '-- Capacity by upgrade state and pole out ---' @108 '   (values shown only for the To State)' / @56
-  '-- From ------ To --   -- POfrom ---- POto --' @108 '-- Intercepts --' @(108+8*%NumVertices%-1) '-- Slopes --' / @3
-  'Project' @18 'FrState' @26 'ToState' @35 'ErlyY FixYr      $m fwdMW revMW fwdMW revMW fwdMW revMW fwdMW revMW' ;
-loop(nsegment(n), put n.tl:>8 ) loop(nsegment(n), put n.tl:>8 ) ;
+  'Network file:'          @26 "%GEMnetworkGDX%" /
+  'Regions:'               @26 numReg:<4:0 /
+  'Paths:'                 @26 sum(paths(r,rr)$sum(transitions(tupg,r,rr,ps,pss), 1), 1):<4:0 /
+  'Allowed states:'        @26 card(allowedStates):<4:0 /
+  'Transitions:'           @26 card(transitions):<4:0 /
+  'Loss tranches:'         @26 numT:<4:0 //
+  'All scenarios:'         @26 loop(scen, put scen.tl ', ' ) put /
+  'Default scenario:'      @26 loop(defaultScenario(scen), put scen.tl ) put //
+  'First modelled year:'   @26 firstYear:<4:0 /
+  'Last modelled year:'    @26 lastYear:<4:0 / @107
+  "Loss function parameters by tranche (for the 'from' state only)" / @56
+  'Capacity, MW:' @80 'Capacity (PO), MW:' @107 'Intercepts:' @(107+14*numT) 'Slopes:' @(107+28*numT) 'Max capacity, MW:' / @18
+  '-- State --' @35 '-- Year --' @56 'From state' @68 'To state' @80 'From state' @92 'To state' @107
+  'From region' @(107+7*numT) 'To region' @(107+14*numT) 'From region' @(107+21*numT) 'To region' @(107+28*numT) 'From region' @(107+35*numT) 'To region' / @3
+  'Project' @18 'From' @26 'To' @35 'Early Fixed      $m   -->   <--   -->   <--   -->   <--   -->   <--' @102 ;
+   counter = 0 ; repeat counter = counter + 1 loop(trnch(n), put n.tl:>7 ) until counter = 6 put '    Project description' // ;
 loop((r,rr)$( ( ord(r) > ord(rr) ) and sum((tupg,ps,pss), transitions(tupg,r,rr,ps,pss)) ),
-  put / 'Path: ' r.tl ' <--> ' rr.tl ;
+  put 'Path: ' r.tl ' <--> ' rr.tl ;
   loop(transitions(tupg,r,rr,ps,pss),
     put / @3 tupg.tl:<15, ps.tl:<8, pss.tl:<8, txEarlyComYr(tupg,r,rr,ps,pss):>6:0 ;
-    if(txFixedComYr(tupg,r,rr,ps,pss), put txFixedComYr(tupg,r,rr,ps,pss):>6:0 else put '   any' ) ;
-    put (txCapitalCost(r,rr,pss) + txCapitalCost(rr,r,pss) ):>8:1 ;
-    if(sameas(ps,'initial'),
-      put i_txCapacity(r,rr,ps):>6:0, i_txCapacity(rr,r,ps):>6:0, i_txCapacity(r,rr,pss):>6:0, i_txCapacity(rr,r,pss):>6:0
-          i_txCapacityPO(r,rr,ps):>6:0, i_txCapacityPO(rr,r,ps):>6:0, i_txCapacityPO(r,rr,pss):>6:0, i_txCapacityPO(rr,r,pss):>6:0
-    else
-*    ) ;
-*    if(not sameas(ps,'initial'),
-      put i_txCapacity(r,rr,ps):>6:0, i_txCapacity(rr,r,ps):>6:0, i_txCapacity(r,rr,pss):>6:0, i_txCapacity(rr,r,pss):>6:0
-          i_txCapacityPO(r,rr,ps):>6:0, i_txCapacityPO(rr,r,ps):>6:0, i_txCapacityPO(r,rr,pss):>6:0, i_txCapacityPO(rr,r,pss):>6:0
-    ) ;
-    loop(nsegment(n), put intercept(r,rr,pss,n):>8:1 ) ;
-    loop(nsegment(n), put slope(r,rr,pss,n):>8:3 ) ;
-    put '    ' tupg.te(tupg) ;
-  ) ;
-  put / ;
+    if(txFixedComYr(tupg,r,rr,ps,pss), put txFixedComYr(tupg,r,rr,ps,pss):>6:0 else put '     -' ) ;
+    put (txCapitalCost(r,rr,pss) + txCapitalCost(rr,r,pss) ):>8:1, i_txCapacity(r,rr,ps):>6:0, i_txCapacity(rr,r,ps):>6:0, i_txCapacity(r,rr,pss):>6:0, i_txCapacity(rr,r,pss):>6:0 ;
+    if(i_txCapacityPO(r,rr,ps),  put i_txCapacityPO(r,rr,ps):>6:0  else put '     -' )  if(i_txCapacityPO(rr,r,ps),  put i_txCapacityPO(rr,r,ps):>6:0  else put '     -' )
+    if(i_txCapacityPO(r,rr,pss), put i_txCapacityPO(r,rr,pss):>6:0 else put '     -' )  if(i_txCapacityPO(rr,r,pss), put i_txCapacityPO(rr,r,pss):>6:0 else put '     -' )
+    loop(trnch(n), put intercept(r,rr,ps,n):>7:1 )        loop(trnch(n), put intercept(rr,r,ps,n):>7:1 )
+    loop(trnch(n), put slope(r,rr,ps,n):>7:3 )            loop(trnch(n), put slope(rr,r,ps,n):>7:3 )
+    loop(n$(ord(n)<card(n)), put pCap(r,rr,ps,n+1):>7:0 ) loop(n$(ord(n)<card(n)), put pCap(rr,r,ps,n+1):>7:0 )
+    put '    ' tupg.te(tupg)  ;
+  ) put // ;
 ) ;
-* Might also consider writing i_txResistance(r,rr,ps), allowedStates(r,rr,ps), notAllowedStates(r,rr,ps),
-* upgradeableStates(r,rr,ps), validTransitions(r,rr,ps,pss), reactanceYr(r,rr,y), susceptanceYr(r,rr,y), mapArcNode(p,r,rr), BBincidence(p,r),
-* validTGC(tgc), and txCapCharge(r,rr,ps,y).
-* NB: Reactance and susceptance by year assumes exogenous or fixed timing of transmission expansion decisions, otherwise it stays at
-*     the level of initial year.
+put // 'Count of allowed states (including initial state) on each path:' 
+loop((r,rr)$( ( ord(r) > ord(rr) ) and sum((tupg,ps,pss), transitions(tupg,r,rr,ps,pss)) ),
+  put / r.tl ' <--> ' rr.tl ' -- ' numAllowedStates(r,rr):<2:0 'allowable states.' ;
+) ;
+put /// 'A list dump of key transmission data:' / 'From' @11 'To' @21 'State' @30 'Cap, MW' @41 'Resist' @51 'n' @53 'Intercept' @67 'Slope' @76 'pCap' @82 'bigLoss'
+    @90 'quadLoss' @100 'linLoss' @110 'Loss%' @118 'Project description'  ;
+loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
+  put / r.tl:<10, rr.tl:<10, ps.tl:<10, i_txCapacity(r,rr,ps):6:0, i_txResistance(r,rr,ps):10:6, n.tl:>5, intercept(r,rr,ps,n):10:3, slope(r,rr,ps,n):10:4
+  pCap(r,rr,ps,n+1):8:1, bigLoss(r,rr,ps):9:2, pLoss(r,rr,ps,n+1):9:2, (intercept(r,rr,ps,n) + slope(r,rr,ps,n) * pCap(r,rr,ps,n+1)):9:2
+  (100 * pLoss(r,rr,ps,n+1) / pCap(r,rr,ps,n+1) ):8:2, @118 tupg.tl @133 tupg.te(tupg)
+) ;
+* Might also consider writing allowedStates(r,rr,ps), notAllowedStates(r,rr,ps), upgradeableStates(r,rr,ps), validTransitions(r,rr,ps,pss)
+*   reactanceYr(r,rr,y), susceptanceYr(r,rr,y), mapArcNode(p,r,rr), BBincidence(p,r), validTGC(tgc), and txCapCharge(r,rr,ps,y).
+* NB: Reactance and susceptance by year assumes exogenous or fixed timing of transmission expansion decisions, otherwise it stays at the level of initial year.
 
 
 * Write the plant data summaries.
@@ -1007,8 +1004,7 @@ $set plantDataHdr2 'Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Re
 put plantData, 'Plant data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
   'All scenarios:'                      @38 loop(scen, put scen.tl ', ' ) put /
   'Default scenario:'                   @38 loop(defaultScenario(scen), put scen.tl ) put //
-  'First modelled year:'                @38 firstYear:<4:0 /
-  'Last modelled year:'                 @38 lastYear:<4:0 //
+  'Modelled time horizon:'              @38 firstYear:<4:0 '-' lastYear:<4:0 //
   'Summary counts' /
   'Plant in input file:'                @38 card(g):<4:0 /
   'Existing plant:'                     @38 card(exist):<4:0 /

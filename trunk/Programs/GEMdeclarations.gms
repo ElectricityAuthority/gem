@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 31/10/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 02/11/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -214,7 +214,7 @@ Parameters
 
 * a) Hard-coded sets (non-developer users have no need to change these set elements).
 Sets
-  n                                             'Piecewise linear vertices'
+  n                                             'Number of vertices in piecewise linear loss functions'
   ct                                            'Capital expenditure types'           / genplt     'New generation plant'
                                                                                         refplt     'Refurbish existing generation plant' /
   d                                             'Discount rate classes'               / WACCg      "Generation investor's post-tax real weighted average cost of capital"
@@ -387,7 +387,7 @@ Sets
   upgradeableStates(r,rr,ps)                    'Identify all allowable states of upgrade on each path'
   lastAllowedState(r,rr,ps)                     'Identify the last allowed transmission upgrade state on each path'
   validTGC(tgc)                                 'Valid transmission group constraints'
-  nSegment(n)                                   'Line segments for piecewise linear transmission losses function (number of segments = number of vertices - l)'
+  trnch(n)                                      'Tranches for piecewise linear transmission loss function (number of tranches = card(n) - l)'
 * Reserve energy data.
 * Hydrology.
   chooseHydroYears(hY)                          'Used for calculation of hydro sequences'  ;
@@ -450,17 +450,18 @@ Parameters
   peakLoadNZ(y,scenarios)                       'Peak load for New Zealand by year, MW'
   peakLoadNI(y,scenarios)                       'Peak load for North Island by year, MW'
 * Transmission data.
-  numAllowedStates(r,rr)                        'Number of allowed upgrade states for each active path'
+  numT                                          'Number of tranches in piecewise linear loss functions'
+  numAllowedStates(r,rr)                        'Number of allowed states for each active path'
   txEarlyComYr(tupg,r,rr,ps,pss)                'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
   txFixedComYr(tupg,r,rr,ps,pss)                'Fixed year in which a transmission upgrade must occur (a parameter, not a set)'
   reactanceYr(r,rr,y)                           'Reactance by year for each transmission path. Units are p.u.'
   susceptanceYr(r,rr,y)                         'Susceptance by year for each transmission path. Units are p.u.'
   BBincidence(p,r)                              'Bus-branch incidence matrix'
-  pCap(r,rr,ps,n)                               'Capacity per piecewise linear segment, MW'
-  pLoss(r,rr,ps,n)                              'Losses per piecewise linear segment, MW'
+  pCap(r,rr,ps,n)                               'Maximum capacity per loss tranche, MW'
+  pLoss(r,rr,ps,n)                              'Losses at maximum capacity of each loss tranche, MW'
   bigLoss(r,rr,ps)                              'Upper bound on losses along path r-rr when in state ps, MW'
-  slope(r,rr,ps,n)                              'Slope of each piecewise linear segment'
-  intercept(r,rr,ps,n)                          'Intercept of each piecewise linear segment'
+  slope(r,rr,ps,n)                              'Slope of loss function at each tranche (i.e. piecewise linear segment)'
+  intercept(r,rr,ps,n)                          'Intercept of loss function at each tranche (i.e. piecewise linear segment)'
   txCapitalCost(r,rr,ps)                        'Capital cost of transmission upgrades by path and state, $m'
   txCapCharge(r,rr,ps,y)                        'Annualised or levelised capital charge for new transmission investment - $m/yr'
 * Reserve energy data.
@@ -593,7 +594,7 @@ Equations
   limit_pumpgen1(g,y,t,scenarios)               'Limit output from pumped hydro in a period to the quantity pumped'
   limit_pumpgen2(g,y,t,scenarios)               'Limit output from pumped hydro in a period to the assumed storage'
   limit_pumpgen3(g,y,t,lb,scenarios)            "Pumped MW can be no more than the scheme's installed MW"
-  boundtxloss(r,rr,ps,y,t,lb,n,scenarios)       'Sort out which segment of the loss function to operate on'
+  boundtxloss(r,rr,ps,y,t,lb,n,scenarios)       'Sort out which tranche of the loss function to operate on'
   tx_capacity(r,rr,y,t,lb,scenarios)            'Calculate the relevant transmission capacity'
   tx_projectdef(tupg,r,rr,ps,pss,y)             'Associate projects to individual upgrades'
   tx_onestate(r,rr,y)                           'A link must be in exactly one state in any given year'
@@ -799,7 +800,7 @@ limit_pumpgen3(validYrOperate(g,y),t,lb,sc)$pumpedHydroPlant(g)..
   PUMPEDGEN(g,y,t,lb,sc) =l= 0.001 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
 * Piecewise linear transmission losses.
-boundTxloss(paths(r,rr),ps,y,t,lb,nsegment(n),sc)$( allowedStates(paths,ps) * bigloss(paths,ps) )..
+boundTxloss(paths(r,rr),ps,y,t,lb,trnch(n),sc)$( allowedStates(paths,ps) * bigloss(paths,ps) )..
   LOSS(paths,y,t,lb,sc) =g=
   intercept(paths,ps,n) + slope(paths,ps,n) * TX(paths,y,t,lb,sc) - bigloss(paths,ps) * ( 1 - BTX(paths,ps,y) ) ;
 
@@ -1004,7 +1005,7 @@ Parameters
   s_limit_pumpgen1(steps,scenarioSets,g,y,t,scenarios)           'Limit output from pumped hydro in a period to the quantity pumped'
   s_limit_pumpgen2(steps,scenarioSets,g,y,t,scenarios)           'Limit output from pumped hydro in a period to the assumed storage'
   s_limit_pumpgen3(steps,scenarioSets,g,y,t,lb,scenarios)        "Pumped MW can be no more than the scheme's installed MW"
-  s_boundtxloss(steps,scenarioSets,r,rr,ps,y,t,lb,n,scenarios)   'Sort out which segment of the loss function to operate on'
+  s_boundtxloss(steps,scenarioSets,r,rr,ps,y,t,lb,n,scenarios)   'Sort out which tranche of the loss function to operate on'
   s_tx_capacity(steps,scenarioSets,r,rr,y,t,lb,scenarios)        'Calculate the relevant transmission capacity'
   s_tx_projectdef(steps,scenarioSets,tupg,r,rr,ps,pss,y)         'Associate projects to individual upgrades'
   s_tx_onestate(steps,scenarioSets,r,rr,y)                       'A link must be in exactly one state in any given year'
