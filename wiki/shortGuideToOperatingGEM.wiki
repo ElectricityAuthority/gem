@@ -1,0 +1,13 @@
+#A no-frills guide to get GEM up and running.
+
+= Introduction =
+
+GEM has been designed to be operated through the emi user interface (see http://code.google.com/p/getemi). While emi enables users unfamiliar with GAMS to operate GEM, some users may prefer to work directly with the GEM codes and input data files. 
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
