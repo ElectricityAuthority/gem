@@ -11,5 +11,5 @@ The last version of GEM released by the Electricity Commission was v1.5.10 in Ma
 
 A slightly modified version of 1.5.10 (GEM_1_5_10_2010SOO) is available for download from this site - click on the Downloads tab. The 2010 SOO was published by the Electricity Commission in September 2010. GEM_1_5_10_2010SOO contains the codes and data files necessary to replicate the results presented in the 2010 SOO.
 
-=Version 2.0.0 coming soon=
-A significantly revamped version of GEM, v2.0.0, will hopefully be released in the second quarter of 2011.
+=Version 2.0=
+A significantly revamped version of GEM, v2.0, was produced during 2011. It is available as a download from this site. All changes to the GEM2.0 (and onwards) codes and data files are recorded in the version control software and can be perused via the Source tab.
