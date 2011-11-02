@@ -2,7 +2,7 @@ A no-frills guide to get GEM up and running.
 
 = Introduction =
 
-GEM has been designed to be operated through the emi user interface (see http://code.google.com/p/getemi). While emi enables with GAMS to operate GEM, some users may prefer to users unfamiliar with GAMS to operate GEM, some users may prefer to work directly with the GEM codes and input data files. The purpose of this note is to briefly describe how to operate GEM without emi.
+GEM has been designed to be operated through the emi user interface (see http://code.google.com/p/getemi). While emi enables users unfamiliar with GAMS to operate GEM, some users may prefer to work directly with the GEM codes and input data files. The purpose of this note is to briefly describe how to operate GEM without emi.
 
 It is assumed that users have downloaded the two zip files containing:
   * the GEM codes, and
