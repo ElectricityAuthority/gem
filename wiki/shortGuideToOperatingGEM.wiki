@@ -2,7 +2,7 @@ A no-frills guide to get GEM up and running.
 
 = Introduction =
 
-GEM has been designed to be operated through the emi user interface (see http://code.google.com/p/getemi). While emi enables users unfamiliar with GAMS to operate GEM, some users may prefer to work directly with the GEM codes and input data files. The purpose of this note is briefly describe how to operate GEM without emi.
+GEM has been designed to be operated through the emi user interface (see http://code.google.com/p/getemi). While emi enables users unfamiliar with GAMS to operate GEM, some users may prefer to work directly with the GEM codes and input data files. The purpose of this note is to briefly describe how to operate GEM without emi.
 
 It is assumed that users have downloaded the two zip files containing:
   * the GEM codes, and
@@ -15,11 +15,9 @@ Moreover, it is assumed that GEM is located in a directory structure as follows:
 The GEM codes should be unpacked into the GEM programs directory and the GEM input files should be unpacked into the GEM data directory. It does not matter where on your computer the GEM directory is located but it is probably advisable not to run large GEM jobs over a network.
 Finally, the GEM programs directory ought to be placed on the Windows path environment variable. 
 = Four "runGEM" scripts =
-There are four simple GAMS' programs that do control the invocation and operation of the various aspects of running a GEM job, or sequence of jobs. Before invoking these scripts it is necessary to edit the 3 "include" (or .inc) files described in the next section.
-== runGEMsetup.gms==
-blah
-== runGEMDataAndSolve.gms==
-blah
+There are four simple GAMS' programs that control the invocation and operation of the various aspects of running a GEM job, or sequence of jobs. Before invoking these scripts it is necessary to edit the 3 "include" (or .inc) files described in the next section.
+  # runGEMsetup.gms - after importing the file called GEMpathsAndFiles.inc, this script sets up a location in the GEM output directory to contain the output of the GEM run. It also archives certain files so that the GEM run can be replicated at some future date and its precise configuration examined.
+  # runGEMDataAndSolve.gms - after importing the file called GEMpathsAndFiles.inc, this script invokes sequentially the two programs called GEMdata.gms and GEMsolve.gms.
 == runMergeGDXs.gms==
 blah
 == runGEMreports.gms==
