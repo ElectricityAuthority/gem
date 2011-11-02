@@ -1,11 +1,29 @@
-#A no-frills guide to get GEM up and running.
+A no-frills guide to get GEM up and running.
 
 = Introduction =
 
-GEM has been designed to be operated through the emi user interface (see http://code.google.com/p/getemi). While emi enables users unfamiliar with GAMS to operate GEM, some users may prefer to work directly with the GEM codes and input data files. 
+GEM has been designed to be operated through the emi user interface (see http://code.google.com/p/getemi). While emi enables users unfamiliar with GAMS to operate GEM, some users may prefer to work directly with the GEM codes and input data files. The purpose of this note is briefly describe how to operate GEM without emi.
 
+It is assumed that users have downloaded the two zip files containing:
+*the GEM codes, and
+*the GDX input files.
+Moreover, it is assumed that GEM is located in a directory structure as follows:
+..\GEM\Data
+..\GEM\Output
+..\GEM\Programs
+The GEM codes should be unpacked into the GEM programs directory and the GEM input files should be unpacked into the GEM data directory. It does not matter where on your computer the GEM directory is located but it is probably advisable not to run large GEM jobs over a network.
+Finally, the GEM programs directory ought to be placed on the Windows path environment variable. 
+= Four "runGEM" scripts =
+There are four simple GAMS' programs that do control the invocation and operation of the various aspects of running a GEM job, or sequence of jobs. Before invoking these scripts it is necessary to edit the 3 "include" (or .inc) files described in the next section.
+== runGEMsetup.gms==
+blah
+== runGEMDataAndSolve.gms==
+blah
+== runMergeGDXs.gms==
+blah
+== runGEMreports.gms==
+blah
 
-= Details =
 
 Add your content here.  Format your content with:
   * Text in *bold* or _italic_
