@@ -1,7 +1,6 @@
-A brief history of GEM.
+_A brief history of GEM._
 
 =Introduction=
-
 GEM was created by the New Zealand Electricity Commission in 2006. While used to support several areas of work, the primary purpose in its first 3 or 4 years was to support the analysis of grid upgrade proposals.
 
 On 1 November 2010 the Electricity Commission was dis-established and replaced with a new regulatory agency, the Electricity Authority (www.ea.govt.nz). The objective and functions of the EA are quite different from its predecessor. One of its new and important functions is to monitor the performance of all aspects of the electricity sector. In this role, the EA will continue to develop, maintain, and make use of GEM. The EA will also continue to make GEM freely available to any person or organisation interested in using it.
