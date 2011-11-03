@@ -11,8 +11,7 @@ Moreover, it is assumed that GEM is located in a directory structure as follows:
   * ..\GEM\Data
   * ..\GEM\Output
   * ..\GEM\Programs
-The GEM codes should be unpacked into the GEM programs directory and the GEM input files should be unpacked into the GEM data directory.
-It does not matter where the GEM directory is located. It is probably advisable not to run large GEM jobs over a network. Finally, the GEM programs directory ought to be placed on the Windows path environment variable.
+The GEM codes should be unpacked into the GEM programs directory and the GEM input files should be unpacked into the GEM data directory. It does not matter where the GEM directory is located. It is probably advisable not to run large GEM jobs over a network. Finally, the GEM programs directory ought to be placed on the Windows path environment variable.
 
 = The "runGEM" scripts =
 There are four simple GAMS' programs that control the invocation and operation of the various aspects of running a GEM job, or sequence of jobs. Before invoking these scripts it is necessary to edit the 3 "include" (or .inc) files described in the next section.
@@ -24,5 +23,11 @@ There are four simple GAMS' programs that control the invocation and operation o
 = The ".inc" files =
 There are three so-called .inc files - GEMpathsAndFiles.inc, GEMsettings.inc, and GEMstochastic.inc. These three files contain the configuration settings specific to 
 
-= Editing the input GDX files =
-blah blah blah
+= The input GDX files =
+The input data is provided to GEM via three or more GDX files:
+  # the first one, denoted GEMinputGDX in GEMpathsAndFiles.inc, contains all of the data (except for demand) that is invariant with respect to the regional/network configuration;
+  # the second, denoted GEMdemandGDX in GEMpathsAndFiles.inc, contains the demand data (commensurate with a given load duration curve as defined in GEMinputGDX; and
+  # the third input GDX file contains the data associated with a particular network and regional configuration.
+An override GDX file may also be prepared and used to override selected input data values with alternative values. See GEMoverrideGDX and GEMoverrideGDX in GEMpathsAndFiles.inc.
+
+The user interface, emi, can be used to modify the input GDX files or create new ones. Outside of emi, however, users need to find a way to modify the contents of the input GDX files. A set of Python tools for precisely this task is available at https://github.com/geoffleyland/py-gdx.
