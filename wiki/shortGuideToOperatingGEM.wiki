@@ -21,10 +21,8 @@ There are four simple GAMS' programs that control the invocation and operation o
   # *runMergeGDXs.gms* - after importing the file called GEMpathsAndFiles.inc, this script takes the GDX files produced by GEMsolve.gms and merges them into a single GDX file ready for use by GEMreports.gms. More specifically, a set of merged GDX files is required for each variant of the run that is to be reported on. The runMergeGDXs.gms script will need to be edited prior to invocation, and the edits will need to be consistent with the declaration and initialization of the sets called runVersions and runVersionColor in GEMpathsAndFiles.inc.
   # *runGEMreports.gms* - after importing the files called GEMpathsAndFiles.inc and GEMsettings.inc, this script invokes the program called GEMreports.gms and, as the name suggests, it produces a collection of reports.  Non-developer users of GEM should have no need to edit runGEMreports.gms or GEMreports.gms
 
-
 = The ".inc" files =
-There are three so-called .inc files - GEMpathsAndFiles.inc, GEMsettings.inc, and GEMstochastic.inc. These three files contain the configuration settings specific to a GEM run. A GEM run comprises one or more run versions. If emi is used, the three .inc files are created automatically. Without emi, the user needs to edit the .inc files accordingly. This task may prove to be a little difficult for novice users because much of the explanatory help available from emi is not provided in the .inc files.
-
+There are three so-called .inc files - GEMpathsAndFiles.inc, GEMsettings.inc, and GEMstochastic.inc. These three files contain the configuration settings specific to a GEM run. A GEM run comprises one or more run versions. If emi is used, the three .inc files are created automatically. Without emi, users must edit the .inc files accordingly. This task may prove to be a little difficult for novice users because much of the explanatory help available from emi is not provided in the .inc files.
 
 = The input GDX files =
 The input data is provided to GEM via three or more GDX files:
