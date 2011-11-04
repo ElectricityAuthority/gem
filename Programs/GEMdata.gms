@@ -955,11 +955,6 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 
 
 
-option transitions:0:0:1 ;
-display 'cunt', transitions ;
-
-
-
 * Write the transmission data summaries.
 put txData, 'Transmission data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Network file:'          @26 "%GEMnetworkGDX%" /
