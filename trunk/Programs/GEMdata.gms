@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 02/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/11/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -715,6 +715,10 @@ i_txCapacity('akld','nshr','upgr1') = 1556 ;   i_txCapacity('nshr','akld','upgr1
 i_txCapacity('waik','akld','initial') = 2588 ; i_txCapacity('akld','waik','initial') = 2588 ;
 i_txCapacity('waik','akld','upgr1') = 3420 ;   i_txCapacity('akld','waik','upgr1') = 3420 ;
 
+*bigLoss(paths,ps)$bigLoss(paths,ps) = bigLoss(paths,'initial') ;
+intercept(paths,ps,n)$intercept(paths,ps,n) = intercept(paths,'initial',n) ;
+slope(paths,ps,n)$slope(paths,ps,n) = slope(paths,'initial',n) ;
+
 option transitions:0:0:1, i_txCapacity:0:0:1 ;
 Display 'After temporary overwite', i_txCapacity, transitions ;
 $offtext
@@ -950,6 +954,12 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 *$setglobal FigureTitles 0
 
 
+
+option transitions:0:0:1 ;
+display 'cunt', transitions ;
+
+
+
 * Write the transmission data summaries.
 put txData, 'Transmission data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Network file:'          @26 "%GEMnetworkGDX%" /
@@ -986,12 +996,13 @@ put // 'Count of allowed states (including initial state) on each path:'
 loop((r,rr)$( ( ord(r) > ord(rr) ) and sum((tupg,ps,pss), transitions(tupg,r,rr,ps,pss)) ),
   put / r.tl ' <--> ' rr.tl ' -- ' numAllowedStates(r,rr):<2:0 'allowable states.' ;
 ) ;
-put /// 'A list dump of key transmission data:' / 'From' @11 'To' @21 'State' @30 'Cap, MW' @41 'Resist' @51 'n' @53 'Intercept' @67 'Slope' @76 'pCap' @82 'bigLoss'
-    @90 'quadLoss' @100 'linLoss' @110 'Loss%' @118 'Project description'  ;
+put /// "A list dump of key transmission data (each row refers to the 'from' state - see above table for 'from-to' state data):" /
+  'FromReg' @11 'ToRegion' @21 'FromState' @31 'ToState' @40 'Cap, MW' @51 'Resist' @61 'n' @63 'Intercept' @77 'Slope' @86 'pCap' @92
+  'bigLoss' @100 'quadLoss' @110 'linLoss' @120 'Loss%' @128 'Project description'  ;
 loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
-  put / r.tl:<10, rr.tl:<10, ps.tl:<10, i_txCapacity(r,rr,ps):6:0, i_txResistance(r,rr,ps):10:6, n.tl:>5, intercept(r,rr,ps,n):10:3, slope(r,rr,ps,n):10:4
+  put / r.tl:<10, rr.tl:<10, ps.tl:<10, pss.tl:<10, i_txCapacity(r,rr,ps):6:0, i_txResistance(r,rr,ps):10:6, n.tl:>5, intercept(r,rr,ps,n):10:3, slope(r,rr,ps,n):10:4
   pCap(r,rr,ps,n+1):8:1, bigLoss(r,rr,ps):9:2, pLoss(r,rr,ps,n+1):9:2, (intercept(r,rr,ps,n) + slope(r,rr,ps,n) * pCap(r,rr,ps,n+1)):9:2
-  (100 * pLoss(r,rr,ps,n+1) / pCap(r,rr,ps,n+1) ):8:2, @118 tupg.tl @133 tupg.te(tupg)
+  (100 * pLoss(r,rr,ps,n+1) / pCap(r,rr,ps,n+1) ):8:2, @128 tupg.tl @143 tupg.te(tupg)
 ) ;
 * Might also consider writing allowedStates(r,rr,ps), notAllowedStates(r,rr,ps), upgradeableStates(r,rr,ps), validTransitions(r,rr,ps,pss)
 *   reactanceYr(r,rr,y), susceptanceYr(r,rr,y), mapArcNode(p,r,rr), BBincidence(p,r), validTGC(tgc), and txCapCharge(r,rr,ps,y).
