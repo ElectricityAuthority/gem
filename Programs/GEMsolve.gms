@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 02/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/11/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -276,7 +276,6 @@ $ label noGRschedule2
 *     Collect modelledHydroOutput and hydroOutputUpgrades for posterity.
       allModelledHydroOutput(experiments,steps,scenSet,g,y,t,sc) = modelledHydroOutput(g,y,t,sc) ;
       allHydroOutputUpgrades(experiments,steps,scenSet,g,y,t,sc) = hydroOutputUpgrades(g,y,t,sc) ;
- ;
 
 *     Solve either GEM or DISP, depending on what step we're at.
       if(sameas(steps,'dispatch'),
@@ -405,9 +404,9 @@ $     include CollectResults.inc
 * Equations (ignore the objective function)
   s_calc_scenarioCosts s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire s_endogretonce
   s_balance_capacity s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg
-  s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3 s_boundtxloss s_tx_capacity s_tx_projectdef
-  s_tx_onestate s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1 s_resvtrfr1
-  s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind
+  s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3 s_calcTxLossesMIP s_calcTxLossesRMIP s_tx_capacity
+  s_tx_projectdef s_tx_onestate s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1
+  s_resvtrfr1 s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind
   ;
 
 * Repeat the output dump to a GDX file named after the experiment, but this time dump only the output required for reporting.
@@ -470,7 +469,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   hoursPerBlock AClossFactors scenarioNRGfactor i_NrgDemand NrgDemand ldcMW scenarioPeakLoadFactor peakLoadNZ peakLoadNI
 * Transmission and grid
   DCloadFlowOn transitions validTransitions allowedStates upgradeableStates i_txCapacity i_txCapacityPO
-  slope intercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS
+  lossSlopeMIP lossIntercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 * Reserves
   reservesOn singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve
 * Hydro related sets and parameters

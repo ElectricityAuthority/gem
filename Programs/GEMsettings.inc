@@ -32,6 +32,7 @@ Scalar randomCapexCostAdjuster / 0 / ;
 
 
 *+++ GemConstraints +++
+Scalar txLossesRMIP / 1 / ;
 Scalar V2GtechnologyOn / 0 / ;
 Scalar renNrgShrOn / 0 / ;
 Scalar renCapShrOn / 0 / ;

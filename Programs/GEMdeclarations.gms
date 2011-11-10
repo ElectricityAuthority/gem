@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 02/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/11/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -293,8 +293,7 @@ Parameters
   hydroOutputUpgrades(g,y,t,scenarios)          'Hydro output normalised for new generation projects that are linked to existing schedulable hydro'
   allModelledHydroOutput(experiments,steps,scenarioSets,g,y,t,scenarios) 'Collect the hydro output used in each modelled year by schedulable hydro plant for all experiments-steps-scenarioSets tuples, GWh'
   allHydroOutputUpgrades(experiments,steps,scenarioSets,g,y,t,scenarios) 'Collect the hydro output normalised for new generation projects that are linked to existing schedulable hydro'
-  solveReport(experiments,steps,scenarioSets,*) 'Collect various details about each solve of the models (both GEM and DISP)'
-  numSolves                                     'Figure out the number of solves to sum over when computing post-solve results averaged over scenarioSets' ;
+  solveReport(experiments,steps,scenarioSets,*) 'Collect various details about each solve of the models (both GEM and DISP)' ;
 
 * c) Various GEM configuration sets and parameters - see (mostly) GEMsettings.
 Sets
@@ -303,6 +302,7 @@ Sets
 Parameters
   firstYear                                     'First modelled year - as a scalar, not a set'
   lastYear                                      'Last modelled year - as a scalar, not a set'
+  txLossesRMIP                                  'Switch to control usage of the RMIP transmission loss functions (1=0n/0=off=use MIP transmission loss functions)'
   V2GtechnologyOn                               'Switch to control usage of the V2G technology (1=0n/0=namePlate MW set to zero for all V2G plant)'
   renNrgShrOn                                   'Switch to control usage of renewable energy share constraint (1=0n/0=off)'
   renCapShrOn                                   'Switch to control usage of renewable capacity share constraint (1=0n/0=off)'
@@ -387,7 +387,7 @@ Sets
   upgradeableStates(r,rr,ps)                    'Identify all allowable states of upgrade on each path'
   lastAllowedState(r,rr,ps)                     'Identify the last allowed transmission upgrade state on each path'
   validTGC(tgc)                                 'Valid transmission group constraints'
-  trnch(n)                                      'Tranches for piecewise linear transmission loss function (number of tranches = card(n) - l)'
+  trnch(n)                                      'Loss tranches for piecewise linear interregional transmission loss function (number of tranches = card(n) - l)'
 * Reserve energy data.
 * Hydrology.
   chooseHydroYears(hY)                          'Used for calculation of hydro sequences'  ;
@@ -460,8 +460,9 @@ Parameters
   pCap(r,rr,ps,n)                               'Maximum capacity per loss tranche, MW'
   pLoss(r,rr,ps,n)                              'Losses at maximum capacity of each loss tranche, MW'
   bigLoss(r,rr,ps)                              'Upper bound on losses along path r-rr when in state ps, MW'
-  slope(r,rr,ps,n)                              'Slope of loss function at each tranche (i.e. piecewise linear segment)'
-  intercept(r,rr,ps,n)                          'Intercept of loss function at each tranche (i.e. piecewise linear segment)'
+  lossSlopeMIP(r,rr,ps,n)                       'Slope of interregional transmission loss function for each loss tranche for each path state (MIP only)'
+  lossSlopeRMIP(r,rr,n)                         'Slope of interregional transmission loss function for each loss tranche - same slope for all states (RMIP only)'
+  lossIntercept(r,rr,ps,n)                      'Intercept of interregional transmission loss function for each loss tranche'
   txCapitalCost(r,rr,ps)                        'Capital cost of transmission upgrades by path and state, $m'
   txCapCharge(r,rr,ps,y)                        'Annualised or levelised capital charge for new transmission investment - $m/yr'
 * Reserve energy data.
@@ -594,7 +595,8 @@ Equations
   limit_pumpgen1(g,y,t,scenarios)               'Limit output from pumped hydro in a period to the quantity pumped'
   limit_pumpgen2(g,y,t,scenarios)               'Limit output from pumped hydro in a period to the assumed storage'
   limit_pumpgen3(g,y,t,lb,scenarios)            "Pumped MW can be no more than the scheme's installed MW"
-  boundtxloss(r,rr,ps,y,t,lb,n,scenarios)       'Sort out which tranche of the loss function to operate on'
+  calcTxLossesMIP(r,rr,ps,y,t,lb,n,scenarios)   'Calculate losses for each tranche of the loss function'
+  calcTxLossesRMIP(r,rr,y,t,lb,n,scenarios)     'Calculate losses for each tranche of the loss function'
   tx_capacity(r,rr,y,t,lb,scenarios)            'Calculate the relevant transmission capacity'
   tx_projectdef(tupg,r,rr,ps,pss,y)             'Associate projects to individual upgrades'
   tx_onestate(r,rr,y)                           'A link must be in exactly one state in any given year'
@@ -617,6 +619,7 @@ Equations
   resvoffcap(g,y,t,lb,scenarios)                'Offline energy reserve capability'
   resvreqwind(rc,ild,y,t,lb,scenarios)          'Reserve energy requirement based on a specified proportion of dispatched wind generation'
   ;
+
 
 
 *===============================================================================================
@@ -799,10 +802,15 @@ limit_pumpgen2(validYrOperate(g,y),t,sc)$pumpedHydroPlant(g)..
 limit_pumpgen3(validYrOperate(g,y),t,lb,sc)$pumpedHydroPlant(g)..
   PUMPEDGEN(g,y,t,lb,sc) =l= 0.001 * CAPACITY(g,y) * maxCapFactPlant(g,t,lb) * hoursPerBlock(t,lb) ;
 
-* Piecewise linear transmission losses.
-boundTxloss(paths(r,rr),ps,y,t,lb,trnch(n),sc)$( allowedStates(paths,ps) * bigloss(paths,ps) )..
+* Calculate piecewise linear transmission losses - MIP.
+calcTxLossesMIP(paths(r,rr),ps,y,t,lb,trnch(n),sc)$( (txLossesRMIP = 0) and allowedStates(paths,ps) * bigloss(paths,ps) )..
   LOSS(paths,y,t,lb,sc) =g=
-  intercept(paths,ps,n) + slope(paths,ps,n) * TX(paths,y,t,lb,sc) - bigloss(paths,ps) * ( 1 - BTX(paths,ps,y) ) ;
+  lossIntercept(paths,ps,n) + lossSlopeMIP(paths,ps,n) * TX(paths,y,t,lb,sc) - bigloss(paths,ps) * ( 1 - BTX(paths,ps,y) ) ;
+
+* Calculate piecewise linear transmission losses - RMIP.
+calcTxLossesRMIP(paths(r,rr),y,t,lb,trnch(n),sc)$txLossesRMIP..
+  LOSS(paths,y,t,lb,sc) =g=
+  sum(allowedStates(paths,ps), BTX(paths,ps,y) * lossIntercept(paths,ps,n)) + lossSlopeRMIP(paths,n) * TX(paths,y,t,lb,sc) ;
 
 * Calculate the relevant transmission capacity and impose it.
 tx_capacity(paths,y,t,lb,sc)..
@@ -908,7 +916,7 @@ Model DISP Dispatch model with build forced and timing fixed  /
   balance_capacity, bal_supdem, peak_nz, peak_ni, noWindPeak_ni
   limit_maxgen, limit_mingen, minutil, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
   limit_pumpgen1, limit_pumpgen2, limit_pumpgen3
-  boundTxloss, tx_capacity, tx_projectdef, tx_onestate, tx_upgrade, tx_oneupgrade
+  calcTxLossesMIP, calcTxLossesRMIP, tx_capacity, tx_projectdef, tx_onestate, tx_upgrade, tx_oneupgrade
   tx_dcflow, tx_dcflow0, equatetxloss, txGrpConstraint
   resvsinglereq1, genmaxresv1, resvtrfr1, resvtrfr2, resvtrfr3, resvrequnit
   resvreq2, resvreqhvdc, resvtrfr4, resvtrfrdef, resvoffcap, resvreqwind
@@ -922,6 +930,7 @@ Model DISP Dispatch model with build forced and timing fixed  /
 Model GEM Generation expansion model / DISP, bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire, endogretonce / ;
 
 
+
 *===============================================================================================
 * 5. Declare the 's_' parameters and specify the statements used to collect up results at end of each experiment.
 *    NB: The 's' prefix denotes 'solution' to model.
@@ -933,100 +942,101 @@ Parameters
 *+++++++++++++++++++++++++
 * More non-free reserves code.
 * Positive Variables
-  s_RESVCOMPONENTS(steps,scenarioSets,r,rr,y,t,lb,scenarios,stp) 'Non-free reserve components, MW'
+  s_RESVCOMPONENTS(steps,scenarioSets,r,rr,y,t,lb,scenarios,stp)   'Non-free reserve components, MW'
 * Equations
-  s_calc_nfreserves(steps,scenarioSets,r,rr,y,t,lb,scenarios)    'Calculate non-free reserve components' 
-  s_resv_capacity(steps,scenarioSets,r,rr,y,t,lb,scenarios,stp)  'Calculate and impose the relevant capacity on each step of free reserves'
+  s_calc_nfreserves(steps,scenarioSets,r,rr,y,t,lb,scenarios)      'Calculate non-free reserve components' 
+  s_resv_capacity(steps,scenarioSets,r,rr,y,t,lb,scenarios,stp)    'Calculate and impose the relevant capacity on each step of free reserves'
 *+++++++++++++++++++++++++
 * Free Variables
-  s_TOTALCOST(steps,scenarioSets)                                'Discounted total system costs over all modelled years, $m (objective function value)'
-  s_SCENARIO_COSTS(steps,scenarioSets,scenarios)                 'Discounted costs that might vary by scenario, $m (a component of objective function value)'
-  s_TX(steps,scenarioSets,r,rr,y,t,lb,scenarios)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
-  s_THETA(steps,scenarioSets,r,y,t,lb,scenarios)                 'Bus voltage angle'
+  s_TOTALCOST(steps,scenarioSets)                                  'Discounted total system costs over all modelled years, $m (objective function value)'
+  s_SCENARIO_COSTS(steps,scenarioSets,scenarios)                   'Discounted costs that might vary by scenario, $m (a component of objective function value)'
+  s_TX(steps,scenarioSets,r,rr,y,t,lb,scenarios)                   'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s_THETA(steps,scenarioSets,r,y,t,lb,scenarios)                   'Bus voltage angle'
 * Binary Variables
-  s_BGEN(steps,scenarioSets,g,y)                                 'Binary variable to identify build year for new generation plant'
-  s_BRET(steps,scenarioSets,g,y)                                 'Binary variable to identify endogenous retirement year for the eligble generation plant'
-  s_ISRETIRED(steps,scenarioSets,g)                              'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
-  s_BTX(steps,scenarioSets,r,rr,ps,y)                            'Binary variable indicating the current state of a transmission path'
-  s_NORESVTRFR(steps,scenarioSets,ild,ild1,y,t,lb,scenarios)     'Is there available capacity on the HVDC link to transfer energy reserves (0 = Yes, 1 = No)'
+  s_BGEN(steps,scenarioSets,g,y)                                   'Binary variable to identify build year for new generation plant'
+  s_BRET(steps,scenarioSets,g,y)                                   'Binary variable to identify endogenous retirement year for the eligble generation plant'
+  s_ISRETIRED(steps,scenarioSets,g)                                'Binary variable to identify if the plant has actually been endogenously retired (0 = not retired, 1 = retired)'
+  s_BTX(steps,scenarioSets,r,rr,ps,y)                              'Binary variable indicating the current state of a transmission path'
+  s_NORESVTRFR(steps,scenarioSets,ild,ild1,y,t,lb,scenarios)       'Is there available capacity on the HVDC link to transfer energy reserves (0 = Yes, 1 = No)'
 * Positive Variables
-  s_REFURBCOST(steps,scenarioSets,g,y)                           'Annualised generation plant refurbishment expenditure charge, $'
-  s_GENBLDCONT(steps,scenarioSets,g,y)                           'Continuous variable to identify build year for new scalable generation plant - for plant in linearPlantBuild set'
-  s_CGEN(steps,scenarioSets,g,y)                                 'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)'
-  s_BUILD(steps,scenarioSets,g,y)                                'New capacity installed by generating plant and year, MW'
-  s_RETIRE(steps,scenarioSets,g,y)                               'Capacity endogenously retired by generating plant and year, MW'
-  s_CAPACITY(steps,scenarioSets,g,y)                             'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s_TXCAPCHARGES(steps,scenarioSets,r,rr,y)                      'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s_GEN(steps,scenarioSets,g,y,t,lb,scenarios)                   'Generation by generating plant and block, GWh'
-  s_VOLLGEN(steps,scenarioSets,s,y,t,lb,scenarios)               'Generation by VOLL plant and block, GWh'
-  s_PUMPEDGEN(steps,scenarioSets,g,y,t,lb,scenarios)             'Energy from pumped hydro (treated like demand), GWh'
-  s_LOSS(steps,scenarioSets,r,rr,y,t,lb,scenarios)               'Transmission losses along each path, MW'
-  s_TXPROJVAR(steps,scenarioSets,tupg,y)                         'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  s_TXUPGRADE(steps,scenarioSets,r,rr,ps,pss,y)                  'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
+  s_REFURBCOST(steps,scenarioSets,g,y)                             'Annualised generation plant refurbishment expenditure charge, $'
+  s_GENBLDCONT(steps,scenarioSets,g,y)                             'Continuous variable to identify build year for new scalable generation plant - for plant in linearPlantBuild set'
+  s_CGEN(steps,scenarioSets,g,y)                                   'Continuous variable to identify build year for new scalable generation plant - for plant in integerPlantBuild set (CGEN or BGEN = 0 in any year)'
+  s_BUILD(steps,scenarioSets,g,y)                                  'New capacity installed by generating plant and year, MW'
+  s_RETIRE(steps,scenarioSets,g,y)                                 'Capacity endogenously retired by generating plant and year, MW'
+  s_CAPACITY(steps,scenarioSets,g,y)                               'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s_TXCAPCHARGES(steps,scenarioSets,r,rr,y)                        'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s_GEN(steps,scenarioSets,g,y,t,lb,scenarios)                     'Generation by generating plant and block, GWh'
+  s_VOLLGEN(steps,scenarioSets,s,y,t,lb,scenarios)                 'Generation by VOLL plant and block, GWh'
+  s_PUMPEDGEN(steps,scenarioSets,g,y,t,lb,scenarios)               'Energy from pumped hydro (treated like demand), GWh'
+  s_LOSS(steps,scenarioSets,r,rr,y,t,lb,scenarios)                 'Transmission losses along each path, MW'
+  s_TXPROJVAR(steps,scenarioSets,tupg,y)                           'Continuous 0-1 variable indicating whether an upgrade project is applied'
+  s_TXUPGRADE(steps,scenarioSets,r,rr,ps,pss,y)                    'Continuous 0-1 variable indicating whether a transmission upgrade is applied'
 * Reserve variables
-  s_RESV(steps,scenarioSets,g,rc,y,t,lb,scenarios)               'Reserve energy supplied, MWh'
-  s_RESVVIOL(steps,scenarioSets,rc,ild,y,t,lb,scenarios)         'Reserve energy supply violations, MWh'
-  s_RESVTRFR(steps,scenarioSets,rc,ild,ild1,y,t,lb,scenarios)    'Reserve energy transferred from one island to another, MWh'
-  s_RESVREQINT(steps,scenarioSets,rc,ild,y,t,lb,scenarios)       'Internally determined energy reserve requirement, MWh'
+  s_RESV(steps,scenarioSets,g,rc,y,t,lb,scenarios)                 'Reserve energy supplied, MWh'
+  s_RESVVIOL(steps,scenarioSets,rc,ild,y,t,lb,scenarios)           'Reserve energy supply violations, MWh'
+  s_RESVTRFR(steps,scenarioSets,rc,ild,ild1,y,t,lb,scenarios)      'Reserve energy transferred from one island to another, MWh'
+  s_RESVREQINT(steps,scenarioSets,rc,ild,y,t,lb,scenarios)         'Internally determined energy reserve requirement, MWh'
 * Penalty variables
-  s_RENNRGPENALTY(steps,scenarioSets,y)                          'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s_PEAK_NZ_PENALTY(steps,scenarioSets,y,scenarios)              'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
-  s_PEAK_NI_PENALTY(steps,scenarioSets,y,scenarios)              'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
-  s_NOWINDPEAK_NI_PENALTY(steps,scenarioSets,y,scenarios)        'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
+  s_RENNRGPENALTY(steps,scenarioSets,y)                            'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s_PEAK_NZ_PENALTY(steps,scenarioSets,y,scenarios)                'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
+  s_PEAK_NI_PENALTY(steps,scenarioSets,y,scenarios)                'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
+  s_NOWINDPEAK_NI_PENALTY(steps,scenarioSets,y,scenarios)          'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
 * Slack variables
-  s_ANNMWSLACK(steps,scenarioSets,y)                             'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s_RENCAPSLACK(steps,scenarioSets,y)                            'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s_HYDROSLACK(steps,scenarioSets,y)                             'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s_MINUTILSLACK(steps,scenarioSets,y)                           'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s_FUELSLACK(steps,scenarioSets,y)                              'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s_ANNMWSLACK(steps,scenarioSets,y)                               'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s_RENCAPSLACK(steps,scenarioSets,y)                              'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s_HYDROSLACK(steps,scenarioSets,y)                               'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s_MINUTILSLACK(steps,scenarioSets,y)                             'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s_FUELSLACK(steps,scenarioSets,y)                                'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations (ignore the objective function)
-  s_calc_scenarioCosts(steps,scenarioSets,scenarios)             'Calculate discounted costs that might vary by scenario'
-  s_calc_refurbcost(steps,scenarioSets,g,y)                      'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
-  s_calc_txcapcharges(steps,scenarioSets,r,rr,y)                 'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
-  s_bldgenonce(steps,scenarioSets,g)                             'If new generating plant is to be built, ensure it is built only once'
-  s_buildcapint(steps,scenarioSets,g,y)                          'If new integer plant is built, ensure built capacity is equal to nameplate capacity'
-  s_buildcapcont(steps,scenarioSets,g,y)                         'If new scalable plant is built, ensure built capacity does not exceed nameplate capacity'
-  s_annNewMWcap(steps,scenarioSets,y)                            'Restrict aggregate new capacity built in a single year to be less than a specified MW'
-  s_endogpltretire(steps,scenarioSets,g,y)                       'Calculate the MW to endogenously retire'
-  s_endogretonce(steps,scenarioSets,g)                           'Can only endogenously retire a plant once'
-  s_balance_capacity(steps,scenarioSets,g,y)                     'Year to year capacity balance relationship for all plant, MW'
-  s_bal_supdem(steps,scenarioSets,r,y,t,lb,scenarios)            'Balance supply and demand in each region, year, time period and load block'
-  s_peak_nz(steps,scenarioSets,y,scenarios)                      'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
-  s_peak_ni(steps,scenarioSets,y,scenarios)                      'Ensure enough capacity to meet peak demand in NI subject to contingencies'
-  s_noWindPeak_ni(steps,scenarioSets,y,scenarios)                'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
-  s_limit_maxgen(steps,scenarioSets,g,y,t,lb,scenarios)          'Ensure generation in each block does not exceed capacity implied by max capacity factors'
-  s_limit_mingen(steps,scenarioSets,g,y,t,lb,scenarios)          'Ensure generation in each block exceeds capacity implied by min capacity factors'
-  s_minutil(steps,scenarioSets,g,y,scenarios)                    'Ensure certain generation plant meets a minimum utilisation'
-  s_limit_fueluse(steps,scenarioSets,f,y,scenarios)              'Quantum of each fuel used and possibly constrained, PJ'
-  s_limit_nrg(steps,scenarioSets,f,y,scenarios)                  'Impose a limit on total energy generated by any one fuel type'
-  s_minreq_rennrg(steps,scenarioSets,y,scenarios)                'Impose a minimum requirement on total energy generated from all renewable sources'
-  s_minreq_rencap(steps,scenarioSets,y)                          'Impose a minimum requirement on installed renewable capacity'
-  s_limit_hydro(steps,scenarioSets,g,y,t,scenarios)              'Limit hydro generation according to inflows'
-  s_limit_pumpgen1(steps,scenarioSets,g,y,t,scenarios)           'Limit output from pumped hydro in a period to the quantity pumped'
-  s_limit_pumpgen2(steps,scenarioSets,g,y,t,scenarios)           'Limit output from pumped hydro in a period to the assumed storage'
-  s_limit_pumpgen3(steps,scenarioSets,g,y,t,lb,scenarios)        "Pumped MW can be no more than the scheme's installed MW"
-  s_boundtxloss(steps,scenarioSets,r,rr,ps,y,t,lb,n,scenarios)   'Sort out which tranche of the loss function to operate on'
-  s_tx_capacity(steps,scenarioSets,r,rr,y,t,lb,scenarios)        'Calculate the relevant transmission capacity'
-  s_tx_projectdef(steps,scenarioSets,tupg,r,rr,ps,pss,y)         'Associate projects to individual upgrades'
-  s_tx_onestate(steps,scenarioSets,r,rr,y)                       'A link must be in exactly one state in any given year'
-  s_tx_upgrade(steps,scenarioSets,r,rr,ps,y)                     'Make sure the upgrade of a link corresponds to a legitimate state-to-state transition'
-  s_tx_oneupgrade(steps,scenarioSets,r,rr,y)                     'Only one upgrade per path in a single year'
-  s_tx_dcflow(steps,scenarioSets,r,rr,y,t,lb,scenarios)          'DC load flow equation'
-  s_tx_dcflow0(steps,scenarioSets,r,rr,y,t,lb,scenarios)         'DC load flow equation'
-  s_equatetxloss(steps,scenarioSets,r,rr,y,t,lb,scenarios)       'Ensure that losses in both directions are equal'
-  s_txGrpConstraint(steps,scenarioSets,tgc,y,t,lb,scenarios)     'Group transmission constraints'
-  s_resvsinglereq1(steps,scenarioSets,rc,ild,y,t,lb,scenarios)   'Single reserve energy requirement constraint 1'
-  s_genmaxresv1(steps,scenarioSets,g,y,t,lb,scenarios)           'Limit the amount of energy reserves per generator'
-  s_resvtrfr1(steps,scenarioSets,ild,ild1,y,t,lb,scenarios)      'Limit on the amount of reserve energy transfer - constraint 1'
-  s_resvtrfr2(steps,scenarioSets,rc,ild,ild1,y,t,lb,scenarios)   'Limit on the amount of reserve energy transfer - constraint 2'
-  s_resvtrfr3(steps,scenarioSets,rc,ild,ild1,y,t,lb,scenarios)   'Limit on the amount of reserve energy transfer - constraint 3'
-  s_resvrequnit(steps,scenarioSets,g,rc,ild,y,t,lb,scenarios)    'Reserve energy requirement based on the largest dispatched unit'
-  s_resvreq2(steps,scenarioSets,rc,ild,y,t,lb,scenarios)         'Island reserve energy requirement - constraint 2'
-  s_resvreqhvdc(steps,scenarioSets,rc,ild,y,t,lb,scenarios)      'Reserve energy requirement based on the HVDC transfer taking into account self-cover'
-  s_resvtrfr4(steps,scenarioSets,ild1,ild,y,t,lb,scenarios)      'Limit on the amount of reserve energy transfer - constraint 4'
-  s_resvtrfrdef(steps,scenarioSets,ild,ild1,y,t,lb,scenarios)    'Constraint that defines if reserve energy transfer is available'
-  s_resvoffcap(steps,scenarioSets,g,y,t,lb,scenarios)            'Offline energy reserve capability'
-  s_resvreqwind(steps,scenarioSets,rc,ild,y,t,lb,scenarios)      'Reserve energy requirement based on a specified proportion of dispatched wind generation'
+  s_calc_scenarioCosts(steps,scenarioSets,scenarios)               'Calculate discounted costs that might vary by scenario'
+  s_calc_refurbcost(steps,scenarioSets,g,y)                        'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
+  s_calc_txcapcharges(steps,scenarioSets,r,rr,y)                   'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
+  s_bldgenonce(steps,scenarioSets,g)                               'If new generating plant is to be built, ensure it is built only once'
+  s_buildcapint(steps,scenarioSets,g,y)                            'If new integer plant is built, ensure built capacity is equal to nameplate capacity'
+  s_buildcapcont(steps,scenarioSets,g,y)                           'If new scalable plant is built, ensure built capacity does not exceed nameplate capacity'
+  s_annNewMWcap(steps,scenarioSets,y)                              'Restrict aggregate new capacity built in a single year to be less than a specified MW'
+  s_endogpltretire(steps,scenarioSets,g,y)                         'Calculate the MW to endogenously retire'
+  s_endogretonce(steps,scenarioSets,g)                             'Can only endogenously retire a plant once'
+  s_balance_capacity(steps,scenarioSets,g,y)                       'Year to year capacity balance relationship for all plant, MW'
+  s_bal_supdem(steps,scenarioSets,r,y,t,lb,scenarios)              'Balance supply and demand in each region, year, time period and load block'
+  s_peak_nz(steps,scenarioSets,y,scenarios)                        'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
+  s_peak_ni(steps,scenarioSets,y,scenarios)                        'Ensure enough capacity to meet peak demand in NI subject to contingencies'
+  s_noWindPeak_ni(steps,scenarioSets,y,scenarios)                  'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
+  s_limit_maxgen(steps,scenarioSets,g,y,t,lb,scenarios)            'Ensure generation in each block does not exceed capacity implied by max capacity factors'
+  s_limit_mingen(steps,scenarioSets,g,y,t,lb,scenarios)            'Ensure generation in each block exceeds capacity implied by min capacity factors'
+  s_minutil(steps,scenarioSets,g,y,scenarios)                      'Ensure certain generation plant meets a minimum utilisation'
+  s_limit_fueluse(steps,scenarioSets,f,y,scenarios)                'Quantum of each fuel used and possibly constrained, PJ'
+  s_limit_nrg(steps,scenarioSets,f,y,scenarios)                    'Impose a limit on total energy generated by any one fuel type'
+  s_minreq_rennrg(steps,scenarioSets,y,scenarios)                  'Impose a minimum requirement on total energy generated from all renewable sources'
+  s_minreq_rencap(steps,scenarioSets,y)                            'Impose a minimum requirement on installed renewable capacity'
+  s_limit_hydro(steps,scenarioSets,g,y,t,scenarios)                'Limit hydro generation according to inflows'
+  s_limit_pumpgen1(steps,scenarioSets,g,y,t,scenarios)             'Limit output from pumped hydro in a period to the quantity pumped'
+  s_limit_pumpgen2(steps,scenarioSets,g,y,t,scenarios)             'Limit output from pumped hydro in a period to the assumed storage'
+  s_limit_pumpgen3(steps,scenarioSets,g,y,t,lb,scenarios)          "Pumped MW can be no more than the scheme's installed MW"
+  s_calcTxLossesMIP(steps,scenarioSets,r,rr,ps,y,t,lb,n,scenarios) 'Calculate losses for each tranche of the loss function'
+  s_calcTxLossesRMIP(steps,scenarioSets,r,rr,y,t,lb,n,scenarios)   'Calculate losses for each tranche of the loss function'
+  s_tx_capacity(steps,scenarioSets,r,rr,y,t,lb,scenarios)          'Calculate the relevant transmission capacity'
+  s_tx_projectdef(steps,scenarioSets,tupg,r,rr,ps,pss,y)           'Associate projects to individual upgrades'
+  s_tx_onestate(steps,scenarioSets,r,rr,y)                         'A link must be in exactly one state in any given year'
+  s_tx_upgrade(steps,scenarioSets,r,rr,ps,y)                       'Make sure the upgrade of a link corresponds to a legitimate state-to-state transition'
+  s_tx_oneupgrade(steps,scenarioSets,r,rr,y)                       'Only one upgrade per path in a single year'
+  s_tx_dcflow(steps,scenarioSets,r,rr,y,t,lb,scenarios)            'DC load flow equation'
+  s_tx_dcflow0(steps,scenarioSets,r,rr,y,t,lb,scenarios)           'DC load flow equation'
+  s_equatetxloss(steps,scenarioSets,r,rr,y,t,lb,scenarios)         'Ensure that losses in both directions are equal'
+  s_txGrpConstraint(steps,scenarioSets,tgc,y,t,lb,scenarios)       'Group transmission constraints'
+  s_resvsinglereq1(steps,scenarioSets,rc,ild,y,t,lb,scenarios)     'Single reserve energy requirement constraint 1'
+  s_genmaxresv1(steps,scenarioSets,g,y,t,lb,scenarios)             'Limit the amount of energy reserves per generator'
+  s_resvtrfr1(steps,scenarioSets,ild,ild1,y,t,lb,scenarios)        'Limit on the amount of reserve energy transfer - constraint 1'
+  s_resvtrfr2(steps,scenarioSets,rc,ild,ild1,y,t,lb,scenarios)     'Limit on the amount of reserve energy transfer - constraint 2'
+  s_resvtrfr3(steps,scenarioSets,rc,ild,ild1,y,t,lb,scenarios)     'Limit on the amount of reserve energy transfer - constraint 3'
+  s_resvrequnit(steps,scenarioSets,g,rc,ild,y,t,lb,scenarios)      'Reserve energy requirement based on the largest dispatched unit'
+  s_resvreq2(steps,scenarioSets,rc,ild,y,t,lb,scenarios)           'Island reserve energy requirement - constraint 2'
+  s_resvreqhvdc(steps,scenarioSets,rc,ild,y,t,lb,scenarios)        'Reserve energy requirement based on the HVDC transfer taking into account self-cover'
+  s_resvtrfr4(steps,scenarioSets,ild1,ild,y,t,lb,scenarios)        'Limit on the amount of reserve energy transfer - constraint 4'
+  s_resvtrfrdef(steps,scenarioSets,ild,ild1,y,t,lb,scenarios)      'Constraint that defines if reserve energy transfer is available'
+  s_resvoffcap(steps,scenarioSets,g,y,t,lb,scenarios)              'Offline energy reserve capability'
+  s_resvreqwind(steps,scenarioSets,rc,ild,y,t,lb,scenarios)        'Reserve energy requirement based on a specified proportion of dispatched wind generation'
   ;
 
 * Now push the statements that collect up results into a file called CollectResults.inc. This file gets $include'd into GEMsolve.gms
@@ -1101,7 +1111,8 @@ $onecho > CollectResults.inc
   s_limit_pumpgen1(steps,scenarioSets,g,y,t,sc)              = limit_pumpgen1.m(g,y,t,sc) ;
   s_limit_pumpgen2(steps,scenarioSets,g,y,t,sc)              = limit_pumpgen2.m(g,y,t,sc) ;
   s_limit_pumpgen3(steps,scenarioSets,g,y,t,lb,sc)           = limit_pumpgen3.m(g,y,t,lb,sc) ;
-  s_boundtxloss(steps,scenarioSets,r,rr,ps,y,t,lb,n,sc)      = boundtxloss.m(r,rr,ps,y,t,lb,n,sc) ;
+  s_calcTxLossesMIP(steps,scenarioSets,r,rr,ps,y,t,lb,n,sc)  = calcTxLossesMIP.m(r,rr,ps,y,t,lb,n,sc) ;
+  s_calcTxLossesRMIP(steps,scenarioSets,r,rr,y,t,lb,n,sc)    = calcTxLossesRMIP.m(r,rr,y,t,lb,n,sc) ;
   s_tx_capacity(steps,scenarioSets,r,rr,y,t,lb,sc)           = tx_capacity.m(r,rr,y,t,lb,sc) ;
   s_tx_projectdef(steps,scenarioSets,tupg,r,rr,ps,pss,y)     = tx_projectdef.m(tupg,r,rr,ps,pss,y) ;
   s_tx_onestate(steps,scenarioSets,r,rr,y)                   = tx_onestate.m(r,rr,y) ;

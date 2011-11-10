@@ -683,6 +683,7 @@ put / 'Run', 'Type', 'Region', 'Year','MW', 'GWh', 'Price', 'Rev';
 
 *put / 'Peak Constraint by run, Region, year, $/kW/yr ' ;
 *put / 'Run', 'PkConstraint','Region', 'Year','MW', 'GWh', 'Price';
+$ontext
    loop((rvRD(rv),y),
          put / rv.tl, 'Security', 'ni', y.tl, 0, sum(reportDomain,loadByRegionAndYear(rv,reportDomain,'ni',y)),
               sum(reportDomain, (peakNZPrice(rv,reportDomain,y)+peakNIPrice(rv,reportDomain,y)+peaknoWindNIPrice(rv,reportDomain,y))/8.76) ;
@@ -693,6 +694,7 @@ put / 'Run', 'Type', 'Region', 'Year','MW', 'GWh', 'Price', 'Rev';
          put / rv.tl, 'Security', 'si', y.tl, 0, sum(reportDomain,loadByRegionAndYear(rv,reportDomain,'si',y)),
               sum(reportDomain, peakNZPrice(rv,reportDomain,y)/8.76) ;
     ) ;
+$offtext
 
 *put / 'Link Flow by run, FromRegion, Toregion and year, MW, GWh ' ;
 *put / 'Run', 'FromRegion', 'ToRegion', 'Year','MW', 'GWh', 'Price';

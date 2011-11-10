@@ -11,7 +11,7 @@ $setglobal GEMdemandGDX    "NRG_2Region9LB_TiwaiGoes.gdx"
 $setglobal GEMoverrideGDX  "mds5_Override.gdx"
 
 $setglobal useOverrides     0
-$setglobal sprsGEMsolve     0
+$setglobal sprsGEMsolve     1
 $setglobal Mode             0
 
 
