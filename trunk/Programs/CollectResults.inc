@@ -68,7 +68,8 @@
   s_limit_pumpgen1(steps,scenarioSets,g,y,t,sc)              = limit_pumpgen1.m(g,y,t,sc) ;
   s_limit_pumpgen2(steps,scenarioSets,g,y,t,sc)              = limit_pumpgen2.m(g,y,t,sc) ;
   s_limit_pumpgen3(steps,scenarioSets,g,y,t,lb,sc)           = limit_pumpgen3.m(g,y,t,lb,sc) ;
-  s_boundtxloss(steps,scenarioSets,r,rr,ps,y,t,lb,n,sc)      = boundtxloss.m(r,rr,ps,y,t,lb,n,sc) ;
+  s_calcTxLossesMIP(steps,scenarioSets,r,rr,ps,y,t,lb,n,sc)  = calcTxLossesMIP.m(r,rr,ps,y,t,lb,n,sc) ;
+  s_calcTxLossesRMIP(steps,scenarioSets,r,rr,y,t,lb,n,sc)    = calcTxLossesRMIP.m(r,rr,y,t,lb,n,sc) ;
   s_tx_capacity(steps,scenarioSets,r,rr,y,t,lb,sc)           = tx_capacity.m(r,rr,y,t,lb,sc) ;
   s_tx_projectdef(steps,scenarioSets,tupg,r,rr,ps,pss,y)     = tx_projectdef.m(tupg,r,rr,ps,pss,y) ;
   s_tx_onestate(steps,scenarioSets,r,rr,y)                   = tx_onestate.m(r,rr,y) ;

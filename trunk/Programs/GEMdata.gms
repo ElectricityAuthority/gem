@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 05/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/11/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -139,12 +139,14 @@ $label noOverrides2
 
 
 ** A temporary TPR override
-*i_txEarlyComYr(tupg)$( not sameas(tupg,'exist') ) = 3333 ;
-*i_txEarlyComYr('PEN_ALB220a') = 2012 ;
-*i_txEarlyComYr('WKM_OTA40022') = 2012 ;
-*i_txEarlyComYr('NewPole1') = 2012 ;
-*i_txEarlyComYr('NewPole2') = 2014 ;
-*i_txEarlyComYr('NewPole3') = 2016 ;
+$ontext
+i_txEarlyComYr(tupg)$( not sameas(tupg,'exist') ) = 3333 ;
+i_txEarlyComYr('PEN_ALB220a') = 2012 ;
+i_txEarlyComYr('WKM_OTA40022') = 2012 ;
+i_txEarlyComYr('NewPole1') = 2012 ;
+i_txEarlyComYr('NewPole2') = 2014 ;
+i_txEarlyComYr('NewPole3') = 2016 ;
+$offtext
 **
 
 
@@ -588,25 +590,45 @@ loop(mapArcNode(p,r,rr),
   BBincidence(p,rr) = -1 ;
 ) ;
 
+* Compute slopes and intercepts for transmission loss functions - assume integerized BTX in first instance:
 * Initialise the loss tranches set (i.e. number tranches = card(n) - 1).
 trnch(n)$( ord(n) < card(n) ) = yes ;
 
-* Determine capacity of each segment, i.e. uniform between 0 and i_txCapacity(r,rr,ps). Note that there is no
-* special reason why the segments must be of uniform sizes.
+* Determine capacity of each loss tranche, i.e. uniform between 0 and i_txCapacity(r,rr,ps). Note that there is no
+* special reason why the segments must be of uniform sizes. Note too that the 'capacity by tranche' and 'loss by
+* tranche' are only used in determining the intercepts and slopes - they play no explicit role in the model.
 pCap(paths(r,rr),ps,n)$(card(n) - 1 ) = (ord(n) - 1) * i_txCapacity(paths,ps) / (card(n) - 1 ) ;
 
-* Then use the quadratic loss function to compute losses at max capacity of each piece/segment.
+* Then use the quadratic loss function to compute losses at max capacity of each tranche.
 pLoss(paths(r,rr),ps,n) = i_txResistance(paths,ps) * ( pCap(paths,ps,n)**2 ) ;
 
-* Figure out the upper bound on losses.
+* Figure out the upper bound on losses, i.e. losses at max capacity of path in each state.
 bigLoss(paths,ps) = smax(n, pLoss(paths,ps,n) ) ;
 
-* Now compute the slope and intercept terms to be used in the loss functions in GEM.
-slope(paths(r,rr),ps,trnch(n))$[ (pCap(paths,ps,n+1) - pCap(paths,ps,n)) > eps ] =
+* Now compute the slope and intercept terms to be used in the GEM loss functions.
+lossSlopeMIP(allowedStates(paths,ps),trnch(n))$[ (pCap(paths,ps,n+1) - pCap(paths,ps,n)) > eps ] =
   [pLoss(paths,ps,n+1) - pLoss(paths,ps,n)] / [pCap(paths,ps,n+1) - pCap(paths,ps,n)] ;
 
-intercept(paths(r,rr),ps,trnch(n)) = pLoss(paths,ps,n) - slope(paths,ps,n) * pCap(paths,ps,n) ;
+lossIntercept(paths(r,rr),ps,trnch(n)) = pLoss(paths,ps,n) - lossSlopeMIP(paths,ps,n) * pCap(paths,ps,n) ;
 
+* Overwrite some of the above - pCap, pLoss, lossIntercept and both lossSlopeMIP and lossSlopeRMIP - if integerization of BTX is not to be employed.
+if(txLossesRMIP,
+* Accept values from above for the initial state, and populate slopes for all states using initial state slopes.
+  pCap(paths,ps,n)$(not sameas(ps,'initial') ) = 0 ;
+  pLoss(paths,ps,n)$(not sameas(ps,'initial') ) = 0 ;
+  lossIntercept(paths,ps,n)$(not sameas(ps,'initial') ) = 0 ;
+  lossSlopeRMIP(paths,n) = lossSlopeMIP(paths,'initial',n) ;
+
+* Now loop over paths, states and loss tranches, iteratively computing pCap, pLoss and lossIntercept.
+  loop((allowedStates(paths(r,rr),ps),n)$( (ord(n) > 1) and (not sameas(ps,'initial')) ),
+    pCap(paths,ps,n) = ( lossSlopeRMIP(paths,n-1) +
+                         sqrt( lossSlopeRMIP(paths,n-1)**2 + 4 * i_txResistance(paths,ps) * lossIntercept(paths,ps,n-1) ) ) / (2 * i_txResistance(paths,ps)) ;
+    pLoss(paths,ps,n) = i_txResistance(paths,ps) * pCap(paths,ps,n)**2 ;
+    lossIntercept(paths,ps,n)$( ord(n) < card(n) ) = pLoss(paths,ps,n) - lossSlopeRMIP(paths,n) * pCap(paths,ps,n) ;
+  ) ;
+* Finally, assign the RMIP slopes (same for all states) to the MIP slopes parameter - this makes the reporting further below robust across either assumption.
+lossSlopeMIP(paths,ps,n)$lossSlopeMIP(paths,ps,n) = lossSlopeRMIP(paths,n) ;
+) ;
 
 
 * f) Reserve energy data.
@@ -703,21 +725,16 @@ historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 
 
 $ontext
-** A temporary overwrite to do the uncapacitated/free transmission upgrade runs while maintaining the capacitated loss functions.
-** The last loss tranche keeps the same loss function and the same cost for non-free reserves, but the capacity is increased by 15 times,
-** i.e. i_txCapacity is  multiplied by 15 for the last allowed upgrade state.
+** Another temporary TPR overwrite to do the uncapacitated/free transmission upgrade runs while maintaining the capacitated loss functions. The last
+** loss tranche keeps the same loss function parameters but the capacity (of the initial state) is increased by 15 times, i.e. i_txCapacity is multiplied
+** by 15 and then capacity for all states after initial are set to zero. The committed upgrades are excluded from this overwrite.
 
-*i_txCapacity(theLastAllowedState(r,rr,ps))$( not (nwd(r,rr) or swd(r,rr)) ) = 15 * i_txCapacity(theLastAllowedState) ;
 i_txCapacity(r,rr,ps)$( not (nwd(r,rr) or swd(r,rr)) ) = 15 * i_txCapacity(r,rr,ps) ;
 i_txCapacity(r,rr,ps)$( (not (nwd(r,rr) or swd(r,rr))) and (not sameas(ps,'initial')) ) = 0 ;
 i_txCapacity('akld','nshr','initial') = 1067 ; i_txCapacity('nshr','akld','initial') = 1004 ;
 i_txCapacity('akld','nshr','upgr1') = 1556 ;   i_txCapacity('nshr','akld','upgr1') = 1556 ;
 i_txCapacity('waik','akld','initial') = 2588 ; i_txCapacity('akld','waik','initial') = 2588 ;
 i_txCapacity('waik','akld','upgr1') = 3420 ;   i_txCapacity('akld','waik','upgr1') = 3420 ;
-
-*bigLoss(paths,ps)$bigLoss(paths,ps) = bigLoss(paths,'initial') ;
-intercept(paths,ps,n)$intercept(paths,ps,n) = intercept(paths,'initial',n) ;
-slope(paths,ps,n)$slope(paths,ps,n) = slope(paths,'initial',n) ;
 
 option transitions:0:0:1, i_txCapacity:0:0:1 ;
 Display 'After temporary overwite', i_txCapacity, transitions ;
@@ -762,7 +779,7 @@ Display
   WtdAvgFOFmultiplier, reservesCapability, peakConPlant, NWpeakConPlant, maxCapFactPlant, minCapFactPlant
 * Load data.
 * Transmission data.
-  txEarlyComYr, txFixedComYr, reactanceYr, susceptanceYr, BBincidence, pCap, pLoss, bigLoss, slope, intercept
+  txEarlyComYr, txFixedComYr, reactanceYr, susceptanceYr, BBincidence, pCap, pLoss, bigLoss, lossSlopeMIP, lossSlopeRMIP, lossIntercept
   txCapitalCost, txCapCharge
 * Reserve energy data.
   reservesAreas, penaltyViolateReserves, windCoverPropn, bigM
@@ -862,6 +879,7 @@ $ label noGRschedule
   'Default scenario:'        @26 "%defaultScenario%"  ' - only used for input data reporting' /
   'Report domain:'           @26 put "%reportDomain%" ' - only used for reporting an output summary' //
   'Switches' /
+  'Assume integerized loss functions:'   @40 if(txLossesRMIP,         put 'no'  else put 'yes' ) put /
   'Use V2G generation plant:'            @40 if(V2GtechnologyOn,      put 'yes' else put 'no' ) put /
   'Renewable energy share constraint:'   @40 if(renNrgShrOn,          put 'on'  else put 'off' ) put /
   'Renewable capacity share constraint:' @40 if(renCapShrOn,          put 'on'  else put 'off' ) put /
@@ -958,6 +976,7 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 * Write the transmission data summaries.
 put txData, 'Transmission data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Network file:'          @26 "%GEMnetworkGDX%" /
+  'Integerized losses:'    @26 if(txLossesRMIP, put 'no' else put 'yes' ) put /
   'Regions:'               @26 numReg:<4:0 /
   'Paths:'                 @26 sum(paths(r,rr)$sum(transitions(tupg,r,rr,ps,pss), 1), 1):<4:0 /
   'Allowed states:'        @26 card(allowedStates):<4:0 /
@@ -966,7 +985,8 @@ put txData, 'Transmission data summarised (default scenario only) - based on use
   'All scenarios:'         @26 loop(scen, put scen.tl ', ' ) put /
   'Default scenario:'      @26 loop(defaultScenario(scen), put scen.tl ) put //
   'First modelled year:'   @26 firstYear:<4:0 /
-  'Last modelled year:'    @26 lastYear:<4:0 / @107
+  'Last modelled year:'    @26 lastYear:<4:0 //
+  'Note that capacity by loss tranche is only used in computation of slope and intercept terms. It plays no explicit role in the model' // @107
   "Loss function parameters by tranche (for the 'from' state only)" / @56
   'Capacity, MW:' @80 'Capacity (PO), MW:' @107 'Intercepts:' @(107+14*numT) 'Slopes:' @(107+28*numT) 'Max capacity, MW:' / @18
   '-- State --' @35 '-- Year --' @56 'From state' @68 'To state' @80 'From state' @92 'To state' @107
@@ -981,8 +1001,8 @@ loop((r,rr)$( ( ord(r) > ord(rr) ) and sum((tupg,ps,pss), transitions(tupg,r,rr,
     put (txCapitalCost(r,rr,pss) + txCapitalCost(rr,r,pss) ):>8:1, i_txCapacity(r,rr,ps):>6:0, i_txCapacity(rr,r,ps):>6:0, i_txCapacity(r,rr,pss):>6:0, i_txCapacity(rr,r,pss):>6:0 ;
     if(i_txCapacityPO(r,rr,ps),  put i_txCapacityPO(r,rr,ps):>6:0  else put '     -' )  if(i_txCapacityPO(rr,r,ps),  put i_txCapacityPO(rr,r,ps):>6:0  else put '     -' )
     if(i_txCapacityPO(r,rr,pss), put i_txCapacityPO(r,rr,pss):>6:0 else put '     -' )  if(i_txCapacityPO(rr,r,pss), put i_txCapacityPO(rr,r,pss):>6:0 else put '     -' )
-    loop(trnch(n), put intercept(r,rr,ps,n):>7:1 )        loop(trnch(n), put intercept(rr,r,ps,n):>7:1 )
-    loop(trnch(n), put slope(r,rr,ps,n):>7:3 )            loop(trnch(n), put slope(rr,r,ps,n):>7:3 )
+    loop(trnch(n), put lossIntercept(r,rr,ps,n):>7:1 )    loop(trnch(n), put lossIntercept(rr,r,ps,n):>7:1 )
+    loop(trnch(n), put lossSlopeMIP(r,rr,ps,n):>7:3 )     loop(trnch(n), put lossSlopeMIP(rr,r,ps,n):>7:3 )
     loop(n$(ord(n)<card(n)), put pCap(r,rr,ps,n+1):>7:0 ) loop(n$(ord(n)<card(n)), put pCap(rr,r,ps,n+1):>7:0 )
     put '    ' tupg.te(tupg)  ;
   ) put // ;
@@ -995,8 +1015,8 @@ put /// "A list dump of key transmission data (each row refers to the 'from' sta
   'FromReg' @11 'ToRegion' @21 'FromState' @31 'ToState' @40 'Cap, MW' @51 'Resist' @61 'n' @63 'Intercept' @77 'Slope' @86 'pCap' @92
   'bigLoss' @100 'quadLoss' @110 'linLoss' @120 'Loss%' @128 'Project description'  ;
 loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
-  put / r.tl:<10, rr.tl:<10, ps.tl:<10, pss.tl:<10, i_txCapacity(r,rr,ps):6:0, i_txResistance(r,rr,ps):10:6, n.tl:>5, intercept(r,rr,ps,n):10:3, slope(r,rr,ps,n):10:4
-  pCap(r,rr,ps,n+1):8:1, bigLoss(r,rr,ps):9:2, pLoss(r,rr,ps,n+1):9:2, (intercept(r,rr,ps,n) + slope(r,rr,ps,n) * pCap(r,rr,ps,n+1)):9:2
+  put / r.tl:<10, rr.tl:<10, ps.tl:<10, pss.tl:<10, i_txCapacity(r,rr,ps):6:0, i_txResistance(r,rr,ps):10:6, n.tl:>5, lossIntercept(r,rr,ps,n):10:3, lossSlopeMIP(r,rr,ps,n):10:4
+  pCap(r,rr,ps,n+1):8:1, bigLoss(r,rr,ps):9:2, pLoss(r,rr,ps,n+1):9:2, (lossIntercept(r,rr,ps,n) + lossSlopeMIP(r,rr,ps,n) * pCap(r,rr,ps,n+1)):9:2
   (100 * pLoss(r,rr,ps,n+1) / pCap(r,rr,ps,n+1) ):8:2, @128 tupg.tl @143 tupg.te(tupg)
 ) ;
 * Might also consider writing allowedStates(r,rr,ps), notAllowedStates(r,rr,ps), upgradeableStates(r,rr,ps), validTransitions(r,rr,ps,pss)
@@ -1165,3 +1185,14 @@ $label noLRMC
 
 
 * End of file.
+
+
+File compareLossFn / lossFunctionParameters.txt / ; compareLossFn.lw = 0 ; compareLossFn.pw = 999 ; put compareLossFn ;
+put "Key transmission data (except for regions, 'From/Fr' and 'To' refers to the state):" /
+  'FromReg' @11 'ToRegion' @21 'FromState' @31 'ToState' @42 'FrCapMW' @50 'ToCapMW' @59 'FrResist' @69 'ToResist' @81 'n' @83 'FrIntcept' @93 'ToIntcept' @105
+  'FrSlope' @115 'ToSlope' @125 'Project description'  ;
+loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
+  put / r.tl:<10, rr.tl:<10, ps.tl:<10, pss.tl:<10, i_txCapacity(r,rr,ps):8:0, i_txCapacity(r,rr,pss):8:0, i_txResistance(r,rr,ps):10:6, i_txResistance(r,rr,pss):10:6
+  n.tl:>5, lossIntercept(r,rr,ps,n):10:3, lossIntercept(r,rr,pss,n):10:3, lossSlopeMIP(r,rr,ps,n):10:5, lossSlopeMIP(r,rr,pss,n):10:5
+  @125 tupg.tl @140 tupg.te(tupg)
+) ;
