@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 10/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 11/11/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -455,7 +455,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   allSolves weightScenariosBySet numExperiments numSteps numScenarioSets numScenarios
 * Time, financial, capex and cost related sets and parameters
   yearNum taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
-  capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost locationFactor capexPlant refurbCapexPlant
+  capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost ensembleFactor capexPlant refurbCapexPlant
   capCharge refurbCapCharge txCapCharge
   i_winterCapacityMargin i_SIACrisk i_fkSI i_fkNI i_HVDClossesAtMaxXfer i_largestGenerator i_P200ratioNZ i_P200ratioNI
   i_fixedOM i_HVDCshr i_HVDClevy totalFuelCost CO2taxByPlant srmc i_plantReservesCost

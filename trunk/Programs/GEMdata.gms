@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 10/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 11/11/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -80,7 +80,7 @@ bat.ap = 0 ;
 
 Set y  / %firstYear% * %lastYear% / ;
 
-* Load 131 symbols from 3 input GDX files: 112 from GEMinputGDX, 18 from GEMnetworkGDX, and 1 from GEMdemandGDX.
+* Load 132 symbols from 3 input GDX files: 113 from GEMinputGDX, 18 from GEMnetworkGDX, and 1 from GEMdemandGDX.
 $gdxin "%DataPath%\%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
@@ -96,7 +96,7 @@ $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_m
 $load   i_fuelPrices i_fuelQuantities i_co2tax i_minUtilisation
 $loaddc i_nameplate i_UnitLargestProp i_baseload i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear i_fof
 $loaddc i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_varFuelCosts i_fixedFuelCosts
-$loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_plantReservesCap i_plantReservesCost i_PltCapFact
+$loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_hydroPeakingFactor i_plantReservesCap i_plantReservesCost i_PltCapFact
 $loaddc i_HVDCshr
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
 $loaddc i_substnCoordinates i_zonalLocFacs
@@ -128,13 +128,15 @@ Parameters
   i_fuelPricesOvrd(f,y)           'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantitiesOvrd(f,y)       'Quantitative limit on availability of various fuels by year, PJ'
   i_co2taxOvrd(y)                 'CO2 tax by year, $/tonne CO2-equivalent'
+  i_FixComYrOvrd(g)               'Fixed commissioning year for potentially new generation plant (includes plant fixed never to be built)'
   ;
 
 $gdxin "%DataPath%\%GEMoverrideGDX%"
-$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd
+$load   i_fuelPricesOvrd i_fuelQuantitiesOvrd i_co2taxOvrd i_FixComYrOvrd
 i_fuelPrices(f,y)$i_fuelPricesOvrd(f,y) = i_fuelPricesOvrd(f,y) ;              i_fuelPrices(f,y)$( i_fuelPrices(f,y) = eps ) = 0 ;
 i_fuelQuantities(f,y)$i_fuelQuantitiesOvrd(f,y) = i_fuelQuantitiesOvrd(f,y) ;  i_fuelQuantities(f,y)$( i_fuelQuantities(f,y) = eps ) = 0 ;
 i_co2tax(y)$i_co2taxOvrd(y) = i_co2taxOvrd(y) ;                                i_co2tax(y)$( i_co2tax(y) = eps ) = 0 ; 
+i_FixComYr(g)$i_FixComYrOvrd(g) = i_FixComYrOvrd(g) ;                          i_FixComYr(g)$( i_FixComYr(g) = eps ) = 0 ; 
 $label noOverrides2
 
 
@@ -167,15 +169,15 @@ loop((k,f,fg)$( mapf_k(f,k) * mapf_fg(f,fg) ),
 ) ;
 
 put // 'Generation plant data' / 'g' 'k' 'f' 'i' 'o' 'exist' 'coal' 'lignite' 'gas' 'diesel' 'cogen' 'peaker' 'hydroSched' 'hydroPumped' 'wind' 'renew'
-  'thermalTech' 'demandGen' 'schedHydroUpg' 'mapSH_Upg' 'i_nameplate' 'i_heatrate' 'i_fixedOM' 'i_varOM' 'i_varFuelCosts', 'i_fixedFuelCosts' 'i_HVDCshr'
-  'i_fof' 'i_capFacTech' 'i_peakContribution', 'i_NWpeakContribution' 'i_minHydroCapFact' 'i_maxHydroCapFact', 'i_PumpedHydroMonth' 'i_PumpedHydroEffic'
+  'thermalTech' 'demandGen' 'schedHydroUpg' 'mapSH_Upg' 'i_nameplate' 'i_heatrate' 'i_fixedOM' 'i_varOM' 'i_varFuelCosts', 'i_fixedFuelCosts' 'i_hydroPeakingFactor'
+  'i_HVDCshr' 'i_fof' 'i_capFacTech' 'i_peakContribution', 'i_NWpeakContribution' 'i_minHydroCapFact' 'i_maxHydroCapFact', 'i_PumpedHydroMonth' 'i_PumpedHydroEffic'
   'i_UnitLargestProp' 'i_baseload' 'i_offlineReserve' 'i_plantLife' 'i_capitalCost' 'i_connectionCost' 'i_FixComYr' 'i_EarlyComYr' 'i_ExogenousRetireYr'
   'refurbish' 'i_refurbishmentLife' 'i_refurbDecisionYear' 'i_refurbcapitalcost' 'i_retireOffsetYrs' ;
 loop((g,k,f,i,o)$( mapgenplant(g,k,i,o) * mapf_k(f,k) ),
   put / g.tl, k.tl, f.tl, i.tl, o.tl, exist(g), coal(f), lignite(f), gas(f), diesel(f), cogen(k), peaker(k), hydroSched(k), hydroPumped(k), wind(k), renew(k)
   thermalTech(k), demandGen(k), schedHydroUpg(g) ;
   if(sum(mapSH_Upg(gg,g), 1), loop(mapSH_Upg(gg,g), put gg.tl ) else put '-' ) ;
-  put i_nameplate(g), i_heatrate(g), i_fixedOM(g), i_varOM(g), i_varFuelCosts(g), i_fixedFuelCosts(g), i_HVDCshr(o), i_fof(g), i_capFacTech(k)
+  put i_nameplate(g), i_heatrate(g), i_fixedOM(g), i_varOM(g), i_varFuelCosts(g), i_fixedFuelCosts(g), i_hydroPeakingFactor(g), i_HVDCshr(o), i_fof(g), i_capFacTech(k)
   i_peakContribution(k), i_NWpeakContribution(k), i_minHydroCapFact(g), i_maxHydroCapFact(g), i_PumpedHydroMonth(g), i_PumpedHydroEffic(g), i_UnitLargestProp(g)
   i_baseload(g), i_offlineReserve(g), i_plantLife(k), i_capitalCost(g), i_connectionCost(g), i_FixComYr(g), i_EarlyComYr(g), i_ExogenousRetireYr(g) ;
   if( (exist(g) * refurbish(k) * i_refurbcapitalcost(g) * i_refurbDecisionYear(g) ),
@@ -473,9 +475,15 @@ reservesCapability(g,rc)$i_plantReservesCap(g,rc) = i_nameplate(g) * i_plantRese
 i_fixedOM(g) = i_fixedOM(g) + i_fixedFuelCosts(g) * i_heatrate(g) / 1000 * 8.76 ;
 
 * Compute the marginal loss location factors by plant (reciprocal of the zonally-based location factors).
-* Also, set equal to 1 if there are more than 2 regions.
+* Also, set equal to 1 if it should be zero (it shouldn't be) or if there are more than 2 regions.
 locationFactor(g) = sum(mapg_e(g,e)$i_zonalLocFacs(e), 1 / i_zonalLocFacs(e) ) ;
+locationFactor(g)$( locationFactor(g) = 0 ) = 1 ;
 locationFactor(g)$( numreg > 2 ) = 1 ;
+
+* Collect up the various cost factors into the so-called ensemble factor. 
+ensembleFactor(g)$i_hydroPeakingFactor(g)         = locationFactor(g) * (1 / i_hydroPeakingFactor(g) ) ; 
+ensembleFactor(g)$( i_hydroPeakingFactor(g) = 0 ) = locationFactor(g) ;
+
 
 
 * e) Transmission data.
@@ -877,36 +885,36 @@ $ label noGRschedule
     loop(scen$mapScenarios(scenSet,scen), put scen.tl ' ' )
   ) ; put //
   'Default scenario:'        @26 "%defaultScenario%"  ' - only used for input data reporting' /
-  'Report domain:'           @26 put "%reportDomain%" ' - only used for reporting an output summary' //
+  'Report domain:'           @26 "%reportDomain%" ' - only used for reporting an output summary' //
   'Switches' /
-  'Assume integerized loss functions:'   @40 if(txLossesRMIP,         put 'no'  else put 'yes' ) put /
-  'Use V2G generation plant:'            @40 if(V2GtechnologyOn,      put 'yes' else put 'no' ) put /
-  'Renewable energy share constraint:'   @40 if(renNrgShrOn,          put 'on'  else put 'off' ) put /
-  'Renewable capacity share constraint:' @40 if(renCapShrOn,          put 'on'  else put 'off' ) put /
-  "NI 'no wind' peak constraint:"        @40 if(niNWpeakCnstrntOn,    put 'on'  else put 'off' ) put /
-  'Limit energy by fuel constraint:'     @40 if(limitNrgByFuelOn,     put 'on'  else put 'off' ) put /
-  'Full-blown reserves formulation:'     @40 if(reservesOn,           put 'on'  else put 'off' ) put /
-  'DC load flow formulation:'            @40 if(DCloadFlowOn,         put 'on'  else put 'off' ) put /
-  'Write out a GR build schedule:'       @40 if(GRscheduleWrite,      put 'yes' else put 'no' ) put /
-  'Read/enforce a GR build schedule:'    @40 if(%GRscheduleRead% = 0, put 'no'  else put 'yes' ) put /
-  'Compute LRMCs from input data:'       @40 if(%calcInputLRMCs% = 0, put 'no'  else put 'yes' ) put //
+  'Integerized loss functions:'           @40 if(txLossesRMIP,         put 'no'  else put 'yes' ) put /
+  'Use V2G generation plant:'             @40 if(V2GtechnologyOn,      put 'yes' else put 'no' ) put /
+  'Renewable energy share constraint:'    @40 if(renNrgShrOn,          put 'on'  else put 'off' ) put /
+  'Renewable capacity share constraint:'  @40 if(renCapShrOn,          put 'on'  else put 'off' ) put /
+  "NI 'no wind' peak constraint:"         @40 if(niNWpeakCnstrntOn,    put 'on'  else put 'off' ) put /
+  'Limit energy by fuel constraint:'      @40 if(limitNrgByFuelOn,     put 'on'  else put 'off' ) put /
+  'Full-blown reserves formulation:'      @40 if(reservesOn,           put 'on'  else put 'off' ) put /
+  'DC load flow formulation:'             @40 if(DCloadFlowOn,         put 'on'  else put 'off' ) put /
+  'Write out a GR build schedule:'        @40 if(GRscheduleWrite,      put 'yes' else put 'no' ) put /
+  'Read/enforce a GR build schedule:'     @40 if(%GRscheduleRead% = 0, put 'no'  else put 'yes' ) put /
+  'Compute LRMCs from input data:'        @40 if(%calcInputLRMCs% = 0, put 'no'  else put 'yes' ) put //
   'Miscellaneous parameters' /
-  'Modelled time horizon:'               @40 firstYear:<4:0 '-' lastYear:<4:0 /
-  'Corporate tax rate:'                  @40 (100 * taxRate):<4:1 /
-  'Generation WACC:'                     @40 (100 * WACCg):<4:1 /
-  'Transmission WACC:'                   @40 (100 * WACCt):<4:1 /
-  'Depreciation rate for Tx kit:        '@40 (100 * txDepRate):<4:1 /
-  'Life of transmission kit, years:'     @40 txPlantLife:<3:0 /
-  'Annual MW build limit:'               @40 AnnualMWlimit:<5:0 /
-  'Number of VOLL plant:'                @40 (card(r)):<3:0 /
-  'Capacity of all VOLL plant, MW:'      @40 VOLLcap:<5:0 /
-  'Cost of all VOLL plant, $/MWh:'       @40 VOLLcost:<6:0 /
-  'Number of loss tranches:'             @40 numT:<3:0 /
-  'AC loss adjustment (to load), NI:'    @40 (100 * %AClossesNI%):<5:2 /
-  'AC loss adjustment (to load), SI:'    @40 (100 * %AClossesSI%):<5:2 //
+  'Modelled time horizon:'                @40 firstYear:<4:0 '-' lastYear:<4:0 /
+  'Corporate tax rate (%):'               @40 (100 * taxRate):<4:1 /
+  'Generation WACC (%):'                  @40 (100 * WACCg):<4:1 /
+  'Transmission WACC (%):'                @40 (100 * WACCt):<4:1 /
+  'Depreciation rate for Tx kit (%):'     @40 (100 * txDepRate):<4:1 /
+  'Life of transmission kit, years:'      @40 txPlantLife:<3:0 /
+  'Annual MW build limit:'                @40 AnnualMWlimit:<5:0 /
+  'Number of VOLL plant:'                 @40 (card(r)):<3:0 /
+  'Capacity of all VOLL plant, MW:'       @40 VOLLcap:<5:0 /
+  'Cost of all VOLL plant, $/MWh:'        @40 VOLLcost:<6:0 /
+  'Number of loss tranches:'              @40 numT:<3:0 /
+  'AC loss adjustment (to load), NI (%):' @40 (100 * %AClossesNI%):<5:2 /
+  'AC loss adjustment (to load), SI (%):' @40 (100 * %AClossesSI%):<5:2 //
   'Penalties' /
-  'Violate peak constraints, $/MW??:'    @40 penaltyViolatePeakLoad:<7:0 /
-  'Violate renewable NRG target, $/MWh:' @40 penaltyViolateRenNrg:<7:0 /
+  'Violate peak constraints, $/MW??:'     @40 penaltyViolatePeakLoad:<7:0 /
+  'Violate renewable NRG target, $/MWh:'  @40 penaltyViolateRenNrg:<7:0 /
   ;
 
 put  /// 'Scenario weights and factors by experiment.' / @54 'Scenario' @66 'Scenario factors:' /
@@ -1011,13 +1019,16 @@ put // 'Count of allowed states (including initial state) on each path:'
 loop((r,rr)$( ( ord(r) > ord(rr) ) and sum((tupg,ps,pss), transitions(tupg,r,rr,ps,pss)) ),
   put / r.tl ' <--> ' rr.tl ' -- ' numAllowedStates(r,rr):<2:0 'allowable states.' ;
 ) ;
-put /// "A list dump of key transmission data (each row refers to the 'from' state - see above table for 'from-to' state data):" /
-  'FromReg' @11 'ToRegion' @21 'FromState' @31 'ToState' @40 'Cap, MW' @51 'Resist' @61 'n' @63 'Intercept' @77 'Slope' @86 'pCap' @92
-  'bigLoss' @100 'quadLoss' @110 'linLoss' @120 'Loss%' @128 'Project description'  ;
+put /// "A list dump of key transmission data (except for regions, 'From/Fr' and 'To' refers to the state):" /
+  'FromReg' @11 'ToRegion' @21 'FromState' @31 'ToState' @42 'FrCapMW' @50 'ToCapMW' @59 'FrResist' @69 'ToResist' @81 'n' @83 'FrIntcept' @93 'ToIntcept' @105
+  'FrSlope' @115 'ToSlope' @124 'FRpCap' @132 'TOpCap' @139 'FrBigLoss' @149 'ToBigLoss' @159 'FRSqrLos' @168 'TOSqrLos' @177 'FrLinLos' @186 'ToLinLos' @195
+  'FrLoss%' @203 'ToLoss%' @214 'Project description'  ;
 loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
-  put / r.tl:<10, rr.tl:<10, ps.tl:<10, pss.tl:<10, i_txCapacity(r,rr,ps):6:0, i_txResistance(r,rr,ps):10:6, n.tl:>5, lossIntercept(r,rr,ps,n):10:3, lossSlopeMIP(r,rr,ps,n):10:4
-  pCap(r,rr,ps,n+1):8:1, bigLoss(r,rr,ps):9:2, pLoss(r,rr,ps,n+1):9:2, (lossIntercept(r,rr,ps,n) + lossSlopeMIP(r,rr,ps,n) * pCap(r,rr,ps,n+1)):9:2
-  (100 * pLoss(r,rr,ps,n+1) / pCap(r,rr,ps,n+1) ):8:2, @128 tupg.tl @143 tupg.te(tupg)
+  put / r.tl:<10, rr.tl:<10, ps.tl:<10, pss.tl:<10, i_txCapacity(r,rr,ps):8:0, i_txCapacity(r,rr,pss):8:0, i_txResistance(r,rr,ps):10:6, i_txResistance(r,rr,pss):10:6
+  n.tl:>5, lossIntercept(r,rr,ps,n):10:3, lossIntercept(r,rr,pss,n):10:3, lossSlopeMIP(r,rr,ps,n):10:5, lossSlopeMIP(r,rr,pss,n):10:5, pCap(r,rr,ps,n+1):8:1, pCap(r,rr,pss,n+1):8:1, 
+  bigLoss(r,rr,ps):10:2, bigLoss(r,rr,pss):10:2, pLoss(r,rr,ps,n+1):9:2, pLoss(r,rr,pss,n+1):9:2, (lossIntercept(r,rr,ps,n) + lossSlopeMIP(r,rr,ps,n) * pCap(r,rr,ps,n+1)):9:2
+ (lossIntercept(r,rr,pss,n) + lossSlopeMIP(r,rr,pss,n) * pCap(r,rr,pss,n+1)):9:2, (100 * pLoss(r,rr,ps,n+1) / pCap(r,rr,ps,n+1) ):8:2, (100 * pLoss(r,rr,pss,n+1) / pCap(r,rr,pss,n+1) ):8:2
+  @214 tupg.tl @229 tupg.te(tupg)
 ) ;
 * Might also consider writing allowedStates(r,rr,ps), notAllowedStates(r,rr,ps), upgradeableStates(r,rr,ps), validTransitions(r,rr,ps,pss)
 *   reactanceYr(r,rr,y), susceptanceYr(r,rr,y), mapArcNode(p,r,rr), BBincidence(p,r), validTGC(tgc), and txCapCharge(r,rr,ps,y).
@@ -1025,7 +1036,7 @@ loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
 
 
 * Write the plant data summaries.
-$set plantDataHdr1 'MW  Capex  varCC  varOM avSRMC  fixOM fixFDC     HR  PkCon    FoF  xFoFm mnCapF mxCapF  avMnU  '
+$set plantDataHdr1 'MW  Capex  varCC  varOM avSRMC  fixOM fixFDC TCsclr     HR  PkCon    FoF  xFoFm mnCapF mxCapF  avMnU  '
 $set plantDataHdr2 'Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
 put plantData, 'Plant data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
   'All scenarios:'                      @38 loop(scen, put scen.tl ', ' ) put /
@@ -1062,6 +1073,7 @@ put plantData, 'Plant data summarised (default scenario only) - based on user-su
   '  NB: SRMC includes variable O&M, CO2 tax, and total fuel costs (which is made up of energy price plus any variable fuel prodcution/delivery cost).' /
   'fixOM - fixed O&M costs by plant (as used in objective function and including any fixed fuel prodcution/delivery costs), $/kW/year.' /
   'fixFDC - fixed fuel prodcution/delivery costs (converted to $/kW/year and included in fixOM above), $/GJ.' /
+  'TCsclr - scaling factor applied to all (actually, most) costs in objective function - the so-called ensembleFactor.' /
   'HR - heat rate of generating plant, GJ/GWh.' /
   'PkCon - contribution to peak factor - averaged over years.' /
   'FoF - forced outage factor.' /
@@ -1088,40 +1100,40 @@ counter = 0 ;
 loop((k,exist(g))$mapg_k(g,k),
   counter = counter + 1 ;
   put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, avgSRMC(g):7:1, i_fixedOM(g):7:1
-        i_fixedFuelCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, i_fof(g):7:2 @102 ;
-  if(xFoFm(g),        put 'Y' else put '-' ) put @106 ;
-  put avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, avgMinUtilisation(g):7:2, @130 'Y' @136 '-' @146 ;
-  if(commit(g),       put 'Y' else put '-' ) put @150 ;
-  if(new(g),          put 'Y' else put '-' ) put @155 ;
-  if(neverBuild(g),   put 'Y' else put '-' ) put @161 ;
-  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @167 ;
-  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @175 ;
-  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @183 ;
-  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @189 ;
-  if(possibleToRetire(g),     put 'Y' else put '-' ) put @195 ;
-  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @202 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @211 '-' @215 ;
-  loop(mapg_r(g,r), put r.tl ) put @222 loop(mapg_o(g,o), put o.tl ) put @229 loop(mapg_i(g,i), put i.tl ) put @239 g.te(g) ;
+        i_fixedFuelCosts(g):7:1, ensembleFactor(g):7:2, i_heatrate(g):7:0, avgPeakCon(g):7:2, i_fof(g):7:2 @109 ;
+  if(xFoFm(g),        put 'Y' else put '-' ) put @113 ;
+  put avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, avgMinUtilisation(g):7:2, @137 'Y' @143 '-' @153 ;
+  if(commit(g),       put 'Y' else put '-' ) put @157 ;
+  if(new(g),          put 'Y' else put '-' ) put @162 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @168 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @174 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @182 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @190 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @196 ;
+  if(possibleToRetire(g),     put 'Y' else put '-' ) put @202 ;
+  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @209 ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @218 '-' @222 ;
+  loop(mapg_r(g,r), put r.tl ) put @229 loop(mapg_o(g,o), put o.tl ) put @236 loop(mapg_i(g,i), put i.tl ) put @246 g.te(g) ;
 ) ;
 put // 'Non-existing plant' @34 "%plantDataHdr1%" "%plantDataHdr2%" ;
 loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
   counter = counter + 1 ;
   put / counter:<4:0, g.tl:<15, k.tl:<12, i_nameplate(g):4:0, (1e-3*capexPlant(g)):7:0, (1e-3*vbleConCostPlant(g)):7:0, i_varOM(g):7:1, avgSRMC(g):7:1, i_fixedOM(g):7:1
-        i_fixedFuelCosts(g):7:1, i_heatrate(g):7:0, avgPeakCon(g):7:2, i_fof(g):7:2 @102 ;
-  if(xFoFm(g),        put 'Y' else put '-' ) put @106 ;
-  put avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, avgMinUtilisation(g):7:2, @130 '-' @136 'Y' @146 ;
-  if(commit(g),       put 'Y' else put '-' ) put @150 ;
-  if(new(g),          put 'Y' else put '-' ) put @155 ;
-  if(neverBuild(g),   put 'Y' else put '-' ) put @161 ;
-  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @167 ;
-  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @175 ;
-  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @183 ;
-  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @189 ;
-  if(possibleToRetire(g),     put 'Y' else put '-' ) put @195 ;
-  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @202 ;
-  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @211 ;
-  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @215 ;
-  loop(mapg_r(g,r), put r.tl ) put @222 loop(mapg_o(g,o), put o.tl ) put @229 loop(mapg_i(g,i), put i.tl ) put @239 g.te(g) ;
+        i_fixedFuelCosts(g):7:1, ensembleFactor(g):7:2, i_heatrate(g):7:0, avgPeakCon(g):7:2, i_fof(g):7:2 @109 ;
+  if(xFoFm(g),        put 'Y' else put '-' ) put @113 ;
+  put avgMinCapFact(g):7:2, avgMaxCapFact(g):7:2, avgMinUtilisation(g):7:2, @137 '-' @143 'Y' @153 ;
+  if(commit(g),       put 'Y' else put '-' ) put @157 ;
+  if(new(g),          put 'Y' else put '-' ) put @162 ;
+  if(neverBuild(g),   put 'Y' else put '-' ) put @168 ;
+  if(i_EarlyComYr(g), put i_EarlyComYr(g):4:0 else put '-' ) put @174 ;
+  if(i_fixComYr(g),   put i_fixComYr(g):4:0   else put '-' ) put @182 ;
+  if(sum(y, validYrBuild(g,y)),   put 'Y' else put '-' ) put @190 ;
+  if(sum(y, validYrOperate(g,y)), put 'Y' else put '-' ) put @196 ;
+  if(possibleToRetire(g),     put 'Y' else put '-' ) put @202 ;
+  if(i_refurbDecisionYear(g), put i_refurbDecisionYear(g):>4:0 else put '-' ) put @209 ;
+  if(i_ExogenousRetireYr(g),  put i_ExogenousRetireYr(g):>4:0  else put '-' ) put @218 ;
+  if(sum(movers(k), 1) and not moverExceptions(g), put 'Y' else put '-' ) ;   put @222 ;
+  loop(mapg_r(g,r), put r.tl ) put @229 loop(mapg_o(g,o), put o.tl ) put @236 loop(mapg_i(g,i), put i.tl ) put @246 g.te(g) ;
 ) ;
 
 
@@ -1185,14 +1197,3 @@ $label noLRMC
 
 
 * End of file.
-
-
-File compareLossFn / lossFunctionParameters.txt / ; compareLossFn.lw = 0 ; compareLossFn.pw = 999 ; put compareLossFn ;
-put "Key transmission data (except for regions, 'From/Fr' and 'To' refers to the state):" /
-  'FromReg' @11 'ToRegion' @21 'FromState' @31 'ToState' @42 'FrCapMW' @50 'ToCapMW' @59 'FrResist' @69 'ToResist' @81 'n' @83 'FrIntcept' @93 'ToIntcept' @105
-  'FrSlope' @115 'ToSlope' @125 'Project description'  ;
-loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
-  put / r.tl:<10, rr.tl:<10, ps.tl:<10, pss.tl:<10, i_txCapacity(r,rr,ps):8:0, i_txCapacity(r,rr,pss):8:0, i_txResistance(r,rr,ps):10:6, i_txResistance(r,rr,pss):10:6
-  n.tl:>5, lossIntercept(r,rr,ps,n):10:3, lossIntercept(r,rr,pss,n):10:3, lossSlopeMIP(r,rr,ps,n):10:5, lossSlopeMIP(r,rr,pss,n):10:5
-  @125 tupg.tl @140 tupg.te(tupg)
-) ;

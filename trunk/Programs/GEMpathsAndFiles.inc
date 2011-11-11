@@ -8,10 +8,10 @@ $setglobal GEMinputGDX     "standardGEMinput9LB.gdx"
 $setglobal GEMnetworkGDX   "2RegionNetwork.gdx"
 $setglobal GEMdemandGDX    "NRG_2Region9LB_TiwaiGoes.gdx"
 
-$setglobal GEMoverrideGDX  "mds5_Override.gdx"
+$setglobal GEMoverrideGDX  "mds3_Override.gdx"
 
-$setglobal useOverrides     0
-$setglobal sprsGEMsolve     1
+$setglobal useOverrides     1
+$setglobal sprsGEMsolve     0
 $setglobal Mode             0
 
 

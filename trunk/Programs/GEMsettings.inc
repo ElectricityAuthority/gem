@@ -5,7 +5,7 @@ $setglobal lastYear 2025
 * Last modelled year.
 $setglobal RunType 1
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
-$setglobal GEMtype RMIP
+$setglobal GEMtype MIP
 * Specify whether GEM is to be a MIP or an RMIP - take care to get the spelling exact (default = MIP).
 $setglobal DISPtype RMIP
 * Specify whether DISP is to be a MIP or an RMIP - take care to get the spelling exact (default = RMIP).
@@ -32,7 +32,7 @@ Scalar randomCapexCostAdjuster / 0 / ;
 
 
 *+++ GemConstraints +++
-Scalar txLossesRMIP / 1 / ;
+Scalar txLossesRMIP / 0 / ;
 Scalar V2GtechnologyOn / 0 / ;
 Scalar renNrgShrOn / 0 / ;
 Scalar renCapShrOn / 0 / ;
