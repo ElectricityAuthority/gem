@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 10/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 11/11/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -114,7 +114,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 78 parameters (again, grouped thematically as per the navigation pane of emi).
+* Declare 79 parameters (again, grouped thematically as per the navigation pane of emi).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -132,7 +132,7 @@ Parameters
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantities(f,y)                         'Quantitative limit on availability of various fuels by year, PJ'
   i_co2tax(y)                                   'CO2 tax by year, $/tonne CO2-equivalent'
-* 30 generation
+* 31 generation
   i_nameplate(g)                                'Nameplate capacity of generating plant, MW'
   i_UnitLargestProp(g)                          'Largest proportion of generating plant output carried by a single unit at the plant'
   i_baseload(g)                                 'Force plant to be baseloaded, 0/1 (1 = baseloaded)'
@@ -154,6 +154,7 @@ Parameters
   i_capitalCost(g)                              'Generation plant capital cost, $/kW'
   i_connectionCost(g)                           'Capital cost for connecting generation plant to grid, $m (NZD)'
   i_refurbCapitalCost(g)                        'Generation plant refurbishment capital cost, $/kW'
+  i_hydroPeakingFactor(g)                       'Factor to approximate the impact of hydro variability (correlation and dry year back-up)'
   i_plantReservesCap(g,rc)                      'Plant-specific capability per reserve class (0-1 but define only when > 0)'
   i_plantReservesCost(g,rc)                     'Plant-specific cost per reserve class, $/MWh'
   i_PltCapFact(g,m)                             'Plant-specific capacity factor'
@@ -431,6 +432,7 @@ Parameters
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'
   vbleConCostPlant(g)                           'Variablised capital cost of connection for new generation plant, $/MW'
   locationFactor(g)                             'Location factors by plant - used to adjust costs to account for marginal loss effects (sourced from zonal factors)'
+  ensembleFactor(g)                             'Collection of total cost adjustment factors by plant (e.g. location factors and hydro peaking factors)'
   capexPlant(g)                                 'Capital cost for new generation plant, $/MW'
   capCharge(g,y)                                'Annualised or levelised capital charge for new generation plant, $/MW/yr'
   refurbCapexPlant(g)                           'Capital cost for refurbishing existing generation plant, $/MW'
@@ -512,16 +514,13 @@ Parameters
   bigSwd(r,rr)                                  'Biggest value of non-free reserves in southward direction'
   bigNwd(r,rr)                                  'Biggest value of non-free reserves in northward direction'
   pNFresvCap(r,rr,stp)                          'Capacity of each piece (or step) of non-free reserves, MW'
-  pNFresvCost(r,rr,stp)                         'Constant cost of each non-free piece (or step) of function, $/MWh'
-  ;
+  pNFresvCost(r,rr,stp)                         'Constant cost of each non-free piece (or step) of function, $/MWh' ;
 
 Positive Variables
-  RESVCOMPONENTS(r,rr,y,t,lb,scenarios,stp)     'Non-free reserve components, MW'
-  ;
+  RESVCOMPONENTS(r,rr,y,t,lb,scenarios,stp)     'Non-free reserve components, MW' ;
 Equations
   calc_nfreserves(r,rr,y,t,lb,scenarios)        'Calculate non-free reserve components' 
-  resv_capacity(r,rr,y,t,lb,scenarios,stp)      'Calculate and impose the relevant capacity on each step of free reserves'
-  ;
+  resv_capacity(r,rr,y,t,lb,scenarios,stp)      'Calculate and impose the relevant capacity on each step of free reserves' ;
 *+++++++++++++++++++++++++
 
 Free Variables
@@ -643,12 +642,12 @@ objectivefn..
 * NB: The HVDC charge applies only to committed and new SI projects.
   1e-6 * sum((y,t), PVfacG(y,t) * (1 - taxRate) * (
            ( 1/card(t) ) * 1e3 * (
-           sum(g, locationFactor(g) * i_fixedOM(g) * CAPACITY(g,y)) +
-           sum((g,k,o)$((not demandGen(k)) * mapg_k(g,k) * sigen(g) * possibleToBuild(g) * mapg_o(g,o)), i_HVDCshr(o) * locationFactor(g) * i_HVDClevy(y) * CAPACITY(g,y))
+           sum(g, ensembleFactor(g) * i_fixedOM(g) * CAPACITY(g,y)) +
+           sum((g,k,o)$((not demandGen(k)) * mapg_k(g,k) * sigen(g) * possibleToBuild(g) * mapg_o(g,o)), i_HVDCshr(o) * ensembleFactor(g) * i_HVDClevy(y) * CAPACITY(g,y))
            )
          ) ) +
 * Generation capital expenditure - discounted
-  1e-6 * sum((y,firstPeriod(t),possibleToBuild(g)), PVfacG(y,t) * locationFactor(g) * capCharge(g,y) * CAPACITY(g,y) ) +
+  1e-6 * sum((y,firstPeriod(t),possibleToBuild(g)), PVfacG(y,t) * ensembleFactor(g) * capCharge(g,y) * CAPACITY(g,y) ) +
 * Generation refurbishment expenditure - discounted
   1e-6 * sum((y,firstPeriod(t),PossibleToRefurbish(g))$refurbCapCharge(g,y), PVfacG(y,t) * REFURBCOST(g,y) ) +
 * Transmission capital expenditure - discounted
@@ -667,9 +666,9 @@ calc_scenarioCosts(sc)..
 * Lost load
     sum(s, 1e3 * VOLLcost * VOLLGEN(s,y,t,lb,sc) ) +
 * Generation costs
-    sum(g$validYrOperate(g,y), 1e3 * locationFactor(g) * srmc(g,y,sc) * GEN(g,y,t,lb,sc) ) +
+    sum(g$validYrOperate(g,y), 1e3 * ensembleFactor(g) * srmc(g,y,sc) * GEN(g,y,t,lb,sc) ) +
 * Cost of providing reserves ($m)
-    sum((g,rc), i_plantReservesCost(g,rc) * locationFactor(g) * RESV(g,rc,y,t,lb,sc) ) +
+    sum((g,rc), i_plantReservesCost(g,rc) * ensembleFactor(g) * RESV(g,rc,y,t,lb,sc) ) +
 *++++++++++++++++++
 * More non-free reserves code.
 * Cost of providing reserves ($m)
@@ -687,7 +686,7 @@ resv_capacity(paths,y,t,lb,sc,stp)$( nwd(paths) or swd(paths) )..
 
 * Compute the annualised generation plant refurbishment expenditure charge in each year.
 calc_refurbcost(PossibleToRefurbish(g),y)$refurbCapCharge(g,y)..
-  REFURBCOST(g,y) =e= (1 - ISRETIRED(g)) * i_nameplate(g) * locationFactor(g) * refurbCapCharge(g,y) ;
+  REFURBCOST(g,y) =e= (1 - ISRETIRED(g)) * i_nameplate(g) * ensembleFactor(g) * refurbCapCharge(g,y) ;
 
 * Compute the cumulative annualised transmission upgrade capital expenditure charges.
 calc_txcapcharges(paths,y)..
