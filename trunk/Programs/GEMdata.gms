@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 11/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 14/11/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -872,16 +872,18 @@ $ label noOverrides3
 $ if %GRscheduleRead%==0 $goto noGRschedule
   'Build schedule file:' @26 "%GRscheduleFile%" / 
 $ label noGRschedule
- /'Number of experiments:'   @26 numExperiments:<3:0  '-- ' loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put experiments.tl ' ' ) put /
-  'Number of steps:'         @26 numSteps:<3:0        '-- ' loop(steps$sum(allSolves(experiments,steps,scenSet), 1),       put steps.tl ' ' ) put /
-  'Number of scenario sets:' @26 numScenarioSets:<3:0 '-- ' loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1),     put scenSet.tl ' ' ) put /
-  'Number of scenarios:'     @26 numScenarios:<3:0    '-- ' loop(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1), put scen.tl ' ' ) put /
-  'Number of solves:'        @26 card(allSolves):<6:0 'Scenarios are mapped to the experiment-step-scenarioSet groupings as follows:' / @32
-  'Experiments' @45 'Steps'  @53 'scenarioSets' @71 'Scenarios' ;
+ /'Number of experiments:'   @26 numExperiments:<3:0  '-- ' loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put experiments.tl:<15 ) put /
+  'Number of steps:'         @26 numSteps:<3:0        '-- ' loop(steps$sum(allSolves(experiments,steps,scenSet), 1), put steps.tl:<15 ) ; counter = 0 put /
+  'Number of scenario sets:' @26 numScenarioSets:<3:0 '-- ' loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1),
+                                                            counter = counter + 1 if((mod(counter,10) + 1) < 10, put scenSet.tl:<15 else put / @32 scenSet.tl:<15 ) ) ; counter = 0 put /
+  'Number of scenarios:'     @26 numScenarios:<3:0    '-- ' loop(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1),
+                                                            counter = counter + 1 if((mod(counter,10) + 1) < 10, put scen.tl:<15 else put / @32 scen.tl:<15 ) ) put /
+  'Number of solves:'        @26 card(allSolves):<6:0 'For each solve, the scenarios are mapped to the experiment-step-scenarioSet groupings as follows:' / @29 '#  '
+  'Experiments' @45 'Steps'  @55 'scenarioSets' @73 'Scenarios' ;
   counter = 0 ;
   loop(allSolves(experiments,steps,scenSet),
     counter = counter + 1 ;
-    put / @29 counter:<3:0 experiments.tl @45 steps.tl @53 scenSet.tl @67 '<-- ' ;
+    put / @29 counter:<3:0 experiments.tl @45 steps.tl @55 scenSet.tl @69 '<-- ' ;
     loop(scen$mapScenarios(scenSet,scen), put scen.tl ' ' )
   ) ; put //
   'Default scenario:'        @26 "%defaultScenario%"  ' - only used for input data reporting' /
@@ -916,36 +918,6 @@ $ label noGRschedule
   'Violate peak constraints, $/MW??:'     @40 penaltyViolatePeakLoad:<7:0 /
   'Violate renewable NRG target, $/MWh:'  @40 penaltyViolateRenNrg:<7:0 /
   ;
-
-put  /// 'Scenario weights and factors by experiment.' / @54 'Scenario' @66 'Scenario factors:' /
-'Experiments' @15 'Steps' @24 'scenarioSets' @40 'Scenarios' @55 'Weight' @66 'PeakLoad' @76 'Co2' @86 'FuelCost' @96 'Energy' ;
-loop(allSolves(experiments,steps,scenSet),
-  put / experiments.tl @15 steps.tl @24 scenSet.tl @40
-  loop(mapScenarios(scenSet,scen),
-    put scen.tl @50 weightScenariosBySet(scenSet,scen):10:2, scenarioPeakLoadFactor(scen):10:2
-      scenarioCO2TaxFactor(scen):10:2, scenarioFuelCostFactor(scen):10:2, scenarioNRGFactor(scen):10:2 ;
-  ) ;
-) ;
-
-put //// 'Hydrology mappings to scenarios and type of sequence development (Same => averaged over the listed hydro years; Sequential => listed hydro year maps to first modelled year).' /
-'Experiments' @15 'Steps' @24 'scenarioSets' @40 'Scenarios' @56 'SeqType' @66 'Hydro years' ;
-loop(allSolves(experiments,steps,scenSet),
-  put / experiments.tl @15 steps.tl @24 scenSet.tl @40
-  loop(mapScenarios(scenSet,scen),
-    put scen.tl @56 loop(mapSC_hydroSeqTypes(scen,hydroSeqTypes), put hydroSeqTypes.tl:<10 ) loop(mapSC_hY(scen,hY), put hY.tl:<5 ) ;
-  ) ;
-) ;
-
-put //// 'Alternative view of scenario mappings to experiment-step-scenarioSet groups' / 'Experiments' @15 'Steps' @24 'Scenario sets'
-loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
-  put / experiments.tl ;
-  loop(steps$sum(allSolves(experiments,steps,scenSet), 1),
-    put / @15 steps.tl ;
-    loop(allSolves(experiments,steps,scenSet),
-      put / @24 scenSet.tl ' <-- ' loop(scen$mapScenarios(scenSet,scen), put scen.tl ' ' ) ;
-    ) ;
-  ) ;
-) ;
 * Other GEMsettings stuff not yet written out.
 *$setglobal RunType 1
 *$setglobal GEMtype RMIP
@@ -978,6 +950,40 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 *$setglobal PlotOutFigures 0
 *$setglobal PlotMIPtrace 0
 *$setglobal FigureTitles 0
+
+put  /// 'Scenario weights and factors by experiment.' / @54 'Scenario' @66 'Scenario factors:' /
+'Experiments' @15 'Steps' @25 'scenarioSets' @40 'Scenarios' @55 'Weight' @66 'PeakLoad' @76 'Co2' @86 'FuelCost' @96 'Energy' ;
+loop(allSolves(experiments,steps,scenSet),
+  put / experiments.tl @15 steps.tl @25 scenSet.tl @40
+  loop(mapScenarios(scenSet,scen),
+    put scen.tl @50 weightScenariosBySet(scenSet,scen):10:2, scenarioPeakLoadFactor(scen):10:2
+      scenarioCO2TaxFactor(scen):10:2, scenarioFuelCostFactor(scen):10:2, scenarioNRGFactor(scen):10:2 ;
+  ) ;
+) ;
+
+put //// 'Hydrology mappings to scenarios and type of sequence development (Same => averaged over the listed hydro years; Sequential => listed hydro year maps to first modelled year).' /
+'Experiments' @15 'Steps' @25 'scenarioSets' @40 'Scenarios' @56 'SeqType' @68 'Hydro years' ;
+loop(allSolves(experiments,steps,scenSet),
+  put / experiments.tl @15 steps.tl @25 scenSet.tl @40
+  loop(mapScenarios(scenSet,scen),
+    put scen.tl @56 loop(mapSC_hydroSeqTypes(scen,hydroSeqTypes), put hydroSeqTypes.tl:<12 ) ; counter = 0 ;
+    loop(mapSC_hY(scen,hY),
+      counter = counter + 1 ;
+      if((mod(counter,16) + 1) < 16, put hY.tl:<5 else put / @68 hY.tl:<5 ) ;
+    ) ;
+  ) ;
+) ;
+
+put //// 'Alternative view of scenario mappings to experiment-step-scenarioSet groups for each solve' / 'Experiments' @15 'Steps' @24 'Scenario sets'
+loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
+  put / experiments.tl ;
+  loop(steps$sum(allSolves(experiments,steps,scenSet), 1),
+    put / @15 steps.tl ;
+    loop(allSolves(experiments,steps,scenSet),
+      put / @24 scenSet.tl ' <-- ' loop(scen$mapScenarios(scenSet,scen), put scen.tl ' ' ) ;
+    ) ;
+  ) ;
+) ;
 
 
 
