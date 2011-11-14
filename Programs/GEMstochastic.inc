@@ -13,17 +13,13 @@ Sets
 
   scenarios    'The various individual stochastic scenarios, or futures, or states of uncertainty' /
     avgHydro /
-*   avgHydro,  dryHydro, h1990*h2003 /
 *   avgHydro,  dryHydro, h1932*h2007 /
 *   h1992, h1998, h2000, h2002, h2003 /
-*   5hAvg, 5h1932*5h2007 /
 
   scenarioSets 'Sets of scenarios to be used in the same solve' /
     averageHydro  /
-*   averageHydro, dryYrHydro, beginSeq1990*beginSeq2003 /
 *   averageHydro, dryYrHydro, beginSeq1932*beginSeq2007 /
 *   stochastic /
-*   standard5h,   standard1932*standard2007 /
 
 * Mapping sets:
   mapScenarios(scenarioSets,scenarios) 'Map each scenario to a scenarioSet (i.e. 1 or more scenarios make up an scenario set)' /
@@ -38,16 +34,10 @@ Sets
 *   singleExp   . dryYrHydro   /
 
 * dispatchSolves(experiments,scenarioSets) 'Identify the scenarioSet to be used for the dispatch step of each experiment' /
-*   singleExp   .(beginSeq1990*beginSeq2003) /
 *   singleExp   .(beginSeq1932*beginSeq2007) /
 
   mapSC_hY(scenarios,hY) 'Map historical hydro output years to scenarios (Note that the average is computed if more than one hydro year is specified)' /
     avgHydro    .(1932*2007) /
-
-*   avgHydro    .(1990*2003)
-*   dryHydro    . 1932
-*   h1990.1990, h1991.1991, h1992.1992, h1993.1993, h1994.1994, h1995.1995, h1996.1996, h1997.1997, h1998.1998, h1999.1999
-*   h2000.2000, h2001.2001, h2002.2002, h2003.2003 /
 
 *   avgHydro    .(1932*2007)
 *   dryHydro    . 1932
@@ -62,26 +52,14 @@ Sets
 
 *   h1992.1992, h1998.1998, h2000.2000, h2002.2002, h2003.2003 /
 
-*   5h2004.2004, 5h2005.2005, 5h2006.2006, 5h2007.2007  /
-
-*                             5h1932.1932, 5h1933.1933, 5h1934.1934, 5h1935.1935, 5h1936.1936, 5h1937.1937, 5h1938.1938, 5h1939.1939
-*   5h1940.1940, 5h1941.1941, 5h1942.1942, 5h1943.1943, 5h1944.1944, 5h1945.1945, 5h1946.1946, 5h1947.1947, 5h1948.1948, 5h1949.1949
-*   5h1950.1950, 5h1951.1951, 5h1952.1952, 5h1953.1953, 5h1954.1954, 5h1955.1955, 5h1956.1956, 5h1957.1957, 5h1958.1958, 5h1959.1959
-*   5h1960.1960, 5h1961.1961, 5h1962.1962, 5h1963.1963, 5h1964.1964, 5h1965.1965, 5h1966.1966, 5h1967.1967, 5h1968.1968, 5h1969.1969
-*   5h1970.1970, 5h1971.1971, 5h1972.1972, 5h1973.1973, 5h1974.1974, 5h1975.1975, 5h1976.1976, 5h1977.1977, 5h1978.1978, 5h1979.1979
-*   5h1980.1980, 5h1981.1981, 5h1982.1982, 5h1983.1983, 5h1984.1984, 5h1985.1985, 5h1986.1986, 5h1987.1987, 5h1988.1988, 5h1989.1989
-*   5h1990.1990, 5h1991.1991, 5h1992.1992, 5h1993.1993, 5h1994.1994, 5h1995.1995, 5h1996.1996, 5h1997.1997, 5h1998.1998, 5h1999.1999
-*   5h2000.2000, 5h2001.2001, 5h2002.2002, 5h2003.2003, 5h2004.2004, 5h2005.2005, 5h2006.2006, 5h2007.2007  /
-
   mapSC_hydroSeqTypes(scenarios,hydroSeqTypes) 'Map the way hydrology sequences are developed (same or sequential) for each scenario' /
     avgHydro    . Same  /
+
 *   avgHydro    . Same
 *   dryHydro    . Same
-*  (h1990*h2003).Sequential  /
 *  (h1932*h2007).Sequential  /
+
 *  (h1992,h1998,h2000,h2002,h2003).same /
-*  (5h2004*5h2007).Sequential  /
-*  (5h1932*5h2007).Sequential  /
   ;
 
 Parameters
