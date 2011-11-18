@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 14/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 17/11/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -886,8 +886,7 @@ $ label noGRschedule
     put / @29 counter:<3:0 experiments.tl @45 steps.tl @55 scenSet.tl @69 '<-- ' ;
     loop(scen$mapScenarios(scenSet,scen), put scen.tl ' ' )
   ) ; put //
-  'Default scenario:'        @26 "%defaultScenario%"  ' - only used for input data reporting' /
-  'Report domain:'           @26 "%reportDomain%" ' - only used for reporting an output summary' //
+  'Default scenario:'        @26 "%defaultScenario%"  ' - only used for input data reporting' //
   'Switches' /
   'Integerized loss functions:'           @40 if(txLossesRMIP,         put 'no'  else put 'yes' ) put /
   'Use V2G generation plant:'             @40 if(V2GtechnologyOn,      put 'yes' else put 'no' ) put /

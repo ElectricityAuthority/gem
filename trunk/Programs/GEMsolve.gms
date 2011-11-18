@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 11/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 15/11/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -415,7 +415,7 @@ $     include CollectResults.inc
   execute_unload
   solveReport
 * Variable levels
-  s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN
+  s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_LOSS
   s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
   s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK s_RESV s_RESVVIOL s_RESVCOMPONENTS
 * Equation marginals (ignore the objective function)
