@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 14/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 14/17/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -899,7 +899,7 @@ resvtrfr4(interIsland(ild1,ild),y,t,lb,sc)$reservesOn..
 resvtrfrdef(interIsland(ild1,ild),y,t,lb,sc)$reservesOn..
   sum((r,rr)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), TX(r,rr,y,t,lb,sc) ) -
   sum((r,rr,ps)$( paths(r,rr) * mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacityPO(r,rr,ps) * BTX(r,rr,ps,y) )
-  =l= NORESVTRFR(ild1,ild,y,t,lb,sc) * bigm(ild1,ild) ;
+  =l= NORESVTRFR(ild1,ild,y,t,lb,sc) * bigM(ild1,ild) ;
 
 * Constraint to define the offline reserve capability.
 resvoffcap(validYrOperate(g,y),t,lb,sc)$( reservesOn * ( exist(g) or possibleToBuild(g) ) * (sum(rc, reservesCapability(g,rc))) * ( not i_offlineReserve(g) ) )..
