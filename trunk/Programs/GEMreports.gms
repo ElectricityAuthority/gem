@@ -1,23 +1,8 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 18/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/11/2011 (imm@ea.govt.nz)
 
-$set singleDomain "'singleExp','timing','averageHydro'"
-
-Set runVersions "Variants or instances of the run - all stored in the 'runName' output directory" /
-  mds1 'Sustainable path'
-  mds2 'South Island wind'
-  mds3 'Medium renewables'
-  mds4 'Coal'
-  mds5 'High gas discovery' / ;
-
-Set runVersionColor(runVersions,*,*,*) 'RGB color mix for the various versions comprising the run - to pass to plotting applications' ;
-runVersionColor('mds1','0','0','255')   = yes ;
-runVersionColor('mds2','255','0','0')   = yes ;
-runVersionColor('mds3','0','255','0')   = yes ;
-runVersionColor('mds4','0','0','0')     = yes ;
-runVersionColor('mds5','255','0','255') = yes ;
 
 $ontext
  This program generates GEM reports - human-readable files, files to be read by other applications for further processing,
@@ -40,8 +25,8 @@ $ontext
 $offtext
 
 option seed = 101 ;
-$include GEMsettings.inc
-$include GEMpathsAndFiles.inc
+$include GEMreportSettings.inc
+$include "%OutPath%\%runName%\Input data checks\Configuration info for GEMreports - %runName%_%baseRunVersion%.inc"
 $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolcom !
 
 * Declare output files to be created by GEMreports.
@@ -136,12 +121,8 @@ $loaddc firstYr firstPeriod thermalFuel nwd swd paths mapg_k mapg_f mapg_o mapg_
 $loaddc techColor
 * fuelColor fuelGrpColor
 
-* Need steps for the non-free reserves stuff - this may yet get deleted!
+* Need the non-free reserves steps (not to be confused with solve steps in an experiment).
 Set stp 'Steps'  / stp1 * stp5 / ;
-
-* Include GEMstochastic - can't do this until hY and hydroSeqTypes are loaded 
-$include GEMstochastic.inc
-Alias (experiments,expts), (scenarioSets,scenSet), (scenarios,scen) ;
 
 * Declare and load the parameters (variable levels and marginals) to be found in the merged 'all_ReportOutput' GDX file.
 Parameters

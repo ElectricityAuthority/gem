@@ -93,5 +93,3 @@ $setglobal PlotOutFigures 0
 * 1 to generate plots of various model outputs; 0 to prevent the generation of such plots.
 $setglobal PlotMIPtrace 0
 * 1 to generate MIPtrace plots; 0 to prevent the generation of MIPtrace plots.
-$setglobal FigureTitles 0
-* 1 to put titles on the figures, 0 to suppress the use of titles, any other value is illegal.
