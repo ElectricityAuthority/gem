@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 17/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/11/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -801,6 +801,7 @@ $offtext
 
 * Declare input data summary files.
 Files
+  configInfo     / "%OutPath%\%runName%\Input data checks\Configuration info for GEMreports - %runName%_%runVersionName%.inc" /
   runConfig      / "%OutPath%\%runName%\Input data checks\Run configuration summary - %runName%_%runVersionName%.txt" /
   txData         / "%OutPath%\%runName%\Input data checks\Transmission summary - %runName%_%runVersionName%.txt" /
   plantData      / "%OutPath%\%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
@@ -808,6 +809,7 @@ Files
   loadSummary    / "%OutPath%\%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
   lrmc_inData    / "%OutPath%\%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" / ;
 
+configInfo.lw = 0 ;     configInfo.pw = 999 ;
 runConfig.lw = 0 ;      runConfig.pw = 999 ;
 txData.lw = 0 ;         txData.pw = 999 ;
 plantData.lw = 0 ;      plantData.pw = 999 ;
@@ -861,6 +863,27 @@ capexStatistics(k,aggR,'variance')$capexStatistics(k,aggR,'count') =
   sum((g,r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) * possibleToBuild(g) ), sqr(1e-3 * capexPlant(g) - capexStatistics(k,aggR,'mean')) ) / capexStatistics(k,aggR,'count') ; 
 capexStatistics(k,aggR,'stdDev') = sqrt(capexStatistics(k,aggR,'variance')) ;
 capexStatistics(k,aggR,'stdDev%')$capexStatistics(k,aggR,'mean') = 100 * capexStatistics(k,aggR,'stdDev') / capexStatistics(k,aggR,'mean') ;
+
+
+* Write miscellaneous configuration information required later by GEMreports.
+put configInfo ;
+put "Set experiments 'A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps' /" ;
+loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' experiments.tl, '" "', experiments.te(experiments), '"' ) put ' /;' // ;  
+put "Set scenarioSets 'Sets of scenarios to be used in the same solve' /" ;
+loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' scenSet.tl, '" "', scenSet.te(scenSet), '"' ) put ' /;' // ;  
+put "Set scenarios 'The various individual stochastic scenarios, or futures, or states of uncertainty' /" ;
+loop(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1), put / '  "' scen.tl, '" "', scen.te(scen), '"' ) put ' /;' // ;  
+put "Set mapScenarios(scenarioSets,scenarios) 'Map each scenario to a scenarioSet (i.e. 1 or more scenarios make up an scenario set)' /" ;
+loop(mapScenarios(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"' ) put ' /;' // ;  
+put 'Alias (experiments,expts), (scenarioSets,scenSet), (scenarios,scen) ; ' // ;
+put "Parameter weightScenariosBySet(scenarioSets,scenarios) 'Assign weights to the scenarios comprising each set of scenarios' /" ;
+loop((scenSet,scen)$weightScenariosBySet(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"  ', weightScenariosBySet(scenSet,scen):<10:8 ) put ' /;' // ;  
+put '$setglobal firstYear %firstYear%' / '$setglobal lastYear %lastYear%' //
+    'Scalar taxRate / ',                taxRate:<5:2, ' /;' /
+    'Scalar VOLLcost / ',               VOLLcost:<10:1, ' /;' /
+    'Scalar penaltyViolatePeakLoad / ', penaltyViolatePeakLoad:<10:1, ' /;' /
+    'Scalar penaltyViolateRenNrg / ',   penaltyViolateRenNrg:<10:1, ' /;' /
+    'Scalar slackCost / ',              slackCost:<10:1, ' /;' ;
 
 
 * Write the run configuration summary.
