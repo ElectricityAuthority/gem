@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 23/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 28/11/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -80,7 +80,7 @@ bat.ap = 0 ;
 
 Set y  / %firstYear% * %lastYear% / ;
 
-* Load 132 symbols from 3 input GDX files: 113 from GEMinputGDX, 18 from GEMnetworkGDX, and 1 from GEMdemandGDX.
+* Load 133 symbols from 3 input GDX files: 114 from GEMinputGDX, 18 from GEMnetworkGDX, and 1 from GEMdemandGDX.
 $gdxin "%DataPath%\%GEMinputGDX%"
 * Sets
 $loaddc k f fg g o i e tgc t lb rc hY v
@@ -96,8 +96,8 @@ $loaddc i_peakContribution i_NWpeakContribution i_capFacTech i_FOFmultiplier i_m
 $load   i_fuelPrices i_fuelQuantities i_co2tax i_minUtilisation
 $loaddc i_nameplate i_UnitLargestProp i_baseload i_offlineReserve i_FixComYr i_EarlyComYr i_ExogenousRetireYr i_refurbDecisionYear i_fof
 $loaddc i_heatrate i_PumpedHydroMonth i_PumpedHydroEffic i_minHydroCapFact i_maxHydroCapFact i_fixedOM i_varOM i_varFuelCosts i_fixedFuelCosts
-$loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_hydroPeakingFactor i_plantReservesCap i_plantReservesCost i_PltCapFact
-$loaddc i_HVDCshr
+$loaddc i_capitalCost i_connectionCost i_refurbCapitalCost i_hydroPeakingFactor i_inflexiblePlantFactor i_plantReservesCap i_plantReservesCost
+$loaddc i_PltCapFact i_HVDCshr
 $load   i_renewNrgShare i_renewCapShare i_distdGenRenew i_distdGenFossil
 $loaddc i_substnCoordinates i_zonalLocFacs
 $load   i_HVDClevy
@@ -212,6 +212,7 @@ loop((r,rr,ps)$i_txCapacity(r,rr,ps),
 ) ;
 
 ** Complete creation of this file. Group stuff in a sensible order. Check that output is reliable.
+** Need to write out i_inflexiblePlantFactor(g,lb), among others not yet written.
 
 
 
@@ -240,7 +241,6 @@ abort$( firstYear > lastYear )        "First modelled year is later than the las
 hydroYearNum(hY) = i_firstHydroYear + ord(hY) - 1 ;
 
 lastHydroYear = sum(hY$( ord(hY) = card(hY) ), hydroYearNum(hY)) ;
-
 
 * Count hours per load block per time period.
 hoursPerBlock(t,lb) = sum(mapm_t(m,t), 0.5 * i_HalfHrsPerBlk(m,lb)) ;
@@ -282,6 +282,9 @@ numreg = card(r) ;
 * Identify generation plant types
 loop(hydroSched(k),  schedHydroPlant(g)$mapg_k(g,k) = yes ) ;
 loop(hydroPumped(k), pumpedHydroPlant(g)$mapg_k(g,k) = yes ) ;
+
+* Figure out which load blocks are immediately to the right of any given block. 
+rightAdjacentBlocks(lb,lbb)$( ord(lbb) = ord(lb) + 1 ) = yes ;
 
 
 * c) Financial parameters.
@@ -791,6 +794,7 @@ Display
   txCapitalCost, txCapCharge
 * Reserve energy data.
   reservesAreas, penaltyViolateReserves, windCoverPropn, bigM
+  i_inflexiblePlantFactor, rightAdjacentBlocks
   ;
 $offtext
 

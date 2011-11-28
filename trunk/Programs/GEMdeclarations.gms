@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 14/17/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 28/11/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -65,7 +65,7 @@ Sets
   hY           'Hydrology output years'
   v            'Hydro reservoirs or river systems'  ;
 
-Alias (g,gg), (i,ii), (r,rr), (ild,ild1), (ps,pss), (hY,hYY), (col,red,green,blue) ;
+Alias (g,gg), (i,ii), (r,rr), (ild,ild1), (ps,pss), (lb,lbb), (hY,hYY), (col,red,green,blue) ;
 
 * 36 mapping sets and subsets (grouped thematically as per the navigation pane of emi)
 Sets
@@ -114,7 +114,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 79 parameters (again, grouped thematically as per the navigation pane of emi).
+* Declare 80 parameters (again, grouped thematically as per the navigation pane of emi).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -132,7 +132,7 @@ Parameters
   i_fuelPrices(f,y)                             'Fuel prices by fuel type and year, $/GJ'
   i_fuelQuantities(f,y)                         'Quantitative limit on availability of various fuels by year, PJ'
   i_co2tax(y)                                   'CO2 tax by year, $/tonne CO2-equivalent'
-* 31 generation
+* 32 generation
   i_nameplate(g)                                'Nameplate capacity of generating plant, MW'
   i_UnitLargestProp(g)                          'Largest proportion of generating plant output carried by a single unit at the plant'
   i_baseload(g)                                 'Force plant to be baseloaded, 0/1 (1 = baseloaded)'
@@ -155,6 +155,7 @@ Parameters
   i_connectionCost(g)                           'Capital cost for connecting generation plant to grid, $m (NZD)'
   i_refurbCapitalCost(g)                        'Generation plant refurbishment capital cost, $/kW'
   i_hydroPeakingFactor(g)                       'Factor to approximate the impact of hydro variability (correlation and dry year back-up)'
+  i_inflexiblePlantFactor(g,lb)                 'Proportion of generation in one load block that inflexible plant must generate in rightward adjacent load block'
   i_plantReservesCap(g,rc)                      'Plant-specific capability per reserve class (0-1 but define only when > 0)'
   i_plantReservesCost(g,rc)                     'Plant-specific cost per reserve class, $/MWh'
   i_PltCapFact(g,m)                             'Plant-specific capacity factor'
@@ -327,15 +328,16 @@ Parameters
 
 * d) Declare all remaining sets and parameters - to be initialised/computed in GEMdata or GEMsolve.
 Sets
-* Time/date-related sets and parameters.
+* Time/date-related parameters.
   firstYr(y)                                    'First modelled year - as a set, not a scalar'
   lastYr(y)                                     'Last modelled year - as a set, not a scalar'
   allButFirstYr(y)                              'All modelled years except the first year - as a set, not a scalar'
   firstPeriod(t)                                'First time period (i.e. period within the modelled year)'
+  rightAdjacentBlocks(lb,lbb)                   'Identify the load block adjacent to the right of any given load block'
 * VOLL plant (set membership generated automatically in GEMdata)
   s                                             'Shortage or VOLL plants'
   maps_r(s,r)                                   'Map regions to VOLL plants'
-* Various mappings, subsets and counts.
+* Various mappings and subsets.
   mapg_k(g,k)                                   'Map technology types to generating plant'
   mapg_f(g,f)                                   'Map fuel types to generating plant'
   mapg_o(g,o)                                   'Map plant owners to generating plant'
@@ -350,8 +352,6 @@ Sets
   mapv_g(v,g)                                   'Map generating plant to reservoirs'
   thermalFuel(f)                                'Thermal fuels'
   isIldEqReg(ild,r)                             'Figure out if the region labels are identical to the North and South island labels (a reporting facilitation device)' 
-* Financial parameters.
-* Fuel prices and quantity limits.
 * Generation data.
   noExist(g)                                    'Generation plant that are not presently operating'
   commit(g)                                     'Generation plant that are assumed to be committed'
@@ -372,7 +372,6 @@ Sets
   endogenousRetireDecisnYrs(g,y)                'The years in which generation plant able to be endogenously retired can take the decision to retire'
   endogenousRetireYrs(g,y)                      'The years in which generation plant able to be endogenously retired can actually be retired'
   validYrOperate(g,y)                           'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years'
-* Load data.
 * Transmission data.
   slackBus(r)                                   'Designate a region to be the slack or reference bus'
   regLower(r,rr)                                'The lower triangular part of region-region matrix, i.e. where ord(r) > ord(rr)'
@@ -389,19 +388,16 @@ Sets
   lastAllowedState(r,rr,ps)                     'Identify the last allowed transmission upgrade state on each path'
   validTGC(tgc)                                 'Valid transmission group constraints'
   trnch(n)                                      'Loss tranches for piecewise linear interregional transmission loss function (number of tranches = card(n) - l)'
-* Reserve energy data.
 * Hydrology.
   chooseHydroYears(hY)                          'Used for calculation of hydro sequences'  ;
 
 Parameters
   counter                                       'A recyclable counter - set equal to zero each time before using'
-* Time/date-related sets and parameters.
+* Time/date-related parameters.
   yearNum(y)                                    'Real number associated with each year'
   hydroYearNum(hY)                              'Real number associated with each hydrology output year'
   lastHydroYear                                 'Last year of hydrology output data - as an integer'
   hoursPerBlock(t,lb)                           'Hours per load block by time period'
-* Various mappings, subsets and counts.
-  numReg                                        'Number of regions (or, if you like, nodes or buses)'
 * Financial parameters.
   WACCg                                         "Generation investor's post-tax real weighted average cost of capital"
   WACCt                                         "Transmission investor's post-tax real weighted average cost of capital"
@@ -452,6 +448,7 @@ Parameters
   peakLoadNZ(y,scenarios)                       'Peak load for New Zealand by year, MW'
   peakLoadNI(y,scenarios)                       'Peak load for North Island by year, MW'
 * Transmission data.
+  numReg                                        'Number of regions (or, if you like, nodes or buses)'
   numT                                          'Number of tranches in piecewise linear loss functions'
   numAllowedStates(r,rr)                        'Number of allowed states for each active path'
   txEarlyComYr(tupg,r,rr,ps,pss)                'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
@@ -586,6 +583,7 @@ Equations
   limit_maxgen(g,y,t,lb,scenarios)              'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   limit_mingen(g,y,t,lb,scenarios)              'Ensure generation in each block exceeds capacity implied by min capacity factors'
   minutil(g,y,scenarios)                        'Ensure certain generation plant meets a minimum utilisation'
+  limit_inflexPlant(g,y,t,lb,lbb,scenarios)     'Impose a restriction on generation from inflexible plant in adjacent load blocks'
   limit_fueluse(f,y,scenarios)                  'Quantum of each fuel used and possibly constrained, PJ'
   limit_nrg(f,y,scenarios)                      'Impose a limit on total energy generated by any one fuel type'
   minreq_rennrg(y,scenarios)                    'Impose a minimum requirement on total energy generated from all renewable sources'
@@ -765,6 +763,10 @@ limit_mingen(validYrOperate(g,y),t,lb,sc)$minCapFactPlant(g,y,t)..
 minutil(g,y,sc)$i_minUtilisation(g,y)..
   sum((t,lb)$validYrOperate(g,y), GEN(g,y,t,lb,sc)) + MINUTILSLACK(y) =g= i_minUtilisation(g,y) * 8.76 * CAPACITY(g,y) * (1 - i_fof(g)) ;
 
+* Impose restriction on inflexible plant.
+limit_inflexPlant(g,y,t,lb,lbb,sc)$( rightAdjacentBlocks(lb,lbb) and i_inflexiblePlantFactor(g,lbb) )..
+  GEN(g,y,t,lb,sc) / hoursPerBlock(t,lb) =g= i_inflexiblePlantFactor(g,lbb) * GEN(g,y,t,lbb,sc) / hoursPerBlock(t,lbb) ;
+
 * Thermal fuel limits.
 limit_fueluse(thermalfuel(f),y,sc)$( ( gas(f) * (i_fuelQuantities(f,y) > 0) * (i_fuelQuantities(f,y) < 999) ) or ( diesel(f) * (i_fuelQuantities(f,y) > 0) ) )..
   1e-6 * sum((g,t,lb)$( mapg_f(g,f) * validYrOperate(g,y) ), i_heatrate(g) * GEN(g,y,t,lb,sc) ) =l= i_fuelQuantities(f,y) + FUELSLACK(y) ;
@@ -913,7 +915,7 @@ resvreqwind(rc,ild,y,t,lb,sc)$( reservesOn * ( (i_reserveReqMW(y,ild,rc) = -2) o
 Model DISP Dispatch model with build forced and timing fixed  /
   objectivefn, calc_scenarioCosts, calc_refurbcost, calc_txcapcharges,
   balance_capacity, bal_supdem, peak_nz, peak_ni, noWindPeak_ni
-  limit_maxgen, limit_mingen, minutil, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
+  limit_maxgen, limit_mingen, minutil, limit_inflexPlant, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
   limit_pumpgen1, limit_pumpgen2, limit_pumpgen3
   calcTxLossesMIP, calcTxLossesRMIP, tx_capacity, tx_projectdef, tx_onestate, tx_upgrade, tx_oneupgrade
   tx_dcflow, tx_dcflow0, equatetxloss, txGrpConstraint
@@ -1005,6 +1007,7 @@ Parameters
   s_limit_maxgen(steps,scenarioSets,g,y,t,lb,scenarios)            'Ensure generation in each block does not exceed capacity implied by max capacity factors'
   s_limit_mingen(steps,scenarioSets,g,y,t,lb,scenarios)            'Ensure generation in each block exceeds capacity implied by min capacity factors'
   s_minutil(steps,scenarioSets,g,y,scenarios)                      'Ensure certain generation plant meets a minimum utilisation'
+  s_limit_inflexPlant(steps,scenarioSets,g,y,t,lb,lbb,scenarios)   'Impose a restriction on generation from inflexible plant in adjacent load blocks'
   s_limit_fueluse(steps,scenarioSets,f,y,scenarios)                'Quantum of each fuel used and possibly constrained, PJ'
   s_limit_nrg(steps,scenarioSets,f,y,scenarios)                    'Impose a limit on total energy generated by any one fuel type'
   s_minreq_rennrg(steps,scenarioSets,y,scenarios)                  'Impose a minimum requirement on total energy generated from all renewable sources'
@@ -1102,6 +1105,7 @@ $onecho > CollectResults.inc
   s_limit_maxgen(steps,scenSet,g,y,t,lb,sc)             = limit_maxgen.m(g,y,t,lb,sc) ;
   s_limit_mingen(steps,scenSet,g,y,t,lb,sc)             = limit_mingen.m(g,y,t,lb,sc) ;
   s_minutil(steps,scenSet,g,y,sc)                       = minutil.m(g,y,sc) ;
+  s_limit_inflexPlant(steps,scenSet,g,y,t,lb,lbb,sc)    = limit_inflexPlant.m(g,y,t,lb,lbb,sc) ;
   s_limit_fueluse(steps,scenSet,f,y,sc)                 = limit_fueluse.m(f,y,sc) ;
   s_limit_nrg(steps,scenSet,f,y,sc)                     = limit_nrg.m(f,y,sc) ;
   s_minreq_rennrg(steps,scenSet,y,sc)                   = minReq_renNrg.m(y,sc) ;

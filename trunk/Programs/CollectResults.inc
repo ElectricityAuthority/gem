@@ -60,6 +60,7 @@
   s_limit_maxgen(steps,scenSet,g,y,t,lb,sc)             = limit_maxgen.m(g,y,t,lb,sc) ;
   s_limit_mingen(steps,scenSet,g,y,t,lb,sc)             = limit_mingen.m(g,y,t,lb,sc) ;
   s_minutil(steps,scenSet,g,y,sc)                       = minutil.m(g,y,sc) ;
+  s_limit_inflexPlant(steps,scenSet,g,y,t,lb,lbb,sc)    = limit_inflexPlant.m(g,y,t,lb,lbb,sc) ;
   s_limit_fueluse(steps,scenSet,f,y,sc)                 = limit_fueluse.m(f,y,sc) ;
   s_limit_nrg(steps,scenSet,f,y,sc)                     = limit_nrg.m(f,y,sc) ;
   s_minreq_rennrg(steps,scenSet,y,sc)                   = minReq_renNrg.m(y,sc) ;
