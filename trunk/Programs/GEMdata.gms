@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 28/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/12/2011 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -551,8 +551,9 @@ notAllowedStates(allowedStates) = no ;
 i_txCapacity(notAllowedStates) = 0 ;
 i_txCapacityPO(notAllowedStates) = 0 ;
 
-* Identify all existing or potential interregional transmission paths.
+* Identify and count all existing or potential interregional transmission paths.
 paths(r,rr)$sum(allowedStates(r,rr,ps), 1 ) = yes ;
+numPaths = card(paths) ;
 
 * Identify all allowable states of upgrade on each path.
 upgradeableStates(allowedStates(r,rr,ps))$( not sameas(ps,'initial') ) = yes ;
@@ -1012,13 +1013,12 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 ) ;
 
 
-
 * Write the transmission data summaries.
 put txData, 'Transmission data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Network file:'          @26 "%GEMnetworkGDX%" /
   'Integerized losses:'    @26 if(txLossesRMIP, put 'no' else put 'yes' ) put /
   'Regions:'               @26 numReg:<4:0 /
-  'Paths:'                 @26 sum(paths(r,rr)$sum(transitions(tupg,r,rr,ps,pss), 1), 1):<4:0 /
+  'Paths:'                 @26 numPaths:<4:0 /
   'Allowed states:'        @26 card(allowedStates):<4:0 /
   'Transitions:'           @26 card(transitions):<4:0 /
   'Loss tranches:'         @26 numT:<4:0 //

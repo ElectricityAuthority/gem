@@ -1,6 +1,6 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 28/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 09/12/2011 (imm@ea.govt.nz)
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
@@ -450,7 +450,8 @@ Parameters
 * Transmission data.
   numReg                                        'Number of regions (or, if you like, nodes or buses)'
   numT                                          'Number of tranches in piecewise linear loss functions'
-  numAllowedStates(r,rr)                        'Number of allowed states for each active path'
+  numPaths                                      'Number of transmission paths'
+  numAllowedStates(r,rr)                        'Number of allowed states for each active path (including initial state)'
   txEarlyComYr(tupg,r,rr,ps,pss)                'Earliest year that a transmission upgrade can occur (a parameter, not a set)'
   txFixedComYr(tupg,r,rr,ps,pss)                'Fixed year in which a transmission upgrade must occur (a parameter, not a set)'
   reactanceYr(r,rr,y)                           'Reactance by year for each transmission path. Units are p.u.'

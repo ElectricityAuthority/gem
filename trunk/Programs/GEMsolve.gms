@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 15/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 30/11/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -77,7 +77,7 @@ loop(solveGoal(goal),
 * To suppress use of an options file, use the command: 'xxx.OptFile = 0 ;'. Or simply comment out the
 * command that calls the options file for the specific model name.
 
-* Turn on the following to use the GAMSCHK routines.
+* Turn on the following to use the GAMSCHK routines (need to also comment out abort statements).
 *option MIP=GAMSCHK ;
 
 * Include a 'GR' investment schedule if one is specified.
