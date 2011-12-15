@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 23/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/12/2011 (imm@ea.govt.nz)
 
 
 $ontext
@@ -85,12 +85,13 @@ Sets
   r                 'Regions'
   e                 'Zones'
   ps                'Transmission path states (state of upgrade)'
+  tupg              'Transmission upgrade projects'
   t                 'Time periods (within a year)'
   lb                'Load blocks'
   rc                'Reserve classes'
   hY                'Hydrology output years' ;
 
-Alias (i,ii), (r,rr), (col,red,green,blue) ;
+Alias (i,ii), (r,rr), (ps,pss), (col,red,green,blue) ;
 
 * Declare the selected subsets and mapping sets required for reporting.
 Sets
@@ -116,7 +117,7 @@ Sets
 
 * Load set membership from the GDX file containing the default or base case run version.
 $gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%baseRunVersion%.gdx"
-$loaddc k f g s o i r e ps t lb rc hY
+$loaddc k f g s o i r e ps tupg t lb rc hY
 $loaddc firstYr firstPeriod thermalFuel nwd swd paths mapg_k mapg_f mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen exist sigen
 $loaddc techColor
 * fuelColor fuelGrpColor
@@ -137,6 +138,7 @@ Parameters
   s_GEN(runVersions,experiments,steps,scenSet,g,y,t,lb,scen)                   'Generation by generating plant and block, GWh'
   s_VOLLGEN(runVersions,experiments,steps,scenSet,s,y,t,lb,scen)               'Generation by VOLL plant and block, GWh'
   s_LOSS(runVersions,experiments,steps,scenarioSets,r,rr,y,t,lb,scenarios)     'Transmission losses along each path, MW'
+  s_TXPROJVAR(runVersions,experiments,steps,scenarioSets,tupg,y)               'Continuous 0-1 variable indicating whether an upgrade project is applied'
   s_RESV(runVersions,experiments,steps,scenSet,g,rc,y,t,lb,scen)               'Reserve energy supplied, MWh'
   s_RESVVIOL(runVersions,experiments,steps,scenSet,rc,ild,y,t,lb,scen)         'Reserve energy supply violations, MWh'
   s_RESVCOMPONENTS(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen,stp) 'Non-free reserve components, MW'
@@ -164,7 +166,7 @@ Parameters
   s_tx_capacity(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)        'Calculate the relevant transmission capacity' ;
 
 $gdxin "%OutPath%\%runName%\GDX\allRV_ReportOutput_%runName%.gdx"
-$loaddc s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_LOSS s_RESV s_RESVVIOL s_RESVCOMPONENTS
+$loaddc s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_LOSS s_TXPROJVAR s_RESV s_RESVVIOL s_RESVCOMPONENTS
 $loaddc s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
 $loaddc s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
 $loaddc s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_Nrg
@@ -177,12 +179,14 @@ Sets
   possibleToRefurbish(runVersions,g)                   'Generating plant that may possibly be refurbished in any valid modelled year'
   possibleToEndogRetire(runVersions,g)                 'Generating plant that may possibly be endogenously retired'
   possibleToRetire(runVersions,g)                      'Generating plant that may possibly be retired (exogenously or endogenously)'
-  validYrOperate(runVersions,g,y)                      'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years' ;
+  validYrOperate(runVersions,g,y)                      'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years'
+  transitions(runVersions,tupg,r,rr,ps,pss)            'For all transmission paths, define the allowable transitions from one upgrade state to another' ;
 
 Parameters
   i_fuelQuantities(runVersions,f,y)                    'Quantitative limit on availability of various fuels by year, PJ'
   i_namePlate(runVersions,g)                           'Nameplate capacity of generating plant, MW'
   i_heatrate(runVersions,g)                            'Heat rate of generating plant, GJ/GWh (default = 3600)'
+  i_txCapacity(runVersions,r,rr,ps)                    'Transmission path capacities (bi-directional), MW'
   totalFuelCost(runVersions,g,y,scen)                  'Total fuel cost - price plus fuel production and delivery charges all times heatrate - by plant, year and scenario, $/MWh'
   CO2taxByPlant(runVersions,g,y,scen)                  'CO2 tax by plant, year and scenario, $/MWh'
   SRMC(runVersions,g,y,scen)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
@@ -204,8 +208,8 @@ Parameters
   exogMWretired(runVersions,g,y)                       'Exogenously retired MW by plant and year, MW' ;
 
 $gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData_%runName%.gdx"
-$loaddc possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate
-$loaddc i_fuelQuantities i_namePlate i_heatrate totalFuelCost CO2taxByPlant SRMC i_fixedOM ensembleFactor i_HVDCshr i_HVDClevy
+$loaddc possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate transitions
+$loaddc i_fuelQuantities i_namePlate i_heatrate i_txCapacity totalFuelCost CO2taxByPlant SRMC i_fixedOM ensembleFactor i_HVDCshr i_HVDClevy
 $loaddc i_plantReservesCost hoursPerBlock NrgDemand yearNum PVfacG PVfacT capCharge refurbCapCharge MWtoBuild penaltyViolateReserves pNFresvCost exogMWretired
 
 
@@ -279,9 +283,9 @@ repDom(runVersions,experiments,steps,scenSet)$repDomLd(runVersions,experiments,s
 Sets
   rep                                          'Individual solutions to be reported on in the key results file' /
                                                 mds1Tmg   'Sustainable path - timing'
-*                                                mds2Tmg   'South Island wind - timing'
+                                                mds2Tmg   'South Island wind - timing'
                                                 mds3Tmg   'Medium renewables - timing'
-*                                                mds4Tmg   'Coal - timing'
+                                                mds4Tmg   'Coal - timing'
                                                 mds5Tmg   'High gas discovery - timing'
                                                 rep6 * rep50  /
   activeRep(rep)                               'The active elements from set rep'
@@ -560,6 +564,36 @@ loop(activeRep(rep),
   ) ;
   put / 'Total' '' loop(y, put sum((foldRep(repDom,rep),k,r), genByTechRegionYear(repDom,k,r,y)) ) ;
 ) ;
+
+put // 'Transmission investments by year' ;
+loop(tupg$sum((rep,foldRep(repDom,rep),y), s_TXPROJVAR(repDom,tupg,y)), put / tupg.tl, tupg.te(tupg) ) ;
+put / '' '' loop(tupg$sum((rep,foldRep(repDom,rep),y), s_TXPROJVAR(repDom,tupg,y)), put tupg.tl ) ;
+loop(activeRep(rep),
+  put / rep.tl, rep.te(rep) ;
+  loop(y$sum((foldRep(repDom,rep),tupg), s_TXPROJVAR(repDom,tupg,y)),
+    put / y.tl '' ;
+    loop(tupg$( not sameas(tupg,'Exist') ), put sum(foldRep(repDom,rep), s_TXPROJVAR(repDom,tupg,y)) ) ;
+* The above line puts in a 1 in the right place to show what upgrades (cols) occurred in what year (row) by scenario.
+* Need to replace the '1' with the MW built so that a bar graph can be drawn. Below is an incorrect attempt to do that. Perhaps, back up in the data
+* calculation section, we need to assign MW capacity by year to tupg from (paths,ps): 
+*    loop(tupg$( not sameas(tupg,'Exist') ), put sum((foldRep(repDom,rep),transitions(runVersions,tupg,r,rr,ps,pss)), s_TXPROJVAR(repDom,tupg,y)) ) ;
+  ) ;
+) ;
+
+$ontext
+Stuff to delete once above is sorted
+* Calculate the relevant transmission capacity and impose it.
+tx_capacity(paths,y,t,lb,sc)..
+  TX(paths,y,t,lb,sc) =l= sum(allowedStates(paths,ps), i_txCapacity(paths,ps) * BTX(paths,ps,y)) ;
+
+* Associate projects to individual upgrades (also ensures both directions of a path get upgraded together).
+tx_projectdef(transitions(tupg,paths,ps,pss),y)..
+  TXPROJVAR(tupg,y) =e= TXUPGRADE(paths,ps,pss,y) ;
+
+i_txCapacity(runVersions,r,rr,ps)                    'Transmission path capacities (bi-directional), MW'
+
+transitions(runVersions,tupg,r,rr,ps,pss)            'For all transmission paths, define the allowable transitions from one upgrade state to another' ;
+$offtext
 
 
 

@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 30/11/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 16/12/2011 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -415,7 +415,7 @@ $     include CollectResults.inc
   execute_unload
   solveReport
 * Variable levels
-  s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_LOSS
+  s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_LOSS s_TXPROJVAR
   s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
   s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK s_RESV s_RESVVIOL s_RESVCOMPONENTS
 * Equation marginals (ignore the objective function)
@@ -447,7 +447,7 @@ putclose / rep 'Run version ' "%runVersionName%" ' finished at ' system.time ///
 
 Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%runVersionName%.gdx",
 * Basic sets, subsets, and mapping sets.
-  y t f k g o lb i r e ild ps scen rc n tgc hY s
+  y t f k g o lb i r e ild ps tupg scen rc n tgc hY s
   techColor fuelColor fuelGrpColor
   mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r isIldEqReg firstPeriod firstYr lastYr allButFirstYr
   paths nwd swd interIsland pumpedHydroPlant wind gas diesel
