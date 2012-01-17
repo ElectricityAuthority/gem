@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 09/12/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 18/01/2012 (imm@ea.govt.nz)
 
 
 ** To do:
@@ -31,6 +31,13 @@ $ontext
   4. Prepare the scenario-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
   5. Display sets and parameters.
   6. Create input data summaries.
+     a) Write miscellaneous configuration information required later by GEMreports.
+     b) Write the run configuration summary.
+     c) Write the transmission data summaries.
+     d) Write the plant data summaries.
+     e) Write the capex statistics.
+     f) Write the load summaries.
+     g) Include code to compute and write out LRMC of all non-existing plant.
 $offtext
 
 
@@ -579,7 +586,7 @@ txFixedComYr(transitions(tupg,rr,r,ps,pss))$txFixedComYr(tupg,r,rr,ps,pss) = txF
 txFixedComYr(tupg,paths,ps,pss)$( not transitions(tupg,paths,ps,pss) ) = 0 ;
 
 * Transfer transmission capital cost from a project basis (tupg) to path (r-rr) basis. Apportion cost to each direction based on
-* pre-rated transmission capcity in each direction. Convert the lumpy txCapitalCost ($m) to levelised TxCapCharge ($m/yr).
+* pro-rated transmission capcity in each direction. Convert the lumpy txCapitalCost ($m) to levelised TxCapCharge ($m/yr).
 txCapitalCost(r,rr,ps) = sum(transitions(tupg,r,rr,pss,ps)$( i_txCapacity(r,rr,ps) or i_txCapacity(rr,r,ps) ),
                          i_txCapitalCost(tupg) * i_txCapacity(r,rr,ps) / ( i_txCapacity(r,rr,ps) + i_txCapacity(rr,r,ps) ) ) ;
 txCapCharge(r,rr,ps,y) = txCapitalCost(r,rr,ps) * txCapRecFac(y) ;
@@ -870,18 +877,18 @@ capexStatistics(k,aggR,'stdDev') = sqrt(capexStatistics(k,aggR,'variance')) ;
 capexStatistics(k,aggR,'stdDev%')$capexStatistics(k,aggR,'mean') = 100 * capexStatistics(k,aggR,'stdDev') / capexStatistics(k,aggR,'mean') ;
 
 
-* Write miscellaneous configuration information required later by GEMreports.
+* a) Write miscellaneous configuration information required later by GEMreports.
 put configInfo ;
-put "Set experiments 'A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps' /" ;
+put 'Set experiments "A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps" /' ;
 loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' experiments.tl, '" "', experiments.te(experiments), '"' ) put ' /;' // ;  
-put "Set scenarioSets 'Sets of scenarios to be used in the same solve' /" ;
+put 'Set scenarioSets "Sets of scenarios to be used in the same solve" /' ;
 loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' scenSet.tl, '" "', scenSet.te(scenSet), '"' ) put ' /;' // ;  
-put "Set scenarios 'The various individual stochastic scenarios, or futures, or states of uncertainty' /" ;
+put 'Set scenarios "The various individual stochastic scenarios, or futures, or states of uncertainty" /' ;
 loop(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1), put / '  "' scen.tl, '" "', scen.te(scen), '"' ) put ' /;' // ;  
-put "Set mapScenarios(scenarioSets,scenarios) 'Map each scenario to a scenarioSet (i.e. 1 or more scenarios make up an scenario set)' /" ;
+put 'Set mapScenarios(scenarioSets,scenarios) "Map each scenario to a scenarioSet (i.e. 1 or more scenarios make up an scenario set)" /' ;
 loop(mapScenarios(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"' ) put ' /;' // ;  
 put 'Alias (experiments,expts), (scenarioSets,scenSet), (scenarios,scen) ; ' // ;
-put "Parameter weightScenariosBySet(scenarioSets,scenarios) 'Assign weights to the scenarios comprising each set of scenarios' /" ;
+put 'Parameter weightScenariosBySet(scenarioSets,scenarios) "Assign weights to the scenarios comprising each set of scenarios" /' ;
 loop((scenSet,scen)$weightScenariosBySet(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"  ', weightScenariosBySet(scenSet,scen):<10:8 ) put ' /;' // ;  
 put '$setglobal firstYear %firstYear%' / '$setglobal lastYear %lastYear%' //
     'Scalar taxRate / ',                taxRate:<5:2, ' /;' /
@@ -891,7 +898,7 @@ put '$setglobal firstYear %firstYear%' / '$setglobal lastYear %lastYear%' //
     'Scalar slackCost / ',              slackCost:<10:1, ' /;' ;
 
 
-* Write the run configuration summary.
+* b) Write the run configuration summary.
 put runConfig 'Run name:' @26 "%runName%" / 'Run version:' @26 "%runVersionName%" / 'Initiated at:' @26 system.time ' on ' system.date //
   'Main input GDX:' @26 "%DataPath%\%GEMinputGDX%" / 'Region/network GDX:' @26 "%DataPath%\%GEMnetworkGDX%" / 'Demand GDX:' @26 "%DataPath%\%GEMdemandGDX%" / 
 $ if %useOverrides%==0 $goto noOverrides3
@@ -1013,7 +1020,7 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 ) ;
 
 
-* Write the transmission data summaries.
+* c) Write the transmission data summaries.
 put txData, 'Transmission data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Network file:'          @26 "%GEMnetworkGDX%" /
   'Integerized losses:'    @26 if(txLossesRMIP, put 'no' else put 'yes' ) put /
@@ -1067,7 +1074,7 @@ loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
 * NB: Reactance and susceptance by year assumes exogenous or fixed timing of transmission expansion decisions, otherwise it stays at the level of initial year.
 
 
-* Write the plant data summaries.
+* d) Write the plant data summaries.
 $set plantDataHdr1 'MW  Capex  varCC  varOM avSRMC  fixOM fixFDC TCsclr     HR  PkCon    FoF  xFoFm mnCapF mxCapF  avMnU  '
 $set plantDataHdr2 'Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
 put plantData, 'Plant data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
@@ -1169,8 +1176,7 @@ loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
 ) ;
 
 
-
-* Write the capex statistics.
+* e) Write the capex statistics.
 put capexStats 'Descriptive statistics of plant capex (lumpy and including grid connection costs).' //
   'First modelled year:' @22 firstYear:<4:0 /
   'Last modelled year:'  @22 lastYear:<4:0 / ;
@@ -1198,7 +1204,7 @@ loop(k,
 ) ;
 
 
-* Write the load summaries.
+* f) Write the load summaries.
 put loadSummary 'Energy and peak load by region/island and year, GWh' /
   ' - GWh energy grossed-up by AC loss factors and scaled by scenario-specific energy factor' /
   ' - GWh energy and peak load reported here relates only to the default scenario (' loop(defaultScenario(scen), put scen.tl ) put ').' /
@@ -1221,10 +1227,11 @@ put // 'Peak load, MW' @14 loop(aggR, put aggR.tl:>10 ) ;
 loop(y, put / @2 y.tl @14  loop(aggR, put peakLoadByYearAggR(y,aggR):>10:0 ) ) ;
 
 
-* Include code to compute and write out LRMC of all non-existing plant.
+* g) Include code to compute and write out LRMC of all non-existing plant.
 $if %calcInputLRMCs%==0 $goto noLRMC
 $include GEMlrmc.gms
 $label noLRMC
+
 
 
 
