@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 16/12/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 10/01/2012 (imm@ea.govt.nz)
 
 
 *** To do:
@@ -468,7 +468,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
 * Load and peak
   hoursPerBlock AClossFactors scenarioNRGfactor i_NrgDemand NrgDemand ldcMW scenarioPeakLoadFactor peakLoadNZ peakLoadNI
 * Transmission and grid
-  DCloadFlowOn transitions validTransitions allowedStates upgradeableStates i_txCapacity i_txCapacityPO
+  DCloadFlowOn transitions validTransitions allowedStates upgradeableStates i_txCapacity i_txCapacityPO txCapitalCost
   lossSlopeMIP lossIntercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 * Reserves
   reservesOn singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve

@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 16/12/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 18/01/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -74,7 +74,7 @@ Sets
 * Initialise set y with values from GEMsettings.inc.
 Set y 'Modelled calendar years' / %firstYear% * %lastYear% / ;
 
-* Declare the fundamental sets required for reporting.
+* Declare the fundamental sets that are required for reports.
 Sets
   k                 'Generation technologies'
   f                 'Fuels'
@@ -93,7 +93,7 @@ Sets
 
 Alias (i,ii), (r,rr), (ps,pss), (col,red,green,blue) ;
 
-* Declare the selected subsets and mapping sets required for reporting.
+* Declare the selected subsets and mapping sets that are required for reports.
 Sets
   techColor(k,red,green,blue)      'RGB color mix for technologies - to pass to plotting applications'
 * fuelColor(f,red,green,blue)      'RGB color mix for fuels - to pass to plotting applications'
@@ -115,7 +115,7 @@ Sets
   exist(g)                         'Generation plant that are presently operating'
   sigen(g)                         'South Island generation plant' ;
 
-* Load set membership from the GDX file containing the default or base case run version.
+* Load set membership from the GDX file containing the base case run version (the default GDX).
 $gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%baseRunVersion%.gdx"
 $loaddc k f g s o i r e ps tupg t lb rc hY
 $loaddc firstYr firstPeriod thermalFuel nwd swd paths mapg_k mapg_f mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen exist sigen
@@ -125,7 +125,7 @@ $loaddc techColor
 * Need the non-free reserves steps (not to be confused with solve steps in an experiment).
 Set stp 'Steps'  / stp1 * stp5 / ;
 
-* Declare and load the parameters (variable levels and marginals) to be found in the merged 'all_ReportOutput' GDX file.
+* Declare and load the parameters (variable levels and marginals) to be found in the merged 'allRV_ReportOutput' GDX file.
 Parameters
   s_TOTALCOST(runVersions,experiments,steps,scenSet)                           'Discounted total system costs over all modelled years, $m (objective function value)'
   s_TX(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
@@ -173,7 +173,7 @@ $loaddc s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_
 $loaddc s_minReq_RenNrg s_minReq_RenCap s_limit_hydro s_tx_capacity
 
 
-* Declare and load sets and parameters from the merged 'all_SelectedInputData' GDX file.
+* Declare and load sets and parameters from the merged 'allRV_SelectedInputData' GDX file.
 Sets
   possibleToBuild(runVersions,g)                       'Generating plant that may possibly be built in any valid build year'
   possibleToRefurbish(runVersions,g)                   'Generating plant that may possibly be refurbished in any valid modelled year'
@@ -187,6 +187,7 @@ Parameters
   i_namePlate(runVersions,g)                           'Nameplate capacity of generating plant, MW'
   i_heatrate(runVersions,g)                            'Heat rate of generating plant, GJ/GWh (default = 3600)'
   i_txCapacity(runVersions,r,rr,ps)                    'Transmission path capacities (bi-directional), MW'
+  txCapitalCost(runVersions,r,rr,ps)                   'Capital cost of transmission upgrades by path and state, $m'
   totalFuelCost(runVersions,g,y,scen)                  'Total fuel cost - price plus fuel production and delivery charges all times heatrate - by plant, year and scenario, $/MWh'
   CO2taxByPlant(runVersions,g,y,scen)                  'CO2 tax by plant, year and scenario, $/MWh'
   SRMC(runVersions,g,y,scen)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
@@ -209,7 +210,7 @@ Parameters
 
 $gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData_%runName%.gdx"
 $loaddc possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate transitions
-$loaddc i_fuelQuantities i_namePlate i_heatrate i_txCapacity totalFuelCost CO2taxByPlant SRMC i_fixedOM ensembleFactor i_HVDCshr i_HVDClevy
+$loaddc i_fuelQuantities i_namePlate i_heatrate i_txCapacity txCapitalCost totalFuelCost CO2taxByPlant SRMC i_fixedOM ensembleFactor i_HVDCshr i_HVDClevy
 $loaddc i_plantReservesCost hoursPerBlock NrgDemand yearNum PVfacG PVfacT capCharge refurbCapCharge MWtoBuild penaltyViolateReserves pNFresvCost exogMWretired
 
 
@@ -240,30 +241,32 @@ Sets
                                                                  obj_Slacks     'Value of all slacks' / ;
 
 Parameters
-  cntr                                             'A counter'
-  unDiscFactor(runVersions,y,t)                    "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by period and year"
-  unDiscFactorYr(runVersions,y)                    "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by year (use last period of year)"
-  objComponents(*,*,*,*,objc)                      'Components of objective function value'
-  scenarioWeight(scen)                             'Individual scenario weights'
-  loadByRegionAndYear(*,*,*,*,r,y)                 'Load by region and year, GWh'
-  builtByTechRegion(*,*,*,*,k,r)                   'MW built by technology and region/island'
-  builtByTech(*,*,*,*,k)                           'MW built by technology'
-  builtByRegion(*,*,*,*,r)                         'MW built by region/island'
-  capacityByTechRegionYear(*,*,*,*,k,r,y)          'Capacity by technology and region/island and year, MW'
-  genByTechRegionYear(*,*,*,*,k,r,y)               'Generation by technology and region/island and year, GWh'
-  txByRegionYear(*,*,*,*,r,rr,y)                   'Interregional transmission by year, GWh'
-  txLossesByRegionYear(*,*,*,*,r,rr,y)             'Interregional transmission losses by year, GWh'
-  energyPrice(*,*,*,*,r,y)                         'Time-weighted energy price by region and year, $/MWh (from marginal price off of energy balance constraint)'
-  minEnergyPrice(*,*,*,*,g,y)                      'Shadow price off minimum scedulable hydro generation constraint, $/MWh [need to check units and test that this works]'
-  minUtilEnergyPrice(*,*,*,*,g,y)                  'Shadow price off minimum utilisation constraint, $/MWh [need to check units and test that this works]'
-  peakNZPrice(*,*,*,*,y)                           'Shadow price off peak NZ constraint, $/kW'
-  peakNIPrice(*,*,*,*,y)                           'Shadow price off peak NI constraint, $/kW'
-  peaknoWindNIPrice(*,*,*,*,y)                     'Shadow price off peak no wind NI constraint, $/kW'
-  renewEnergyShrPrice(*,*,*,*,y)                   'Shadow price off the minimum renewable energy share constraint, $/GWh [need to check units and test that this works]'
-  renewCapacityShrPrice(*,*,*,*,y)                 'Shadow price off the minimum renewable capacity share constraint, $/kW [need to check units and test that this works]'
-  fuelPrice(*,*,*,*,f,y)                           'Shadow price off limit on fuel use constraint, $/GJ [need to check units and test that this works]'
-  energyLimitPrice(*,*,*,*,f,y)                    'Shadow price off limit on total energy from any one fuel constraint, $/MWh  [need to check units and test that this works]'
-
+  cntr                                              'A counter'
+  unDiscFactor(runVersions,y,t)                     "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by period and year"
+  unDiscFactorYr(runVersions,y)                     "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by year (use last period of year)"
+  objComponents(*,*,*,*,objc)                       'Components of objective function value'
+  scenarioWeight(scen)                              'Individual scenario weights'
+  loadByRegionAndYear(*,*,*,*,r,y)                  'Load by region and year, GWh'
+  builtByTechRegion(*,*,*,*,k,r)                    'MW built by technology and region/island'
+  builtByTech(*,*,*,*,k)                            'MW built by technology'
+  builtByRegion(*,*,*,*,r)                          'MW built by region/island'
+  capacityByTechRegionYear(*,*,*,*,k,r,y)           'Capacity by technology and region/island and year, MW'
+  genByTechRegionYear(*,*,*,*,k,r,y)                'Generation by technology and region/island and year, GWh'
+  txUpgradeYearByProjectAndPath(*,*,*,*,tupg,r,rr)  'Transmission upgrade year by project and transmission path'
+  txCapacityByYear(*,*,*,*,r,rr,y)                  'Transmission capacity in each year by transmission path, MW'
+  txCapexByProjectYear(*,*,*,*,tupg,y)              'Transmission capital expenditure by project and year, $m'
+  txByRegionYear(*,*,*,*,r,rr,y)                    'Interregional transmission by year, GWh'
+  txLossesByRegionYear(*,*,*,*,r,rr,y)              'Interregional transmission losses by year, GWh'
+  energyPrice(*,*,*,*,r,y)                          'Time-weighted energy price by region and year, $/MWh (from marginal price off of energy balance constraint)'
+  minEnergyPrice(*,*,*,*,g,y)                       'Shadow price off minimum scedulable hydro generation constraint, $/MWh [need to check units and test that this works]'
+  minUtilEnergyPrice(*,*,*,*,g,y)                   'Shadow price off minimum utilisation constraint, $/MWh [need to check units and test that this works]'
+  peakNZPrice(*,*,*,*,y)                            'Shadow price off peak NZ constraint, $/kW'
+  peakNIPrice(*,*,*,*,y)                            'Shadow price off peak NI constraint, $/kW'
+  peaknoWindNIPrice(*,*,*,*,y)                      'Shadow price off peak no wind NI constraint, $/kW'
+  renewEnergyShrPrice(*,*,*,*,y)                    'Shadow price off the minimum renewable energy share constraint, $/GWh [need to check units and test that this works]'
+  renewCapacityShrPrice(*,*,*,*,y)                  'Shadow price off the minimum renewable capacity share constraint, $/kW [need to check units and test that this works]'
+  fuelPrice(*,*,*,*,f,y)                            'Shadow price off limit on fuel use constraint, $/GJ [need to check units and test that this works]'
+  energyLimitPrice(*,*,*,*,f,y)                     'Shadow price off limit on total energy from any one fuel constraint, $/MWh  [need to check units and test that this works]'
 *  s_limit_maxgen(runVersions,experiments,steps,scenSet,g,y,t,lb,scen)          'Ensure generation in each block does not exceed capacity implied by max capacity factors'
 *  s_limit_hydro(runVersions,experiments,steps,scenSet,g,y,t,scen)              'Limit hydro generation according to inflows'
 *  s_tx_capacity(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)        'Calculate the relevant transmission capacity' ;
@@ -281,16 +284,16 @@ repDom(runVersions,experiments,steps,scenSet)$repDomLd(runVersions,experiments,s
 * a concatenation of the (runVersions,experiments,steps,scenSet) tuple? In the meantime, use the following code to flatten the 4-dimensional tuple into a
 * single-dimensioned set called rep.
 Sets
-  rep                                          'Individual solutions to be reported on in the key results file' /
-                                                mds1Tmg   'Sustainable path - timing'
-                                                mds2Tmg   'South Island wind - timing'
-                                                mds3Tmg   'Medium renewables - timing'
-                                                mds4Tmg   'Coal - timing'
-                                                mds5Tmg   'High gas discovery - timing'
-                                                rep6 * rep50  /
-  activeRep(rep)                               'The active elements from set rep'
-  foldRep(runVersions,expts,steps,scenSet,rep) 'Fold the (rv,expts,steps,scenSet)-tuple into the set rep'
-  maprv_rep(runVersions,rep)                   'Map runVersions into rep'
+  rep                                               'Individual solutions to be reported on in the key results file' /
+                                                     mds1Tmg   'Sustainable path - timing'
+                                                     mds2Tmg   'South Island wind - timing'
+                                                     mds3Tmg   'Medium renewables - timing'
+                                                     mds4Tmg   'Coal - timing'
+                                                     mds5Tmg   'High gas discovery - timing'
+                                                     rep6 * rep50  /
+  activeRep(rep)                                    'The active elements from set rep'
+  foldRep(runVersions,expts,steps,scenSet,rep)      'Fold the (rv,expts,steps,scenSet)-tuple into the set rep'
+  maprv_rep(runVersions,rep)                        'Map runVersions into rep'
   ;
 
 option foldRep(repDom:rep) ;
@@ -346,6 +349,12 @@ loop(repDomLd(rv,expts,steps,scenSet),
 
   genByTechRegionYear(repDomLd,k,r,y) = sum((g,t,lb,sc)$( mapg_k(g,k) * mapg_r(g,r) ), scenarioWeight(sc) * s_GEN(repDomLd,g,y,t,lb,sc)) ;
 
+  txUpgradeYearByProjectAndPath(repDomLd,tupg,paths) = sum((ps,y)$(s_BTX(repDomLd,paths,ps,y) * s_TXPROJVAR(repDomLd,tupg,y)), yearNum(rv,y)) ;
+
+  txCapacityByYear(repDomLd,paths,y) = sum(ps, i_txCapacity(rv,paths,ps) * s_BTX(repDomLd,paths,ps,y)) ;
+
+  txCapexByProjectYear(repDomLd,tupg,y)$s_TXPROJVAR(repDomLd,tupg,y) = sum(transitions(rv,tupg,paths,ps,pss), txCapitalCost(rv,paths,pss)) ;
+
   txByRegionYear(repDomLd,paths,y) = sum((t,lb,sc), 1e-3 * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_TX(repDomLd,paths,y,t,lb,sc)) ;
 
   txLossesByRegionYear(repDomLd,paths,y) = sum((t,lb,sc), 1e-3 * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_LOSS(repDomLd,paths,y,t,lb,sc)) ;
@@ -376,9 +385,11 @@ loop(repDomLd(rv,expts,steps,scenSet),
 
 objComponents(repDomLd,'obj_Check') = sum(objc, objComponents(repDomLd,objc)) - objComponents(repDomLd,'obj_total') ;
 
+option transitions:0:0:1, txCapacityByYear:0:0:1 ;
+
 Display
   repDomLd, rv, existBuildOrRetire, unDiscFactor, unDiscFactorYr, objComponents
-* builtByTechRegion, capacityByTechRegionYear, genByTechRegionYear, txByRegionYear, txLossesByRegionYear
+* builtByTechRegion, capacityByTechRegionYear, genByTechRegionYear, txUpgradeYearByProjectAndPath, txCapacityByYear, txCapexByProjectYear, txByRegionYear, txLossesByRegionYear
 * energyPrice, minEnergyPrice, minUtilEnergyPrice, peakNZPrice, peakNIPrice, peaknoWindNIPrice, renewEnergyShrPrice, renewCapacityShrPrice, fuelPrice, energyLimitPrice
   loadByRegionAndYear ;
 
@@ -565,35 +576,27 @@ loop(activeRep(rep),
   put / 'Total' '' loop(y, put sum((foldRep(repDom,rep),k,r), genByTechRegionYear(repDom,k,r,y)) ) ;
 ) ;
 
-put // 'Transmission investments by year' ;
-loop(tupg$sum((rep,foldRep(repDom,rep),y), s_TXPROJVAR(repDom,tupg,y)), put / tupg.tl, tupg.te(tupg) ) ;
+put // 'Transmission investment by project and year, $m' ;
 put / '' '' loop(tupg$sum((rep,foldRep(repDom,rep),y), s_TXPROJVAR(repDom,tupg,y)), put tupg.tl ) ;
 loop(activeRep(rep),
   put / rep.tl, rep.te(rep) ;
   loop(y$sum((foldRep(repDom,rep),tupg), s_TXPROJVAR(repDom,tupg,y)),
-    put / y.tl '' ;
-    loop(tupg$( not sameas(tupg,'Exist') ), put sum(foldRep(repDom,rep), s_TXPROJVAR(repDom,tupg,y)) ) ;
-* The above line puts in a 1 in the right place to show what upgrades (cols) occurred in what year (row) by scenario.
-* Need to replace the '1' with the MW built so that a bar graph can be drawn. Below is an incorrect attempt to do that. Perhaps, back up in the data
-* calculation section, we need to assign MW capacity by year to tupg from (paths,ps): 
-*    loop(tupg$( not sameas(tupg,'Exist') ), put sum((foldRep(repDom,rep),transitions(runVersions,tupg,r,rr,ps,pss)), s_TXPROJVAR(repDom,tupg,y)) ) ;
+    put / y.tl '' loop(tupg$( not sameas(tupg,'Exist') ), put sum(foldRep(repDom,rep), txCapexByProjectYear(repDom,tupg,y)) ) ;
   ) ;
 ) ;
 
-$ontext
-Stuff to delete once above is sorted
-* Calculate the relevant transmission capacity and impose it.
-tx_capacity(paths,y,t,lb,sc)..
-  TX(paths,y,t,lb,sc) =l= sum(allowedStates(paths,ps), i_txCapacity(paths,ps) * BTX(paths,ps,y)) ;
+put // 'Transmission capacity by path and year, MW' / '' '' loop(y, put y.tl ) ;
+loop(activeRep(rep),
+  put / rep.tl, rep.te(rep) ;
+  loop(paths(r,rr),
+    put / r.tl, rr.tl loop(y, put sum(foldRep(repDom,rep), txCapacityByYear(repDom,paths,y)) ) ;
+  ) ;
+) ;
 
-* Associate projects to individual upgrades (also ensures both directions of a path get upgraded together).
-tx_projectdef(transitions(tupg,paths,ps,pss),y)..
-  TXPROJVAR(tupg,y) =e= TXUPGRADE(paths,ps,pss,y) ;
+put // 'Transmission investments' ;
+loop(tupg$sum((rep,foldRep(repDom,rep),y), s_TXPROJVAR(repDom,tupg,y)), put / tupg.tl, tupg.te(tupg) ) ;
 
-i_txCapacity(runVersions,r,rr,ps)                    'Transmission path capacities (bi-directional), MW'
-
-transitions(runVersions,tupg,r,rr,ps,pss)            'For all transmission paths, define the allowable transitions from one upgrade state to another' ;
-$offtext
+put / 'EOF' ;
 
 
 
