@@ -20,7 +20,6 @@ $setglobal GRscheduleRead   0
 
 $setglobal ProgPath        "%system.fp%"
 $setglobal DataPath        "%system.fp%..\Data\"
-$setglobal MatCodePath     "%system.fp%..\Matlab code\"
 $setglobal OutPath         "%system.fp%..\Output\"
 
 * Set LogMode to 0 if it hasn't already been set to 1 via invocation, e.g. gams GEMsolve --LogMode=1

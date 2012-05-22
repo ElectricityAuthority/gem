@@ -1,30 +1,30 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 10/01/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 22/05/2012 (imm@ea.govt.nz)
 
-
-*** To do:
-*** Sort out the MIPtrace stuff, also, can it be made to work on all solvers?
-*** Does each model type have the correct modelstat error condition driving the abort stmt?
-*** The abort if slacks present has gone. Bring it back? Warning if penalties?
-
-* NB: The following symbols from input data file may have been changed in GEMdata:
-*     Sets: y and exist.
-*     Parameters: i_fixedOM, i_txCapacity, i_txCapacityPO and i_txEarlyComYr.
 
 $ontext
- This program continues sequentially from GEMdata. The GEMdata work file must be called at invocation
- of GEMsolve. Note that GEMdata was invoked by restarting from the GEMdeclarations work file. Hence,
- GEMsolve embodies all that is declared and/or initialised within GEMdeclarations and GEMdata. GEMsolve
- may be followed by another invocation of GEMdata/GEMsolve or by runMergeGDXs followed by GEMreports.
+  This program continues sequentially from GEMdata. The GEMdata work file (GEMdata.g00) must be called at the invocation
+  of GEMsolve. Note that GEMdata was invoked by restarting from the GEMdeclarations work file. Hence, GEMsolve embodies
+  all that is declared and/or initialised within GEMdeclarations and GEMdata. GEMsolve may be followed either by another
+  invocation of GEMdata/GEMsolve - i.e. if multiple run versions - or by runMergeGDXs and then GEMreports.
+
+  Notes:
+  1. Make sure that each model type has the correct modelstat error condition driving the abort statements.
+  2. The 'abort if slacks are present' statement has been removed. Perhaps it should be reinstated? Add a warning if penalties
+     are present?
+  3. Code at very end of file relates to counting integer solutions from log file. Decide whether to keep this or ditch it. 
+  4. Users should be aware that GEMdata may have changed the data assoicated with the following symbol sin the input data:
+       Sets: y and exist.
+       Parameters: i_fixedOM, i_txCapacity, i_txCapacityPO and i_txEarlyComYr.
+  5. ...
 
  Code sections:
   1. Take care of preliminaries.
   2. Set bounds, initial levels and, in some cases, fix variables to a specified level.
   3. Loop through all the solves
   4. Dump selected prepared input data into a GDX file and rename/relocate a couple of log files.
-
 $offtext
 
 * Track memory usage.
@@ -40,9 +40,7 @@ $offinline offeolcom
 $inlinecom { } eolcom !
 $offupper onempty
 $offuelxref offuellist	
-*$onuelxref  onuellist	
 $offsymxref offsymlist
-*$onsymxref  onsymlist
 
 
 
@@ -80,7 +78,7 @@ loop(solveGoal(goal),
 * Turn on the following to use the GAMSCHK routines (need to also comment out abort statements).
 *option MIP=GAMSCHK ;
 
-* Include a 'GR' investment schedule if one is specified.
+* Include a 'GR' investment schedule if one is specified correctly.
 $if %GRscheduleRead%==0 $goto noGRschedule1
 $if not exist "%GRscheduleFile%" $error Specified investment schedule does not exist
 $if     exist "%GRscheduleFile%" $include "%GRscheduleFile%"
@@ -142,7 +140,7 @@ RESV.fx(g,rc,y,t,lb,scen)$( not validYrOperate(g,y) ) = 0 ;
 *===============================================================================================
 * 3. Loop through all the solves
 
-* The solve statement is inside 3 loops:
+* The solve statement is inside a triple nested loop:
 *   Outer loop: Experiments
 *     Middle loop: Steps, i.e. timing, reopt, or dispatch
 *       Inner loop: scenarioSets
@@ -155,7 +153,6 @@ $set AddUpPenalties "sum((y,sc), PEAK_NZ_PENALTY.l(y,sc) + PEAK_NI_PENALTY.l(y,s
 loop(experiments,
 
 * Reset any variables that might have been fixed for an earlier reoptimisation or dispatch solve (reset fixes by initialising .lo and .up fields)
-
 * Restrict the build variable (i.e. MW) to zero or i_nameplate under certain input assumptions:
   BUILD.lo(g,y) = 0 ;    BUILD.up(g,y) = i_nameplate(g) ;             ! Lower bound equals zero, upper bound equals i_nameplate.
   BUILD.fx(g,y)$( not validYrBuild(g,y) ) = 0 ;                       ! Don't allow capacity to be built in years outside the valid range of build years.
@@ -253,7 +250,7 @@ $ label noGRschedule2
         if(mapSC_hydroSeqTypes(scen,'same'),
           modelledHydroOutput(g,y,t,scen) = hydroOutputScalar *
             sum((mapv_g(v,g),mapm_t(m,t),hY)$(mapSC_hY(scen,hY)), historicalHydroOutput(v,hY,m)) / sum(mapSC_hY(scen,hYY), 1) ;
-*         Capture the current mapping of hydroyears to modelled years.
+*         Capture the current mapping of historical hydro years to modelled years.
           mapHydroYearsToModelledYears(experiments,steps,scenSet,sc,y,hY)$( ord(hY) = sum(mapSC_hY(scen,hYY), 1) ) = yes ;
 *         Assign hydro output to potential new plant linked to existing schedulable hydro plant.
           hydroOutputUpgrades(schedHydroUpg(gg),y,t,sc) = sum(mapSH_Upg(g,gg)$i_namePlate(g), modelledHydroOutput(g,y,t,sc) / i_namePlate(g) ) ;
@@ -264,7 +261,7 @@ $ label noGRschedule2
             chooseHydroYears(hY)$(sum(hYY$(mapSC_hY(scen, hYY) and ord(hYY) + ord(y) - 1 - card(hY) = ord(hY)), 1)) = yes ;
             modelledHydroOutput(g,y,t,sc) =
               sum((mapv_g(v,g),mapm_t(m,t),chooseHydroYears), historicalHydroOutput(v,chooseHydroYears,m)) / sum(chooseHydroYears, 1) ;
-*           Capture the current mapping of hydroyears to modelled years. 
+*           Capture the current mapping of historical hydro years to modelled years. 
             mapHydroYearsToModelledYears(experiments,steps,scenSet,sc,y,chooseHydroYears) = yes ;
 *           Assign hydro output to potential new plant linked to existing schedulable hydro plant.
             hydroOutputUpgrades(schedHydroUpg(gg),y,t,sc) = sum(mapSH_Upg(g,gg)$i_namePlate(g), modelledHydroOutput(g,y,t,sc) / i_namePlate(g) ) ;
@@ -365,13 +362,6 @@ $     label skipThis
         ) ;
       ) ;
 
-*     Generate a MIP trace file when MIPtrace is equal to 1 (MIPtrace specified in GEMsettings).
-$     if not %PlotMIPtrace%==1 $goto NoMIPTrace
-      bat.ap = 0 ;
-      putclose bat 'copy MIPtrace.txt "MIPtrace - %runName%_%runVersionName%_' experiments.tl '_' steps.tl '_' scenSet.tl '.txt"' ;
-      execute 'temp.bat';
-$     label NoMIPTrace
-
 *     Collect up solution values - by experiment, step and scenarioSet.
 $     include CollectResults.inc
 
@@ -385,10 +375,6 @@ $     include CollectResults.inc
   put dummy ;
   put_utility 'gdxout' / '%OutPath%\%runName%\GDX\temp\AllOut\' experiments.tl ;
   execute_unload
-*+++++++++++++++++++++++++
-* More non-free reserves code.
-  s_RESVCOMPONENTS s_calc_nfreserves s_resv_capacity
-*+++++++++++++++++++++++++
 * Free Variables
   s_TOTALCOST s_SCENARIO_COSTS s_TX s_THETA
 * Binary Variables
@@ -397,17 +383,19 @@ $     include CollectResults.inc
   s_REFURBCOST s_GENBLDCONT s_CGEN s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_PUMPEDGEN s_LOSS s_TXPROJVAR s_TXUPGRADE
 * Reserve variables
   s_RESV s_RESVVIOL s_RESVTRFR s_RESVREQINT
+* Non-free reserve variable
+  s_RESVCOMPONENTS
 * Penalty variables
   s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
 * Slack variables
   s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
 * Equations (ignore the objective function)
-  s_calc_scenarioCosts s_calc_refurbcost s_calc_txcapcharges s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire s_endogretonce
-  s_balance_capacity s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg
-  s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3 s_calcTxLossesMIP s_calcTxLossesRMIP s_tx_capacity
-  s_tx_projectdef s_tx_onestate s_tx_upgrade s_tx_oneupgrade s_tx_dcflow s_tx_dcflow0 s_equatetxloss s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1
-  s_resvtrfr1 s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2 s_resvreqhvdc s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind
-  ;
+  s_calc_scenarioCosts s_calc_nfreserves s_resv_capacity s_calc_refurbcost s_calc_txcapcharges
+  s_bldgenonce s_buildcapint s_buildcapcont s_annnewmwcap s_endogpltretire s_endogretonce s_balance_capacity s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni
+  s_limit_maxgen s_limit_mingen s_minutil s_limit_fueluse s_limit_nrg s_minreq_rennrg s_minreq_rencap s_limit_hydro s_limit_pumpgen1 s_limit_pumpgen2 s_limit_pumpgen3
+  s_calcTxLossesMIP s_calcTxLossesRMIP s_tx_capacity s_tx_projectdef s_tx_onestate s_tx_upgrade s_tx_oneupgrade
+  s_tx_dcflow s_tx_dcflow0 s_equatetxloss s_txGrpConstraint s_resvsinglereq1 s_genmaxresv1 s_resvtrfr1 s_resvtrfr2 s_resvtrfr3 s_resvrequnit s_resvreq2
+  s_resvreqhvdc s_resvtrfr4 s_resvtrfrdef s_resvoffcap s_resvreqwind ;
 
 * Repeat the output dump to a GDX file named after the experiment, but this time dump only the output required for reporting.
   put dummy ;
@@ -454,7 +442,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   thermalFuel i_fuelQuantities renew schedHydroPlant trnch demandGen 
   allSolves weightScenariosBySet numExperiments numSteps numScenarioSets numScenarios
 * Time, financial, capex and cost related sets and parameters
-  yearNum taxRate CBAdiscountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
+  yearNum taxRate discountRates PVfacG PVfacT PVfacsM PVfacsEY PVfacs capexLife annuityFacN annuityFacR TxAnnuityFacN TxAnnuityFacR
   capRecFac depTCrecFac txCapRecFac txDepTCrecFac i_capitalCost i_connectionCost ensembleFactor capexPlant refurbCapexPlant
   capCharge refurbCapCharge txCapCharge
   i_winterCapacityMargin i_SIACrisk i_fkSI i_fkNI i_HVDClossesAtMaxXfer i_largestGenerator i_P200ratioNZ i_P200ratioNI
@@ -472,14 +460,12 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
   lossSlopeMIP lossIntercept bigLoss bigM susceptanceYr BBincidence regLower validTGC i_txGrpConstraintsLHS i_txGrpConstraintsRHS
 * Reserves
   reservesOn singleReservesReqF i_maxReservesTrnsfr i_reserveReqMW i_propWindCover windCoverPropn reservesCapability i_offlineReserve
+* Non-free reserves
+  lvl pNFresvCap pNFresvCost
 * Hydro related sets and parameters
   hydroOutputScalar allModelledHydroOutput allHydroOutputUpgrades mapHydroYearsToModelledYears
 * Penalties
   penaltyViolatePeakLoad penaltyViolateRenNrg penaltyViolateReserves
-*+++++++++++++++++++++++++
-* More non-free reserves code.
-  stp pNFresvCap pNFresvCost
-*+++++++++++++++++++++++++
   ;
 
 bat.ap = 0 ;
@@ -496,26 +482,6 @@ execute 'temp.bat' ;
 
 
 $stop
-
-
-
-*===============================================================================================
-*  x. Move MIPtrace files to output directory and generate miptrace.bat.
-
-$if not %PlotMIPtrace%==1 $goto NoTrace
-* Copy current MIPtrace files from the programs to the Traceplots directory, and erase MIPtrace files from programs directory. 
-putclose bat 'copy "%runName%-%runVersionName%-MIPtrace*.txt" "%OutPath%\%runName%\Traceplots"' / 'erase *MIPtrace*.txt' ;
-execute 'temp.bat';
-
-* Create the batch file to call Matlab to make the MIPtrace plots - note that miptrace.bat will be invoked from RunGem.gms.
-if(%MexOrMat% = 1,
-  putclose miptrace '"%MatCodePath%plot_all_objective_traces.exe" "%OutPath%\%runName%\Traceplots" "%runName%" "%Solver% trace"' ;
-  else
-  putclose miptrace "call matlab /r ", '"plot_all_objective_traces(', "'%OutPath%\%runName%\Traceplots','%runName%',","'%Solver% trace'); exit", '"' ;
-) ;
-$label NoTrace
-
-
 
 *  x. Create an awk script which, when executed, will produce a file containing the number of integer solutions per MIP model.
 $if %GEMtype%=="rmip" $goto NoMIP

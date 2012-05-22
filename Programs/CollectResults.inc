@@ -1,11 +1,3 @@
-*+++++++++++++++++++++++++
-* More non-free reserves code.
-* Positive Variables
-  s_RESVCOMPONENTS(steps,scenSet,r,rr,y,t,lb,sc,stp)    = RESVCOMPONENTS.l(r,rr,y,t,lb,sc,stp) ;
-* Equations
-  s_calc_nfreserves(steps,scenSet,r,rr,y,t,lb,sc)       = calc_nfreserves.m(r,rr,y,t,lb,sc) ;
-  s_resv_capacity(steps,scenSet,r,rr,y,t,lb,sc,stp)     = resv_capacity.m(r,rr,y,t,lb,sc,stp) ;
-*+++++++++++++++++++++++++
 * Free Variables
   s_TOTALCOST(steps,scenSet)                            = TOTALCOST.l ;
   s_SCENARIO_COSTS(steps,scenSet,sc)                    = SCENARIO_COSTS.l(sc) ;
@@ -37,6 +29,8 @@
   s_RESVVIOL(steps,scenSet,rc,ild,y,t,lb,sc)            = RESVVIOL.l(RC,ILD,y,t,lb,sc) ;
   s_RESVTRFR(steps,scenSet,rc,ild,ild1,y,t,lb,sc)       = RESVTRFR.l(rc,ild1,ild,y,t,lb,sc) ;
   s_RESVREQINT(steps,scenSet,rc,ild,y,t,lb,sc)          = RESVREQINT.l(rc,ild,y,t,lb,sc) ;
+* Non-free reserve variable
+  s_RESVCOMPONENTS(steps,scenSet,r,rr,y,t,lb,sc,lvl)    = RESVCOMPONENTS.l(r,rr,y,t,lb,sc,lvl) ;
 * Penalty variables
   s_RENNRGPENALTY(steps,scenSet,y)                      = RENNRGPENALTY.l(y) ;
   s_PEAK_NZ_PENALTY(steps,scenSet,y,sc)                 = PEAK_NZ_PENALTY.l(y,sc) ;
@@ -50,6 +44,8 @@
   s_FUELSLACK(steps,scenSet,y)                          = FUELSLACK.l(y) ;
 * Equations, i.e. marginal values. (ignore the objective function)
   s_calc_scenarioCosts(steps,scenSet,sc)                = calc_scenarioCosts.m(sc) ;
+  s_calc_nfreserves(steps,scenSet,r,rr,y,t,lb,sc)       = calc_nfreserves.m(r,rr,y,t,lb,sc) ;
+  s_resv_capacity(steps,scenSet,r,rr,y,t,lb,sc,lvl)     = resv_capacity.m(r,rr,y,t,lb,sc,lvl) ;
   s_calc_refurbcost(steps,scenSet,g,y)                  = calc_refurbcost.m(g,y) ;
   s_calc_txcapcharges(steps,scenSet,paths,y)            = calc_txcapcharges.m(paths,y) ;
   s_balance_capacity(steps,scenSet,g,y)                 = balance_capacity.m(g,y) ;
