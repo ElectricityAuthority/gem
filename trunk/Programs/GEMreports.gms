@@ -1,20 +1,25 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 18/01/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 21/05/2012 (imm@ea.govt.nz)
 
 
 $ontext
- This program generates GEM reports - human-readable files, files to be read by other applications for further processing,
- or pictures. It is to be invoked subsequent to GEMsolve. It does "not" start from GEMdeclarations.g00. All symbols required
- in this program are declared here. Set membership and data values are imported from the default (or base case) run version
- input GDX file or merged GDX files.
+  This program generates GEM reports - human-readable files or files to be read by other applications for further processing.
+  It is to be invoked subsequent to the solving of all runs and run versions that are to be reported on. Note that GEMreports
+  effectively starts afresh as a standalone program - it does "not" start from any previously created GAMS work files, and it
+  imports or loads all of the data it requires. All symbols required in this program are declared here. Set membership and data
+  values are imported from the default (or base case) run version input GDX file or merged GDX files.
+
+  Notes:
+  1. ...
 
  Code sections:
-  1. Declare required symbols and load data.
-  2. Undertake the declarations and calculations necesary to prepare all that is to be reported.
-  3. Write key results to a csv file.
-  4. Write results to be plotted to a single csv file.
+  1. Take care of preliminaries and declare output file names.
+  2. Declare required symbols and load data.
+  3. Undertake the declarations and calculations necesary to prepare all that is to be reported.
+  4. Write key results to a CSV file.
+  5. Write results to be plotted to a single csv file.
 
   x. Generate the remaining external files.
      a) Write an ordered (by year) summary of generation capacity expansion.
@@ -24,7 +29,17 @@ $ontext
   x. Do the John Culy report for TPR work - delete all of this once TPR is over.
 $offtext
 
+
+*** For now, the order of elements in set 'runVersions' in GEMreportSettings.inc must be consistent
+*** with the order of the elements specified below in set rep (circa line 293).
+
+
+
+*===============================================================================================
+* 1. Take care of preliminaries and declare output file names.
+
 option seed = 101 ;
+
 $include GEMreportSettings.inc
 $include "%OutPath%\%runName%\Input data checks\Configuration info for GEMreports - %runName%_%baseRunVersion%.inc"
 $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolcom !
@@ -32,7 +47,6 @@ $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolc
 * Declare output files to be created by GEMreports.
 Files
   keyResults     / "%OutPath%\%runName%\A collection of key results - %runName%.csv" /
-  plotBat        / "%OutPath%\%runName%\Archive\GEMplots.bat" /
   plotResults    / "%OutPath%\%runName%\Processed files\Results to be plotted - %runName%.csv" /
   expandSchedule / "%OutPath%\%runName%\Capacity expansion by year - %runName%.csv" /
   capacityPlant  / "%OutPath%\%runName%\Processed files\Capacity by plant and year (net of retirements) - %runName%.csv" /
@@ -42,7 +56,6 @@ Files
   variousAnnual  / "%OutPath%\%runName%\Processed files\Various annual results - %runName%.csv" /  ;
 
 keyResults.pc = 5 ;      keyResults.pw = 999 ;
-plotBat.lw = 0 ;
 plotResults.pc = 5 ;     plotResults.pw = 999 ;
 expandSchedule.pc = 5 ;  expandSchedule.pw = 999 ;
 capacityPlant.pc = 5 ;   capacityPlant.pw = 999 ;
@@ -54,7 +67,7 @@ variousAnnual.pc = 5 ;   variousAnnual.pw = 999 ;
 
 
 *===============================================================================================
-* 1. Declare required symbols and load data.
+* 2. Declare required symbols and load data.
 
 * Declare and initialise hard-coded sets - copied from GEMdeclarations.
 Sets
@@ -69,7 +82,7 @@ Sets
                                                             si         'South Island'
                                                             nz         'New Zealand' /
   col               'RGB color codes'                     / 0 * 256 /
-  ;
+  lvl               'Levels of non-free reserves'         / lvl1 * lvl5 / ;
 
 * Initialise set y with values from GEMsettings.inc.
 Set y 'Modelled calendar years' / %firstYear% * %lastYear% / ;
@@ -122,9 +135,6 @@ $loaddc firstYr firstPeriod thermalFuel nwd swd paths mapg_k mapg_f mapg_o mapg_
 $loaddc techColor
 * fuelColor fuelGrpColor
 
-* Need the non-free reserves steps (not to be confused with solve steps in an experiment).
-Set stp 'Steps'  / stp1 * stp5 / ;
-
 * Declare and load the parameters (variable levels and marginals) to be found in the merged 'allRV_ReportOutput' GDX file.
 Parameters
   s_TOTALCOST(runVersions,experiments,steps,scenSet)                           'Discounted total system costs over all modelled years, $m (objective function value)'
@@ -141,7 +151,7 @@ Parameters
   s_TXPROJVAR(runVersions,experiments,steps,scenarioSets,tupg,y)               'Continuous 0-1 variable indicating whether an upgrade project is applied'
   s_RESV(runVersions,experiments,steps,scenSet,g,rc,y,t,lb,scen)               'Reserve energy supplied, MWh'
   s_RESVVIOL(runVersions,experiments,steps,scenSet,rc,ild,y,t,lb,scen)         'Reserve energy supply violations, MWh'
-  s_RESVCOMPONENTS(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen,stp) 'Non-free reserve components, MW'
+  s_RESVCOMPONENTS(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen,lvl) 'Non-free reserve components, MW'
   s_RENNRGPENALTY(runVersions,experiments,steps,scenSet,y)                     'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
   s_PEAK_NZ_PENALTY(runVersions,experiments,steps,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
   s_PEAK_NI_PENALTY(runVersions,experiments,steps,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
@@ -205,7 +215,7 @@ Parameters
   refurbCapCharge(runVersions,g,y)                     'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
   MWtoBuild(runVersions,k,aggR)                        'MW available for installation by technology, island and NZ'
   penaltyViolateReserves(runVersions,ild,rc)           'Penalty for failing to meet certain reserve classes, $/MW'
-  pNFresvCost(runVersions,r,rr,stp)                    'Constant cost of each non-free piece (or step) of function, $/MWh'
+  pNFresvCost(runVersions,r,rr,lvl)                    'Constant cost of each non-free piece (or level) of function, $/MWh'
   exogMWretired(runVersions,g,y)                       'Exogenously retired MW by plant and year, MW' ;
 
 $gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData_%runName%.gdx"
@@ -216,7 +226,7 @@ $loaddc i_plantReservesCost hoursPerBlock NrgDemand yearNum PVfacG PVfacT capCha
 
 
 *===============================================================================================
-* 2. Undertake the declarations and calculations necesary to prepare all that is to be reported.
+* 3. Undertake the declarations and calculations necesary to prepare all that is to be reported.
 
 Sets
   sc(scen)                                                      '(Dynamically) selected subsets of elements of scenarios'
@@ -335,7 +345,7 @@ loop(repDomLd(rv,expts,steps,scenSet),
   objComponents(repDomLd,'obj_rescosts')  = 1e-6 * (1 - taxRate) * sum((g,rc,y,t,lb,sc), PVfacG(rv,y,t) * scenarioWeight(sc) * i_plantReservesCost(rv,g,rc) * ensembleFactor(rv,g) * s_RESV(repDomLd,g,rc,y,t,lb,sc) ) ;
   objComponents(repDomLd,'obj_resvviol')  = 1e-6 * sum((rc,ild,y,t,lb,sc), scenarioWeight(sc) * s_RESVVIOL(repDomLd,rc,ild,y,t,lb,sc) * penaltyViolateReserves(rv,ild,rc) ) ;
   objComponents(repDomLd,'obj_nfrcosts')  = 1e-6 * (1 - taxRate) * sum((y,t,lb), PVfacG(rv,y,t) * (
-                                                   sum((paths,stp,sc)$( nwd(paths) or swd(paths) ), hoursPerBlock(rv,t,lb) * scenarioWeight(sc) * s_RESVCOMPONENTS(repDomLd,paths,y,t,lb,sc,stp) * pNFresvcost(rv,paths,stp) ) ) ) ;
+                                                   sum((paths,lvl,sc)$( nwd(paths) or swd(paths) ), hoursPerBlock(rv,t,lb) * scenarioWeight(sc) * s_RESVCOMPONENTS(repDomLd,paths,y,t,lb,sc,lvl) * pNFresvcost(rv,paths,lvl) ) ) ) ;
   objComponents(repDomLd,'obj_Penalties') = sum((y,sc), scenarioWeight(sc) * (
                                               1e-3 * penaltyViolateRenNrg * s_RENNRGPENALTY(repDomLd,y) +
                                               1e-6 * penaltyViolatePeakLoad * ( s_PEAK_NZ_PENALTY(repDomLd,y,sc) + s_PEAK_NI_PENALTY(repDomLd,y,sc) + s_NOWINDPEAK_NI_PENALTY(repDomLd,y,sc) ) )
@@ -396,7 +406,7 @@ Display
 
 
 *===============================================================================================
-* 3. Write key results to a csv file.
+* 4. Write key results to a CSV file.
 
 * Write a report config file - a bit like run config, i.e. what runs, experiments, obj fn value etc. Put the solveReport in it?
 
@@ -535,13 +545,10 @@ loop(activeRep(rep),
 
 
 *===============================================================================================
-* 4. Write results to be plotted to a single csv file.
-
-* Create a batch file in the archive folder to be used to invoke the plotting executable.
-putclose plotBat '"%MatCodePath%\GEMplots.exe" "%OutPath%\%runName%\Processed files\Results to be plotted - %runName%.csv"' / ;
+* 5. Write results to be plotted to a single CSV file.
 
 * Write to the plotting csv file
-put plotResults "%runName%" "%FigureTitles%", card(y) ; ! card(y) needs to indicate the number of columns of data - after the first 2 cols, which are not data.
+put plotResults "%runName%" "%FigureTitles%", card(y) ; ! card(y) needs to indicate the number of columns of data - i.e. after the first 2 cols, which are not data.
 put // 'Technologies' ;
 loop(k, put / k.tl, k.te(k) loop(techColor(k,red,green,blue), put red.tl, green.tl, blue.tl ) ) ;
 
@@ -597,6 +604,9 @@ put // 'Transmission investments' ;
 loop(tupg$sum((rep,foldRep(repDom,rep),y), s_TXPROJVAR(repDom,tupg,y)), put / tupg.tl, tupg.te(tupg) ) ;
 
 put / 'EOF' ;
+
+
+
 
 
 

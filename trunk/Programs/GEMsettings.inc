@@ -32,7 +32,7 @@ Scalar randomCapexCostAdjuster / 0 / ;
 
 
 *+++ GemConstraints +++
-Scalar txLossesRMIP / 1 / ;
+Scalar txLossesRMIP / 0 / ;
 Scalar V2GtechnologyOn / 0 / ;
 Scalar renNrgShrOn / 0 / ;
 Scalar renCapShrOn / 0 / ;
@@ -82,14 +82,3 @@ $setglobal MinGapSecs 10800
 * CPU seconds available for solver to spend solving GEM for solve goal MinGap.
 $setglobal limitOutput 0
 * Set to 1 to limit the amount of output written to the listing file
-
-
-*+++ Plots +++
-$setglobal MexOrMat 1
-* 1 to use .mex executable for Matlab figures, 0 to use Matlab and source codes. All other values are illegal.
-$setglobal PlotInFigures 0
-* 1 to generate plots of various model inputs; 0 to prevent the generation of such plots.
-$setglobal PlotOutFigures 0
-* 1 to generate plots of various model outputs; 0 to prevent the generation of such plots.
-$setglobal PlotMIPtrace 0
-* 1 to generate MIPtrace plots; 0 to prevent the generation of MIPtrace plots.

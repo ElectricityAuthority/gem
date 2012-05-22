@@ -1,12 +1,11 @@
 $setglobal runName        "Test"
 $setglobal baseRunVersion "mds3"
-$setglobal singleDomain   "'singleExp','timing','averageHydro'"
+$setglobal singleDomain   "'oldWayLite','timing','averageHydro'"
 
 $setglobal FigureTitles    0
 
 $setglobal ProgPath       "%system.fp%"
 $setglobal DataPath       "%system.fp%..\Data\"
-$setglobal MatCodePath    "%system.fp%..\Matlab code\"
 $setglobal OutPath        "%system.fp%..\Output\"
 
 Set runVersions "Variants or instances of the run - all stored in the 'runName' output directory" /

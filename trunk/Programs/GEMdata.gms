@@ -1,21 +1,28 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 18/01/2012 (imm@ea.govt.nz)
-
-
-** To do:
-** Formalise/fix up the override stuff once we get GEM back into emi.
+* Last modified by Dr Phil Bishop, 22/05/2012 (imm@ea.govt.nz)
 
 
 $ontext
- This program prepares the data for a single run of GEM (note that a GEM run may comprise many experiments and
- scenarios). GEMdata imports the input data from GDX files, undertakes some manipulations/transformations, and
- performs integrity checks. It finishes by writing out some input data summary tables.
+  This program prepares the data for a single run version of GEM. Note that a GEM run version may comprise many experiments and
+  scenarios. Note too that one or many run versions comprise a GEM run. GEMdata imports the input data from GDX files, undertakes
+  some manipulations/transformations, and performs integrity checks. It finishes by writing out some input data summary tables.
 
- The GEMdata invocation requires GEMdata to be restarted from the GEMdeclarations work file. The files
- called GEMpathsAndFiles.inc, GEMsettings.inc and GEMstochastic.inc are included into GEMdata. The GEMdata work
- file is saved and used to start GEMsolve. GEMsolve is invoked immediately after GEMdata.
+  The GEMdata invocation requires GEMdata to be restarted from the GEMdeclarations work file (GEMdeclarations.g00). The files
+  called GEMpathsAndFiles.inc, GEMsettings.inc and GEMstochastic.inc are included into GEMdata. The GEMdata work file is saved
+  and used to start GEMsolve. GEMsolve is invoked immediately after GEMdata and from the same 'runGEM...' script.
+
+  Notes:
+  1. The override structure needs to be generalised to work with any number of input parameters - perhaps even all of them? Also,
+     when this takes place, the override declarations need to be moved into GEMdeclarations.
+  2. See "File rawData 'GEM input data'" The creation of this file needs to be completed. Symbols need to be group together in a
+     sensible order. The generated output needs to be checked for reliability. Some symbols, such as i_inflexiblePlantFactor(g,lb),
+     are not yet written out.
+  3. Need to update and make current the display statement in code section 5.
+  4. Code section (6)(d) - some info from GEMsettings and elsewhere(?) not yet written or its no longer relevant.
+  5. Some transmission-related data is yet to be written into transmission input data summary file - see code section (6)(e). 
+  6. ...
 
  Code sections:
   1. Take care of a few preliminaries.
@@ -27,17 +34,20 @@ $ontext
      d) Generation data.
      e) Transmission data.
      f) Reserve energy data.
-     g) Create set of VOLL plant - one per region.
+     g) Non-free reserves
+     h) Create set of VOLL plant - one per region.
   4. Prepare the scenario-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
   5. Display sets and parameters.
   6. Create input data summaries.
-     a) Write miscellaneous configuration information required later by GEMreports.
-     b) Write the run configuration summary.
-     c) Write the transmission data summaries.
-     d) Write the plant data summaries.
-     e) Write the capex statistics.
-     f) Write the load summaries.
-     g) Include code to compute and write out LRMC of all non-existing plant.
+     a) Declare input data summary files.
+     b) Do the calculations.
+     c) Write miscellaneous configuration information required later by GEMreports.
+     d) Write the run configuration summary.
+     e) Write the transmission data summaries.
+     f) Write the plant data summaries.
+     g) Write the capex statistics.
+     h) Write the load summaries.
+     i) Include code to compute and write out LRMC of all non-existing plant.
 $offtext
 
 
@@ -58,9 +68,7 @@ $include GEMsettings.inc
 * Turn the following on/off as desired.
 $offupper onempty inlinecom { } eolcom !
 $offuelxref offuellist	
-*$onuelxref  onuellist	
 $offsymxref offsymlist
-*$onsymxref  onsymlist
 
 * Create and execute a batch file to archive/save selected files.
 File bat "A recyclable batch file" / "%ProgPath%temp.bat" / ; bat.lw = 0 ; bat.ap = 0 ;
@@ -123,7 +131,7 @@ $loaddc i_txCapitalCost i_txEarlyComYr i_txFixedComYr i_txGrpConstraintsLHS i_tx
 $gdxin "%DataPath%\%GEMdemandGDX%"
 $load   i_NrgDemand
 
-* Initialise set 'n' and record the number of loss tranches - data comes from GEMsettings.inc.
+* Initialise set 'n' and record the number of loss tranches - %NumVertices% comes from GEMsettings.inc.
 Set n 'Piecewise linear vertices' / n1 * n%NumVertices% / ;
 numT = %NumVertices% - 1 ; ;
 
@@ -146,20 +154,7 @@ i_co2tax(y)$i_co2taxOvrd(y) = i_co2taxOvrd(y) ;                                i
 i_FixComYr(g)$i_FixComYrOvrd(g) = i_FixComYrOvrd(g) ;                          i_FixComYr(g)$( i_FixComYr(g) = eps ) = 0 ; 
 $label noOverrides2
 
-
-** A temporary TPR override
-$ontext
-i_txEarlyComYr(tupg)$( not sameas(tupg,'exist') ) = 3333 ;
-i_txEarlyComYr('PEN_ALB220a') = 2012 ;
-i_txEarlyComYr('WKM_OTA40022') = 2012 ;
-i_txEarlyComYr('NewPole1') = 2012 ;
-i_txEarlyComYr('NewPole2') = 2014 ;
-i_txEarlyComYr('NewPole3') = 2016 ;
-$offtext
-**
-
-
-* Create a csv file of input data, including overrides - unadulterated and just as imported.
+* Create a CSV file of input data, including overrides - unadulterated and just as imported.
 File rawData 'GEM input data' / "%OutPath%\%runName%\Input data checks\Raw GEM input data - %runName%_%runVersionName%.csv" / ;
 rawData.pc = 5 ; rawData.pw = 999 ;
 put rawData 'Data as imported into GEMdata.gms. Sourced from:' /
@@ -219,7 +214,7 @@ loop((r,rr,ps)$i_txCapacity(r,rr,ps),
 ) ;
 
 ** Complete creation of this file. Group stuff in a sensible order. Check that output is reliable.
-** Need to write out i_inflexiblePlantFactor(g,lb), among others not yet written.
+** Need to write out i_inflexiblePlantFactor(g,lb), among other symbols not yet written.
 
 
 
@@ -244,7 +239,7 @@ abort$( firstYear < i_firstDataYear ) "First modelled year precedes first data y
 abort$( lastYear  > i_lastDataYear )  "Last modelled year is later than the last data year",      i_lastDataYear, lastYear, lastYr ;
 abort$( firstYear > lastYear )        "First modelled year is later than the last modelled year", firstYear, firstYr, lastYear, lastYr ;
 
-* Denote each hydro year set element with a real number corresponding to that year, i.e. 1932 = 1932, 1933 = 1933,...2002 = 2002, etc.
+* Denote each historical hydro year set element with a real number corresponding to that year, i.e. 1932 = 1932, 1933 = 1933,...2002 = 2002, etc.
 hydroYearNum(hY) = i_firstHydroYear + ord(hY) - 1 ;
 
 lastHydroYear = sum(hY$( ord(hY) = card(hY) ), hydroYearNum(hY)) ;
@@ -295,19 +290,19 @@ rightAdjacentBlocks(lb,lbb)$( ord(lbb) = ord(lb) + 1 ) = yes ;
 
 
 * c) Financial parameters.
-CBAdiscountRates('WACCg') = WACCg ;
-CBAdiscountRates('WACCt') = WACCt ;
-CBAdiscountRates('dLow')  = discRateLow ;
-CBAdiscountRates('dMed')  = discRateMed ;
-CBAdiscountRates('dHigh') = discRateHigh ;
+discountRates('WACCg') = WACCg ;
+discountRates('WACCt') = WACCt ;
+discountRates('dLow')  = discRateLow ;
+discountRates('dMed')  = discRateMed ;
+discountRates('dHigh') = discRateHigh ;
 
 PVfacG(y,t) = 1 / ( 1 + WACCg ) ** ( (yearNum(y) - firstYear) + (ord(t) * 2 - 1) / ( 2 * card(t) ) ) ;
 
 PVfacT(y,t) = 1 / ( 1 + WACCt ) ** ( (yearNum(y) - firstYear) + (ord(t) * 2 - 1) / ( 2 * card(t) ) ) ;
 
-PVfacsM(y,t,d) = 1 / ( 1 + CBAdiscountRates(d) ) ** ( (yearNum(y) - firstYear) + (ord(t) * 2 - 1) / ( 2 * card(t) ) ) ;
+PVfacsM(y,t,d) = 1 / ( 1 + discountRates(d) ) ** ( (yearNum(y) - firstYear) + (ord(t) * 2 - 1) / ( 2 * card(t) ) ) ;
 
-PVfacsEY(y,d)  = 1 / ( 1 + CBAdiscountRates(d) ) ** (  yearNum(y) - firstYear + 1 ) ;
+PVfacsEY(y,d)  = 1 / ( 1 + discountRates(d) ) ** (  yearNum(y) - firstYear + 1 ) ;
 
 PVfacs(y,t,d,'mid') = PVfacsM(y,t,d) ;
 PVfacs(y,t,d,'eoy') = PVfacsEY(y,d) ;
@@ -664,14 +659,7 @@ bigM(ild1,ild) =
  smin((paths(r,rr),ps)$( mapild_r(ild1,r) * mapild_r(ild,rr) ), i_txCapacityPO(paths,ps) ) ;
 
 
-* g) Create set of VOLL plant - one per region.
-put VOLLplant
-'Set s /'           loop(r, put / "'VOLL" r.tl "'" ) ; put '  /;' //
-'Set maps_r(s,r) /' loop(r, put / "'VOLL" r.tl "'.'" r.tl "'" ) ; put '  /;' ;
-
-
-*+++++++++++++++++++++++++
-* More code to do the non-free reserves stuff. 
+* g) Non-free reserves
 * Estimate free reserves by path state.
 freeReserves(nwd(r,rr),ps)$allowedStates(nwd,ps) = i_txCapacityPO(nwd,ps) + largestNIplant ;
 freeReserves(swd(r,rr),ps)$allowedStates(swd,ps) = i_txCapacityPO(swd,ps) + largestSIplant ;
@@ -680,25 +668,33 @@ freeReserves(swd(r,rr),ps)$allowedStates(swd,ps) = i_txCapacityPO(swd,ps) + larg
 nonFreeReservesCap(paths(r,rr),ps)$( allowedStates(paths,ps) and (nwd(paths) or swd(paths)) ) = i_txCapacity(paths,ps) - freeReserves(paths,ps) ;
 
 * Figure out capacities (really, upper bounds) of non-free reserves by step.
-* a) Find the biggest value in each direction
+* i) Find the biggest value in each direction
 bigSwd(swd) = smax(ps, nonFreeReservesCap(swd,ps)) ;
 bigNwd(nwd) = smax(ps, nonFreeReservesCap(nwd,ps)) ;
-* b) Set the first step to be 100
-pNFresvCap(paths(r,rr),stp)$( nwd(paths) or swd(paths) ) = 100 ;
-* c) Set subsequent steps to be 100 more than the previous step
-loop(stp$( ord(stp) > 1),
-  pNFresvCap(paths(r,rr),stp)$( ord(stp) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCap(paths,stp-1) + 100 ;
+
+* ii) Set the first step to be 100
+pNFresvCap(paths(r,rr),lvl)$( nwd(paths) or swd(paths) ) = 100 ;
+
+* iii) Set subsequent steps to be 100 more than the previous step
+loop(lvl$( ord(lvl) > 1),
+  pNFresvCap(paths(r,rr),lvl)$( ord(lvl) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCap(paths,lvl-1) + 100 ;
 ) ;
-* d) Set the last step to be the biggest value over all states
-pNFresvCap(swd,stp)$( ord(stp) = card(stp) ) = bigswd(swd) ;
-pNFresvCap(nwd,stp)$( ord(stp) = card(stp) ) = bignwd(nwd) ;
+
+* iv) Set the last step to be the biggest value over all states
+pNFresvCap(swd,lvl)$( ord(lvl) = card(lvl) ) = bigswd(swd) ;
+pNFresvCap(nwd,lvl)$( ord(lvl) = card(lvl) ) = bignwd(nwd) ;
 
 * Figure out costs by step - increment by $5/MWh each step.
-pNFresvCost(paths(r,rr),stp)$( (ord(stp) = 1 ) and (nwd(paths) or swd(paths)) ) = 5 ;
-loop(stp$( ord(stp) > 1),
-  pNFresvCost(paths(r,rr),stp)$( ord(stp) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCost(paths,stp-1) + 5 ;
+pNFresvCost(paths(r,rr),lvl)$( (ord(lvl) = 1 ) and (nwd(paths) or swd(paths)) ) = 5 ;
+loop(lvl$( ord(lvl) > 1),
+  pNFresvCost(paths(r,rr),lvl)$( ord(lvl) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCost(paths,lvl-1) + 5 ;
 ) ;
-*+++++++++++++++++++++++++
+
+
+* h) Create set of VOLL plant - one per region.
+put VOLLplant
+'Set s /'           loop(r, put / "'VOLL" r.tl "'" ) ; put '  /;' //
+'Set maps_r(s,r) /' loop(r, put / "'VOLL" r.tl "'.'" r.tl "'" ) ; put '  /;' ;
 
 
 
@@ -738,26 +734,8 @@ ldcMW(r,y,t,lb,scen)$hoursPerBlock(t,lb) = 1e3 * NrgDemand(r,y,t,lb,scen) / hour
 peakLoadNZ(y,scen) = scenarioPeakLoadFactor(scen) * i_P200ratioNZ(y) * ( 1 / 8.76 ) * sum((r,t,lb)$mapAggR_r('nz',r), NrgDemand(r,y,t,lb,scen)) ;
 peakLoadNI(y,scen) = scenarioPeakLoadFactor(scen) * i_P200ratioNI(y) * ( 1 / 8.76 ) * sum((r,t,lb)$mapAggR_r('ni',r), NrgDemand(r,y,t,lb,scen)) ;
 
-* Transfer hydro output for all hydro years from i_historicalHydroOutput to historicalHydroOutput (no scenario-specific adjustment factors at this time).
+* Transfer hydro output for all historical hydro years from i_historicalHydroOutput to historicalHydroOutput (no scenario-specific adjustment factors at this time).
 historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
-
-
-
-$ontext
-** Another temporary TPR overwrite to do the uncapacitated/free transmission upgrade runs while maintaining the capacitated loss functions. The last
-** loss tranche keeps the same loss function parameters but the capacity (of the initial state) is increased by 15 times, i.e. i_txCapacity is multiplied
-** by 15 and then capacity for all states after initial are set to zero. The committed upgrades are excluded from this overwrite.
-
-i_txCapacity(r,rr,ps)$( not (nwd(r,rr) or swd(r,rr)) ) = 15 * i_txCapacity(r,rr,ps) ;
-i_txCapacity(r,rr,ps)$( (not (nwd(r,rr) or swd(r,rr))) and (not sameas(ps,'initial')) ) = 0 ;
-i_txCapacity('akld','nshr','initial') = 1067 ; i_txCapacity('nshr','akld','initial') = 1004 ;
-i_txCapacity('akld','nshr','upgr1') = 1556 ;   i_txCapacity('nshr','akld','upgr1') = 1556 ;
-i_txCapacity('waik','akld','initial') = 2588 ; i_txCapacity('akld','waik','initial') = 2588 ;
-i_txCapacity('waik','akld','upgr1') = 3420 ;   i_txCapacity('akld','waik','upgr1') = 3420 ;
-
-option transitions:0:0:1, i_txCapacity:0:0:1 ;
-Display 'After temporary overwite', i_txCapacity, transitions ;
-$offtext
 
 
 
@@ -790,7 +768,7 @@ Display
 * Various mappings, subsets and counts.
   numReg
 * Financial parameters.
-  CBAdiscountRates, PVfacG, PVfacT, PVfacsM, PVfacsEY, PVfacs, capexLife, annuityFacN, annuityFacR, txAnnuityFacN, txAnnuityFacR
+  discountRates, PVfacG, PVfacT, PVfacsM, PVfacsEY, PVfacs, capexLife, annuityFacN, annuityFacR, txAnnuityFacN, txAnnuityFacR
   capRecFac, depTCrecFac, txCapRecFac, txDeptCRecFac
 * Fuel prices and quantity limits.
 * Generation data.
@@ -811,7 +789,7 @@ $offtext
 *===============================================================================================
 * 6. Create input data summaries.
 
-* Declare input data summary files.
+* a) Declare input data summary files.
 Files
   configInfo     / "%OutPath%\%runName%\Input data checks\Configuration info for GEMreports - %runName%_%runVersionName%.inc" /
   runConfig      / "%OutPath%\%runName%\Input data checks\Run configuration summary - %runName%_%runVersionName%.txt" /
@@ -830,7 +808,7 @@ loadSummary.lw = 0 ;    loadSummary.pw = 999 ;
 lrmc_inData.pc = 5 ;    lrmc_inData.nd = 1 ;
 
 
-* Do the calculations.
+* b) Do the calculations.
 numExperiments  = sum(experiments$sum(allSolves(experiments,steps,scenSet), 1), 1) ;
 numSteps        = sum(steps$sum(allSolves(experiments,steps,scenSet), 1), 1) ;
 numScenarioSets = sum(scenSet$sum(allSolves(experiments,steps,scenSet), 1), 1) ;
@@ -877,7 +855,7 @@ capexStatistics(k,aggR,'stdDev') = sqrt(capexStatistics(k,aggR,'variance')) ;
 capexStatistics(k,aggR,'stdDev%')$capexStatistics(k,aggR,'mean') = 100 * capexStatistics(k,aggR,'stdDev') / capexStatistics(k,aggR,'mean') ;
 
 
-* a) Write miscellaneous configuration information required later by GEMreports.
+* c) Write miscellaneous configuration information required later by GEMreports.
 put configInfo ;
 put 'Set experiments "A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps" /' ;
 loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' experiments.tl, '" "', experiments.te(experiments), '"' ) put ' /;' // ;  
@@ -898,7 +876,7 @@ put '$setglobal firstYear %firstYear%' / '$setglobal lastYear %lastYear%' //
     'Scalar slackCost / ',              slackCost:<10:1, ' /;' ;
 
 
-* b) Write the run configuration summary.
+* d) Write the run configuration summary.
 put runConfig 'Run name:' @26 "%runName%" / 'Run version:' @26 "%runVersionName%" / 'Initiated at:' @26 system.time ' on ' system.date //
   'Main input GDX:' @26 "%DataPath%\%GEMinputGDX%" / 'Region/network GDX:' @26 "%DataPath%\%GEMnetworkGDX%" / 'Demand GDX:' @26 "%DataPath%\%GEMdemandGDX%" / 
 $ if %useOverrides%==0 $goto noOverrides3
@@ -978,12 +956,6 @@ $ label noGRschedule
 *$setglobal Threads 4
 *$setglobal MinGapSecs 10800
 *$setglobal limitOutput 0
-*+++ Plots +++
-*$setglobal MexOrMat 1
-*$setglobal PlotInFigures 0
-*$setglobal PlotOutFigures 0
-*$setglobal PlotMIPtrace 0
-*$setglobal FigureTitles 0
 
 put  /// 'Scenario weights and factors by experiment.' / @54 'Scenario' @66 'Scenario factors:' /
 'Experiments' @15 'Steps' @25 'scenarioSets' @40 'Scenarios' @55 'Weight' @66 'PeakLoad' @76 'Co2' @86 'FuelCost' @96 'Energy' ;
@@ -995,7 +967,7 @@ loop(allSolves(experiments,steps,scenSet),
   ) ;
 ) ;
 
-put //// 'Hydrology mappings to scenarios and type of sequence development (Same => averaged over the listed hydro years; Sequential => listed hydro year maps to first modelled year).' /
+put //// 'Hydrology mappings to scenarios and type of sequence development (Same => averaged over the listed historical hydro years; Sequential => listed historical hydro year maps to first modelled year).' /
 'Experiments' @15 'Steps' @25 'scenarioSets' @40 'Scenarios' @56 'SeqType' @68 'Hydro years' ;
 loop(allSolves(experiments,steps,scenSet),
   put / experiments.tl @15 steps.tl @25 scenSet.tl @40
@@ -1020,7 +992,7 @@ loop(experiments$sum(allSolves(experiments,steps,scenSet), 1),
 ) ;
 
 
-* c) Write the transmission data summaries.
+* e) Write the transmission data summaries.
 put txData, 'Transmission data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
   'Network file:'          @26 "%GEMnetworkGDX%" /
   'Integerized losses:'    @26 if(txLossesRMIP, put 'no' else put 'yes' ) put /
@@ -1074,7 +1046,7 @@ loop((transitions(tupg,r,rr,ps,pss),trnch(n)),
 * NB: Reactance and susceptance by year assumes exogenous or fixed timing of transmission expansion decisions, otherwise it stays at the level of initial year.
 
 
-* d) Write the plant data summaries.
+* f) Write the plant data summaries.
 $set plantDataHdr1 'MW  Capex  varCC  varOM avSRMC  fixOM fixFDC TCsclr     HR  PkCon    FoF  xFoFm mnCapF mxCapF  avMnU  '
 $set plantDataHdr2 'Exist noExst Commit New NvaBld ErlyYr FixYr inVbld inVopr Retire EndogY ExogYr  Mover Region Owner  SubStn' ;
 put plantData, 'Plant data summarised (default scenario only) - based on user-supplied data and the machinations of GEMdata.gms.' //
@@ -1176,7 +1148,7 @@ loop((k,g)$( (not exist(g)) and mapg_k(g,k) ),
 ) ;
 
 
-* e) Write the capex statistics.
+* g) Write the capex statistics.
 put capexStats 'Descriptive statistics of plant capex (lumpy and including grid connection costs).' //
   'First modelled year:' @22 firstYear:<4:0 /
   'Last modelled year:'  @22 lastYear:<4:0 / ;
@@ -1204,7 +1176,7 @@ loop(k,
 ) ;
 
 
-* f) Write the load summaries.
+* h) Write the load summaries.
 put loadSummary 'Energy and peak load by region/island and year, GWh' /
   ' - GWh energy grossed-up by AC loss factors and scaled by scenario-specific energy factor' /
   ' - GWh energy and peak load reported here relates only to the default scenario (' loop(defaultScenario(scen), put scen.tl ) put ').' /
@@ -1227,7 +1199,7 @@ put // 'Peak load, MW' @14 loop(aggR, put aggR.tl:>10 ) ;
 loop(y, put / @2 y.tl @14  loop(aggR, put peakLoadByYearAggR(y,aggR):>10:0 ) ) ;
 
 
-* g) Include code to compute and write out LRMC of all non-existing plant.
+* i) Include code to compute and write out LRMC of all non-existing plant.
 $if %calcInputLRMCs%==0 $goto noLRMC
 $include GEMlrmc.gms
 $label noLRMC

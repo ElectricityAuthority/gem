@@ -1,23 +1,39 @@
 * GEMdeclarations.gms
 
-* Last modified by Dr Phil Bishop, 09/12/2011 (imm@ea.govt.nz)
+
+* Last modified by Dr Phil Bishop, 22/05/2012 (imm@ea.govt.nz)
+
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
-  and including GEMsolve. Some symbols declared here are also used by GEMreports. Symbols required only for post-solve
-  reporting purposes are declared in GEMreports. In a few cases (a handful of sets whose membership never changes), the
-  symbols are intialised here as well. In other words, the membership of those sets is assigned at the time of declaration.
+  and including GEMsolve. A few symbols declared here are also used by GEMreports. Symbols required only for post-solve
+  reporting purposes are declared in GEMreports. In a very few cases (a handful of sets whose membership never changes),
+  the symbols are intialised here as well. In other words, the membership of those sets is assigned at the time of declaration.
   In all other cases, set membership and scalar/parameter values are obtained from user-specified input files, or are
   computed within GEMdata using the imported data.
 
-  The GEMdeclarations work file is saved and used at invocation to restart GEMdata.
+  The GEMdeclarations work file (GEMdeclarations.g00) is saved and used at invocation to restart GEMdata.
+
+  Notes:
+  1. GEM has a comprehensive treatment of reserves, emodied in the following variables and equations:
+       Variables: RESV, RESVVIOL, RESVTRFR and RESVREQINT; and
+       Equations: resvsinglereq1, genmaxresv1, resvtrfr1, resvtrfr2, resvtrfr3, resvrequnit, resvreq2,
+       resvreqhvdc, resvtrfr4, resvtrfrdef, resvoffcap, and resvreqwind.
+     However, the reserves formulation has not yet been properly parameterized so it is suppressed using the switch 'reservesOn',
+     which can be found in GEMsettings.inc. In the meantime, non-free reserves are modelled outside of the reserves formulation.
+     At some point, the reserves formulation will be properly parameterized and, perhaps, modified to incorporate a replacement
+     treatment of non-free reserves. The treatment of non-free reserves makes use of the set lvl; the parameters largestNIplant,
+     largestSIplant, freeReserves, nonFreeReservesCap, bigSwd, bigNwd, pNFresvCap, and pNFresvCost; the variable RESVCOMPONENTS;
+     the equations calc_nfreserves and resv_capacity.
+  2. See the comment "***txGrpConstraint(validTGC,y,t,lb,sc)$txconstraintactive(y,t,validTGC).." at initialisation of txGrpConstraint.
+     What's up with this and does it need fixing, removing? Is txconstraintactive even a known symbol anymore?
 
  Code sections:
   1. Declare sets and parameters - the data for which is imported from input GDX files.
   2. Declare remaining sets and parameters.
      a) Hard-coded sets.
      b) Scenario-specific sets and parameters.
-     c) Various GEM configuration sets and parameters. 
+     c) Various GEM configuration sets and parameters.
      d) Declare all remaining sets and parameters.
   3. Declare model variables and equations.
   4. Specify the equations and declare the models.
@@ -26,8 +42,8 @@ $ontext
 $offtext
 
 * Turn the following maps on/off as desired.
-$offuelxref offuellist	
-*$onuelxref  onuellist	
+$offuelxref offuellist
+*$onuelxref  onuellist
 $offsymxref offsymlist
 *$onsymxref  onsymlist
 
@@ -36,8 +52,9 @@ $offsymxref offsymlist
 *===============================================================================================
 * 1. Declare sets and parameters - the data for which is imported from input GDX files.
 
-* First, declare without initialising five sets (with fixed membership) that are not contained in the input GDX file.
-* But some symbols in the input GDX files are defined on these 5 sets.
+* First, declare without initialising five sets (with fixed membership) that are not contained in the input GDX file. Rather, the
+* membership of these sets comes, either, from a .inc file or it's hard-coded later in GEMdeclarations. But they need to be declared
+* now because some sets in the input GDX files are defined on these five sets.
 Sets
   y            'Modelled calendar years'
   ild          'Islands'
@@ -62,12 +79,12 @@ Sets
   t            'Time periods (within a year)'
   lb           'Load blocks'
   rc           'Reserve classes'
-  hY           'Hydrology output years'
+  hY           'Historical years with hydrology data'
   v            'Hydro reservoirs or river systems'  ;
 
 Alias (g,gg), (i,ii), (r,rr), (ild,ild1), (ps,pss), (lb,lbb), (hY,hYY), (col,red,green,blue) ;
 
-* 36 mapping sets and subsets (grouped thematically as per the navigation pane of emi)
+* 36 mapping sets and subsets (grouped thematically as per the navigation pane of EMI)
 Sets
 * 22 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -114,7 +131,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 80 parameters (again, grouped thematically as per the navigation pane of emi).
+* Declare 80 parameters (again, grouped thematically as per the navigation pane of EMI).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -192,16 +209,16 @@ Parameters
   i_propWindCover(rc)                           'Proportion of wind to cover by reserve class (0-1 but define only when > 0)'
   i_ReservePenalty(ild,rc)                      'Reserve violation penalty, $/MWh'
   i_reserveReqMW(y,ild,rc)                      'Reserve requirement by year, island, and class, MW'
-  i_winterCapacityMargin(y)                     'Required winter capacity margin, MW' 
+  i_winterCapacityMargin(y)                     'Required winter capacity margin, MW'
   i_SIACrisk(y)                                 'Required cover for South Island AC risk by year, MW'
   i_fkSI(y)                                     'Required frequency keeping in South Island by year, MW'
   i_fkNI(y)                                     'Required frequency keeping in North Island by year, MW'
   i_HVDClossesAtMaxXfer(y)                      'Required cover for HVDC (bi-pole) losses at maximum transfer by year, MW'
   i_largestGenerator(y)                         'Largest generation plant by year, MW'
-  i_P200ratioNZ(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), New Zealand'   
-  i_P200ratioNI(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), North Island'   
+  i_P200ratioNZ(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), New Zealand'
+  i_P200ratioNI(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), North Island'
 * 2 hydrology
-  i_firstHydroYear                              'First year of hydrology output data'
+  i_firstHydroYear                              'First year of historical hydrology data'
   i_historicalHydroOutput(v,hY,m)               'Historical hydro output sequences by reservoir and month, GWh'
   ;
 
@@ -211,7 +228,7 @@ Parameters
 * 2. Declare remaining sets and parameters.
 *    a) Hard-coded sets.
 *    b) Scenario-specific sets and parameters.
-*    c) Various GEM configuration sets and parameters. 
+*    c) Various GEM configuration sets and parameters.
 *    d) Declare all remaining sets and parameters.
 
 * a) Hard-coded sets (non-developer users have no need to change these set elements).
@@ -221,9 +238,9 @@ Sets
                                                                                         refplt     'Refurbish existing generation plant' /
   d                                             'Discount rate classes'               / WACCg      "Generation investor's post-tax real weighted average cost of capital"
                                                                                         WACCt      "Transmission investor's post-tax real weighted average cost of capital"
-                                                                                        dLow       'Lower discount rate for CBA sensitivity analysis' 
-                                                                                        dMed       'Central discount rate for CBA sensitivity analysis'
-                                                                                        dHigh      'Upper discount rate for CBA sensitivity analysis'    /
+                                                                                        dLow       'Lower discount rate for sensitivity analysis'
+                                                                                        dMed       'Central discount rate for sensitivity analysis'
+                                                                                        dHigh      'Upper discount rate for sensitivity analysis'    /
   dt                                            'Types of discounting'                / mid        'Middle of the period within each year'
                                                                                         eoy        'End of year'   /
   goal                                          'Goals for MIP solution procedure'    / QDsol      'Find a quick and dirty solution using a user-specified optcr'
@@ -232,8 +249,8 @@ Sets
   steps                                         'Steps in an experiment'              / timing     'Solve the timing problem, i.e. timing of new generation/or transmission investment'
                                                                                         reopt      'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
                                                                                         dispatch   'Solve for the dispatch only with investment timing fixed'  /
-  hydroSeqTypes                                 'Types of hydro sequences to use'     / Same       'Use the same sequence of hydro years to be used in every modelled year'
-                                                                                        Sequential 'Use a sequentially developed mapping of hydro years to modelled years' /
+  hydroSeqTypes                                 'Types of hydro sequences to use'     / Same       'Use the same historical hydro year in every modelled year'
+                                                                                        Sequential 'Use a sequentially developed mapping of historical hydro years to modelled years' /
   ild                                           'Islands'                             / ni         'North Island'
                                                                                         si         'South Island' /
   aggR                                          'Aggregate regional entities'         / ni         'North Island'
@@ -263,22 +280,23 @@ Sets
                                                                                         Mean       'Mean, $/kW'
                                                                                         StdDev     'Standard deviation, $/kW'
                                                                                        'StdDev%'   'Standard deviation as a percentage'  /
-  col                                           'RGB color codes'                     / 0 * 256 / ;
+  col                                           'RGB color codes'                     / 0 * 256 /
+  lvl                                           'Levels of non-free reserves'         / lvl1 * lvl5 / ;
 
 * b) Scenario-specific sets and parameters - see (mostly) GEMstochastic.
 Sets
-  experiments                                   'A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps'
   scenarios                                     'The various individual stochastic scenarios, or futures, or states of uncertainty'
+  scenarioSets                                  'A coherent collection of scenarios to be simultaneously solved over'
+  experiments                                   'A collection of scenarioSets to be solved for in the current runVersion. Experiments must get mapped to steps - timing, re-optimisation and dispatch'
   sc(scenarios)                                 '(Dynamically) selected subsets of elements of scenarios'
-  scenarioSets                                  'Create sets of scenarios to be used in a solve'
   mapScenarios(scenarioSets,scenarios)          'Map the individual scenarios to an scenario set (i.e. 1 or more scenarios make up an scenario set)'
   timingSolves(experiments,scenarioSets)        'Which scenario sets are used for the timing step of each experiment?'
   reoptSolves(experiments,scenarioSets)         'Which scenario sets are used for the reoptimisation step of each experiment?'
   dispatchSolves(experiments,scenarioSets)      'Which scenario sets are used for the dispatch step of each experiment?'
   allSolves(experiments,steps,scenarioSets)     'Scenario sets by experiment and step'
-  mapSC_hY(scenarios,hY)                        'Map historical hydro output years to scenarios (compute the average if more than one hydro year is specified)'
-  mapSC_hydroSeqTypes(scenarios,hydroSeqTypes)  'Map the way types of hydrology sequences are developed (same or sequential) to scenarios'
-  mapHydroYearsToModelledYears(experiments,steps,scenarioSets,scenarios,y,hY) 'Collect the mapping of hydro years to modelled modelled years for all experiments-steps-scenarioSets tuples'
+  mapSC_hY(scenarios,hY)                        'Map historical hydro years to scenarios (compute the average if more than one historical year is specified)'
+  mapSC_hydroSeqTypes(scenarios,hydroSeqTypes)  'Map the hydrology sequence types (same or sequential) to scenarios'
+  mapHydroYearsToModelledYears(experiments,steps,scenarioSets,scenarios,y,hY) 'Collect the mapping of historical hydro years to modelled years for all experiments-steps-scenarioSets tuples'
   sumSolves(scenarioSets)                       'Figure out which solves to sum over when computing post-solve results averaged over scenarioSets'
   defaultScenario(scenarios)                    'Identify a default scenario to use when reporting summaries of input data (see GEMdata)' ;
 
@@ -351,7 +369,7 @@ Sets
   mapAggR_r(aggR,r)                             'Map the regions to the aggregated regional entities (this is primarily to facilitate reporting)'
   mapv_g(v,g)                                   'Map generating plant to reservoirs'
   thermalFuel(f)                                'Thermal fuels'
-  isIldEqReg(ild,r)                             'Figure out if the region labels are identical to the North and South island labels (a reporting facilitation device)' 
+  isIldEqReg(ild,r)                             'Figure out if the region labels are identical to the North and South island labels (a reporting facilitation device)'
 * Generation data.
   noExist(g)                                    'Generation plant that are not presently operating'
   commit(g)                                     'Generation plant that are assumed to be committed'
@@ -395,8 +413,8 @@ Parameters
   counter                                       'A recyclable counter - set equal to zero each time before using'
 * Time/date-related parameters.
   yearNum(y)                                    'Real number associated with each year'
-  hydroYearNum(hY)                              'Real number associated with each hydrology output year'
-  lastHydroYear                                 'Last year of hydrology output data - as an integer'
+  hydroYearNum(hY)                              'Real number associated with each historical hydrology output year'
+  lastHydroYear                                 'Last year of historical hydrology output data - as an integer'
   hoursPerBlock(t,lb)                           'Hours per load block by time period'
 * Financial parameters.
   WACCg                                         "Generation investor's post-tax real weighted average cost of capital"
@@ -405,12 +423,12 @@ Parameters
   taxRate                                       'Corporate tax rate'
   txPlantLife                                   'Life of transmission equipment, years'
   txDepRate                                     'Depreciation rate for transmission equipment'
-  CBAdiscountRates(d)                           'CBA discount rates - for reporting results only'
+  discountRates(d)                              'Discount rates - for reporting results only'
   PVfacG(y,t)                                   "Generation investor's present value factor by period"
   PVfacT(y,t)                                   "Transmission investor's present value factor by period"
-  PVfacsM(y,t,d)                                'Present value factors as at middle of period for generation, transmission, and CBA discounting in post-solve calculations'
-  PVfacsEY(y,d)                                 'Present value factors as at end of year for generation, transmission, and CBA discounting in post-solve calculations'
-  PVfacs(y,t,d,dt)                              'All present value factors - for generation, transmission, and CBA discounting in post-solve calculations'
+  PVfacsM(y,t,d)                                'Present value factors as at middle of period for generation, transmission, and sensitivity of discount rates in post-solve calculations'
+  PVfacsEY(y,d)                                 'Present value factors as at end of year for generation, transmission, and sensitivity of discount rates in post-solve calculations'
+  PVfacs(y,t,d,dt)                              'All present value factors - for generation, transmission, and sensitivity of discount rates in post-solve calculations'
   capexLife(k,ct)                               'Plant life by technology and capex type, years'
   annuityFacN(y,k,ct)                           'Nominal annuity factor by technology, year and type of capex - depends on annual inflation rate'
   annuityFacR(k,ct)                             'Real annuity factor by technology and type of capex'
@@ -470,6 +488,15 @@ Parameters
   singleReservesReqF(rc)                        'Flag to inidicate if there is a single systemwide reserve requirement'
   windCoverPropn(rc)                            'Proportion of wind to be covered by reserves, (0-1)'
   bigM(ild,ild1)                                'A large positive number'
+* Non-free reserves
+  largestNIplant                                "Get this from the peak security data - but you can't have it vary by year"   / 385 /
+  largestSIplant                                "Get this from the peak security data - but you can't have it vary by year"   / 125 /
+  freeReserves(r,rr,ps)                         'Free reserves, MW'
+  nonFreeReservesCap(r,rr,ps)                   'Non-free reserves max capacity (i.e. amount that the system must pay for), MW'
+  bigSwd(r,rr)                                  'Biggest value of non-free reserves in southward direction'
+  bigNwd(r,rr)                                  'Biggest value of non-free reserves in northward direction'
+  pNFresvCap(r,rr,lvl)                          'Capacity of each piece (or level) of non-free reserves, MW'
+  pNFresvCost(r,rr,lvl)                         'Constant cost of each non-free piece (or level) of function, $/MWh'
 * Hydrology output data
   historicalHydroOutput(v,hY,m)                 'Historical hydro output sequences by reservoir and month, GWh'
   hydroOutputScalar                             'Scale the hydro output sequence used to determine the timing of new builds'
@@ -482,7 +509,7 @@ Parameters
   avgSRMC(g)                                    'Short run marginal cost of each generation project - averaged over years for the default scenario, $/MWh'
   avgPeakCon(g)                                 'Contribution to peak factor - averaged over years for each plant'
   avgMaxCapFact(g)                              'Maximum capacity factor averaged over periods and load blocks for each plant (hours per block per period are the weights)'
-  avgMinCapFact(g)                              'Minimum capacity factor averaged over years and periods for each plant' 
+  avgMinCapFact(g)                              'Minimum capacity factor averaged over years and periods for each plant'
   avgMinUtilisation(g)                          'Minimum utilisation of plant averaged over years'
   assumedGWh(g)                                 'Gigawatt hours per plant using assumed technology-specific capacity factors'
   MWtoBuild(k,aggR)                             'MW available for installation by technology, island and NZ'
@@ -497,29 +524,6 @@ Parameters
 
 *===============================================================================================
 * 3. Declare model variables and equations.
-
-*+++++++++++++++++++++++++
-* Code to do the non-free reserves stuff. 
-*   - Need to decide whether to retain/formalise this stuff. For example, can it be accomodated
-*     within the standard reserves formulation?
-Set stp 'Steps'  / stp1 * stp5 / ;
-
-Parameters
-  largestNIplant                                "Get this from the peak security data - but you can't have it vary by year"   / 385 /  
-  largestSIplant                                "Get this from the peak security data - but you can't have it vary by year"   / 125 /  
-  freeReserves(r,rr,ps)                         'Free reserves, MW'
-  nonFreeReservesCap(r,rr,ps)                   'Non-free reserves max capacity (i.e. amount that the system must pay for), MW'
-  bigSwd(r,rr)                                  'Biggest value of non-free reserves in southward direction'
-  bigNwd(r,rr)                                  'Biggest value of non-free reserves in northward direction'
-  pNFresvCap(r,rr,stp)                          'Capacity of each piece (or step) of non-free reserves, MW'
-  pNFresvCost(r,rr,stp)                         'Constant cost of each non-free piece (or step) of function, $/MWh' ;
-
-Positive Variables
-  RESVCOMPONENTS(r,rr,y,t,lb,scenarios,stp)     'Non-free reserve components, MW' ;
-Equations
-  calc_nfreserves(r,rr,y,t,lb,scenarios)        'Calculate non-free reserve components' 
-  resv_capacity(r,rr,y,t,lb,scenarios,stp)      'Calculate and impose the relevant capacity on each step of free reserves' ;
-*+++++++++++++++++++++++++
 
 Free Variables
   TOTALCOST                                     'Discounted total system costs over all modelled years, $m (objective function value)'
@@ -553,6 +557,8 @@ Positive Variables
   RESVVIOL(rc,ild,y,t,lb,scenarios)             'Reserve energy supply violations, MWh'
   RESVTRFR(rc,ild,ild1,y,t,lb,scenarios)        'Reserve energy transferred from one island to another, MWh'
   RESVREQINT(rc,ild,y,t,lb,scenarios)           'Internally determined energy reserve requirement, MWh'
+* Non-free reserve variable
+  RESVCOMPONENTS(r,rr,y,t,lb,scenarios,lvl)     'Non-free reserve components, MW'
 * Penalty variables
   RENNRGPENALTY(y)                              'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
   PEAK_NZ_PENALTY(y,scenarios)                  'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
@@ -568,6 +574,8 @@ Positive Variables
 Equations
   objectivefn                                   'Calculate discounted total system costs over all modelled years, $m'
   calc_scenarioCosts(scenarios)                 'Calculate discounted costs that might vary by scenario'
+  calc_nfreserves(r,rr,y,t,lb,scenarios)        'Calculate non-free reserve components'
+  resv_capacity(r,rr,y,t,lb,scenarios,lvl)      'Calculate and impose the relevant capacity on each level of free reserves'
   calc_refurbcost(g,y)                          'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
   calc_txcapcharges(r,rr,y)                     'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
   bldgenonce(g)                                 'If new generating plant is to be built, ensure it is built only once'
@@ -668,20 +676,17 @@ calc_scenarioCosts(sc)..
     sum(g$validYrOperate(g,y), 1e3 * ensembleFactor(g) * srmc(g,y,sc) * GEN(g,y,t,lb,sc) ) +
 * Cost of providing reserves ($m)
     sum((g,rc), i_plantReservesCost(g,rc) * ensembleFactor(g) * RESV(g,rc,y,t,lb,sc) ) +
-*++++++++++++++++++
-* More non-free reserves code.
-* Cost of providing reserves ($m)
-    sum((paths,stp)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * pNFresvcost(paths,stp) * RESVCOMPONENTS(paths,y,t,lb,sc,stp) )
+* Cost of providing non-free reserves ($m)
+    sum((paths,lvl)$( nwd(paths) or swd(paths) ), hoursPerBlock(t,lb) * pNFresvcost(paths,lvl) * RESVCOMPONENTS(paths,y,t,lb,sc,lvl) )
   ) )  ;
 
-* Calculate non-free reserve components. 
+* Calculate non-free reserve components.
 calc_nfreserves(paths(r,rr),y,t,lb,sc)$( nwd(r,rr) or swd(r,rr) )..
-  sum(stp, RESVCOMPONENTS(r,rr,y,t,lb,sc,stp)) =g= TX(r,rr,y,t,lb,sc) - sum(allowedStates(r,rr,ps), freereserves(r,rr,ps) * BTX(r,rr,ps,y)) ;
+  sum(lvl, RESVCOMPONENTS(r,rr,y,t,lb,sc,lvl)) =g= TX(r,rr,y,t,lb,sc) - sum(allowedStates(r,rr,ps), freereserves(r,rr,ps) * BTX(r,rr,ps,y)) ;
 
-* Calculate and impose the relevant capacity on each step of free reserves.
-resv_capacity(paths,y,t,lb,sc,stp)$( nwd(paths) or swd(paths) )..
-  RESVCOMPONENTS(paths,y,t,lb,sc,stp) =l= pNFresvcap(paths,stp) ;
-*++++++++++++++++++
+* Calculate and impose the relevant capacity on each level of free reserves.
+resv_capacity(paths,y,t,lb,sc,lvl)$( nwd(paths) or swd(paths) )..
+  RESVCOMPONENTS(paths,y,t,lb,sc,lvl) =l= pNFresvcap(paths,lvl) ;
 
 * Compute the annualised generation plant refurbishment expenditure charge in each year.
 calc_refurbcost(PossibleToRefurbish(g),y)$refurbCapCharge(g,y)..
@@ -914,19 +919,14 @@ resvreqwind(rc,ild,y,t,lb,sc)$( reservesOn * ( (i_reserveReqMW(y,ild,rc) = -2) o
   =g= windCoverPropn(rc) * sum(mapg_k(g,k)$( wind(k) * mapg_ild(g,ild) * validYrOperate(g,y) ), 1000 * GEN(g,y,t,lb,sc) ) ;
 
 Model DISP Dispatch model with build forced and timing fixed  /
-  objectivefn, calc_scenarioCosts, calc_refurbcost, calc_txcapcharges,
+  objectivefn, calc_scenarioCosts, calc_nfreserves, resv_capacity, calc_refurbcost, calc_txcapcharges,
   balance_capacity, bal_supdem, peak_nz, peak_ni, noWindPeak_ni
   limit_maxgen, limit_mingen, minutil, limit_inflexPlant, limit_fueluse, limit_Nrg, minReq_RenNrg, minReq_RenCap, limit_hydro
   limit_pumpgen1, limit_pumpgen2, limit_pumpgen3
   calcTxLossesMIP, calcTxLossesRMIP, tx_capacity, tx_projectdef, tx_onestate, tx_upgrade, tx_oneupgrade
   tx_dcflow, tx_dcflow0, equatetxloss, txGrpConstraint
   resvsinglereq1, genmaxresv1, resvtrfr1, resvtrfr2, resvtrfr3, resvrequnit
-  resvreq2, resvreqhvdc, resvtrfr4, resvtrfrdef, resvoffcap, resvreqwind
-*++++++++++
-* More non-free reserves code.
-  calc_nfreserves, resv_capacity
-*++++++++++
-  / ;
+  resvreq2, resvreqhvdc, resvtrfr4, resvtrfrdef, resvoffcap, resvreqwind / ;
 
 * Model GEM is just model DISP with 6 additional constraints added:
 Model GEM Generation expansion model / DISP, bldGenOnce, buildCapInt, buildCapCont, annNewMWcap, endogpltretire, endogretonce / ;
@@ -941,14 +941,6 @@ Model GEM Generation expansion model / DISP, bldGenOnce, buildCapInt, buildCapCo
 *        Units not yet verified in all cases and some descriptions could be made more meaningful.
 
 Parameters
-*+++++++++++++++++++++++++
-* More non-free reserves code.
-* Positive Variables
-  s_RESVCOMPONENTS(steps,scenarioSets,r,rr,y,t,lb,scenarios,stp)   'Non-free reserve components, MW'
-* Equations
-  s_calc_nfreserves(steps,scenarioSets,r,rr,y,t,lb,scenarios)      'Calculate non-free reserve components' 
-  s_resv_capacity(steps,scenarioSets,r,rr,y,t,lb,scenarios,stp)    'Calculate and impose the relevant capacity on each step of free reserves'
-*+++++++++++++++++++++++++
 * Free Variables
   s_TOTALCOST(steps,scenarioSets)                                  'Discounted total system costs over all modelled years, $m (objective function value)'
   s_SCENARIO_COSTS(steps,scenarioSets,scenarios)                   'Discounted costs that might vary by scenario, $m (a component of objective function value)'
@@ -979,6 +971,8 @@ Parameters
   s_RESVVIOL(steps,scenarioSets,rc,ild,y,t,lb,scenarios)           'Reserve energy supply violations, MWh'
   s_RESVTRFR(steps,scenarioSets,rc,ild,ild1,y,t,lb,scenarios)      'Reserve energy transferred from one island to another, MWh'
   s_RESVREQINT(steps,scenarioSets,rc,ild,y,t,lb,scenarios)         'Internally determined energy reserve requirement, MWh'
+* Non-free reserve variable
+  s_RESVCOMPONENTS(steps,scenarioSets,r,rr,y,t,lb,scenarios,lvl)   'Non-free reserve components, MW'
 * Penalty variables
   s_RENNRGPENALTY(steps,scenarioSets,y)                            'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
   s_PEAK_NZ_PENALTY(steps,scenarioSets,y,scenarios)                'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
@@ -992,6 +986,8 @@ Parameters
   s_FUELSLACK(steps,scenarioSets,y)                                'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
 * Equations (ignore the objective function)
   s_calc_scenarioCosts(steps,scenarioSets,scenarios)               'Calculate discounted costs that might vary by scenario'
+  s_calc_nfreserves(steps,scenarioSets,r,rr,y,t,lb,scenarios)      'Calculate non-free reserve components'
+  s_resv_capacity(steps,scenarioSets,r,rr,y,t,lb,scenarios,lvl)    'Calculate and impose the relevant capacity on each step of free reserves'
   s_calc_refurbcost(steps,scenarioSets,g,y)                        'Calculate the annualised generation plant refurbishment expenditure charge in each year, $'
   s_calc_txcapcharges(steps,scenarioSets,r,rr,y)                   'Calculate cumulative annualised transmission capital charges in each modelled year, $m'
   s_bldgenonce(steps,scenarioSets,g)                               'If new generating plant is to be built, ensure it is built only once'
@@ -1044,14 +1040,6 @@ Parameters
 
 * Now push the statements that collect up results into a file called CollectResults.inc. This file gets $include'd into GEMsolve.gms
 $onecho > CollectResults.inc
-*+++++++++++++++++++++++++
-* More non-free reserves code.
-* Positive Variables
-  s_RESVCOMPONENTS(steps,scenSet,r,rr,y,t,lb,sc,stp)    = RESVCOMPONENTS.l(r,rr,y,t,lb,sc,stp) ;
-* Equations
-  s_calc_nfreserves(steps,scenSet,r,rr,y,t,lb,sc)       = calc_nfreserves.m(r,rr,y,t,lb,sc) ;
-  s_resv_capacity(steps,scenSet,r,rr,y,t,lb,sc,stp)     = resv_capacity.m(r,rr,y,t,lb,sc,stp) ;
-*+++++++++++++++++++++++++
 * Free Variables
   s_TOTALCOST(steps,scenSet)                            = TOTALCOST.l ;
   s_SCENARIO_COSTS(steps,scenSet,sc)                    = SCENARIO_COSTS.l(sc) ;
@@ -1083,6 +1071,8 @@ $onecho > CollectResults.inc
   s_RESVVIOL(steps,scenSet,rc,ild,y,t,lb,sc)            = RESVVIOL.l(RC,ILD,y,t,lb,sc) ;
   s_RESVTRFR(steps,scenSet,rc,ild,ild1,y,t,lb,sc)       = RESVTRFR.l(rc,ild1,ild,y,t,lb,sc) ;
   s_RESVREQINT(steps,scenSet,rc,ild,y,t,lb,sc)          = RESVREQINT.l(rc,ild,y,t,lb,sc) ;
+* Non-free reserve variable
+  s_RESVCOMPONENTS(steps,scenSet,r,rr,y,t,lb,sc,lvl)    = RESVCOMPONENTS.l(r,rr,y,t,lb,sc,lvl) ;
 * Penalty variables
   s_RENNRGPENALTY(steps,scenSet,y)                      = RENNRGPENALTY.l(y) ;
   s_PEAK_NZ_PENALTY(steps,scenSet,y,sc)                 = PEAK_NZ_PENALTY.l(y,sc) ;
@@ -1096,6 +1086,8 @@ $onecho > CollectResults.inc
   s_FUELSLACK(steps,scenSet,y)                          = FUELSLACK.l(y) ;
 * Equations, i.e. marginal values. (ignore the objective function)
   s_calc_scenarioCosts(steps,scenSet,sc)                = calc_scenarioCosts.m(sc) ;
+  s_calc_nfreserves(steps,scenSet,r,rr,y,t,lb,sc)       = calc_nfreserves.m(r,rr,y,t,lb,sc) ;
+  s_resv_capacity(steps,scenSet,r,rr,y,t,lb,sc,lvl)     = resv_capacity.m(r,rr,y,t,lb,sc,lvl) ;
   s_calc_refurbcost(steps,scenSet,g,y)                  = calc_refurbcost.m(g,y) ;
   s_calc_txcapcharges(steps,scenSet,paths,y)            = calc_txcapcharges.m(paths,y) ;
   s_balance_capacity(steps,scenSet,g,y)                 = balance_capacity.m(g,y) ;
@@ -1161,7 +1153,7 @@ $offecho
 * 6. Declare some (but not all) output files to be created by GEMdata and GEMsolve.
 
 Files
-  VOLLplant 'Write VOLL plant on the fly'      / VOLLplant.inc / 
+  VOLLplant 'Write VOLL plant on the fly'      / VOLLplant.inc /
   rep       'Write to a solve summary report'  / Report.txt /
   con       'Write to the console'             / con /
   dummy ;
