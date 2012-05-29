@@ -1,7 +1,7 @@
 * GEMdeclarations.gms
 
 
-* Last modified by Dr Phil Bishop, 22/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/05/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -340,9 +340,14 @@ Parameters
   cGenYr                                        'First year in which integer generation build decisions can become continuous, i.e. CGEN or BGEN = 0 in any year'
   noVOLLblks                                    'Number of contiguous load blocks at top of LDC for which the VOLL generators are unavailable'
   randomCapexCostAdjuster                       'Specify the bounds for a small +/- random adjustment to generation plant capital costs'
-  slackCost                                     'An arbitrarily high cost for slack variables to be able enter the objective function'
+  slackCost                                     'An arbitrarily high cost for slack variables to be able to enter the objective function'
   slacks                                        'A flag indicating slack variables exist in at least one solution'
-  penalties                                     'A flag indicating penalty variables exist in at least one solution'  ;
+  penalties                                     'A flag indicating penalty variables exist in at least one solution'
+  genSecs                                       'Number of seconds required to generate the current model'
+  numSecs                                       'Number of CPU seconds required to solve the current model'
+  numIters                                      'Number of iterations required to solve the current model'
+  solverStat                                    'Solver status flag for the current model'
+  modelStat                                     'Model status flag for the current model' ;
 
 * d) Declare all remaining sets and parameters - to be initialised/computed in GEMdata or GEMsolve.
 Sets

@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 22/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 29/05/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -11,7 +11,10 @@ $ontext
   invocation of GEMdata/GEMsolve - i.e. if multiple run versions - or by runMergeGDXs and then GEMreports.
 
   Notes:
-  1. Make sure that each model type has the correct modelstat error condition driving the abort statements.
+  1. Make sure that each model type has the correct modelstat error condition driving the abort statements. Also, does it make
+     sense to have a .optcr for DISP? And/or report it? The assumption is that DISP is solved as an RMIP so the solver reporting
+     related to MIPs is skipped for DISP. Is this o.k.? Should we force, perhaps in EMI, DISP to never be an LP. As an RMIP, it's
+     an LP anyway. Allowing LP as a solve type requires more modelstat error conditions.
   2. The 'abort if slacks are present' statement has been removed. Perhaps it should be reinstated? Add a warning if penalties
      are present?
   3. Code at very end of file relates to counting integer solutions from log file. Decide whether to keep this or ditch it. 
@@ -49,8 +52,8 @@ $offsymxref offsymlist
 
 $include VOLLplant.inc
 
-* Stamp run name and run version name into solve report.
-putclose rep 'Run:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / ;
+* Stamp header for current run/runVersion into GEMsolveReport.
+putclose rep 'Run name:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / 'Date/time:' @15 system.date, ' - ' system.time / ;
 
 * Specify various .lst file and solver-related options.
 if(%limitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ; ) ; 
@@ -281,26 +284,47 @@ $ label noGRschedule2
         Solve GEM using %GEMtype% minimizing TOTALCOST ;
       ) ;
 
-*     Figure out if entire model invocation is to be aborted - but report that fact before aborting.
+*     Add up the value of slacks and penalties in current model.
       slacks = %AddUpSlacks% ;
       penalties = %AddUpPenalties% ;
 
+*     Collect solver and model info for current model just solved, and figure out if entire GEMsolve invocation is to be
+*     aborted - but hold off aborting until solve report is created.
       counter = 0 ;
       if(sameas(steps,'dispatch'),
-        counter$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) = 1 ;
+        genSecs = DISP.resGen ; numSecs = DISP.resUsd ; numIters = DISP.iterUsd ; solverStat = DISP.solveStat ; modelStat = DISP.modelStat ;
+        solveReport(allSolves,'OptFile') = DISP.optfile ;      solveReport(allSolves,'DVars')  = DISP.numdvar ;
+        solveReport(allSolves,'Vars')    = DISP.numvar ;       solveReport(allSolves,'DVars')  = DISP.numdvar ;
+        solveReport(allSolves,'Eqns')    = DISP.numequ ;
         else
-        counter$( ( GEM.modelstat = 10 ) or ( GEM.modelstat <> 1 and GEM.modelstat <> 8 ) ) = 1 ;
+        genSecs = GEM.resGen ; numSecs = GEM.resUsd ; numIters = GEM.iterUsd ; solverStat = GEM.solveStat ; modelStat = GEM.modelStat ;
+        solveReport(allSolves,'OptFile') = gem.optfile ;       solveReport(allSolves,'OptCr')  = gem.optcr ;
+        solveReport(allSolves,'Vars')    = gem.numvar ;        solveReport(allSolves,'DVars')  = gem.numdvar ;
+        solveReport(allSolves,'Eqns')    = gem.numequ ;        solveReport(allSolves,'GapAbs') = abs( gem.objest - gem.objval ) ;
+        solveReport(allSolves,'Gap%')$gem.objval = 100 * abs( gem.objest - gem.objval ) / gem.objval ;
       ) ;
 
-*     Post a progress message to report for use by GUI and to the console.
+      solveReport(allSolves,'ObjFnValue') = TOTALCOST.l ;      solveReport(allSolves,'SCcosts') = sum(sc(scen), SCENARIO_COSTS.l(sc) ) ;
+      solveReport(allSolves,'ModStat') = modelStat ;           solveReport(allSolves,'SolStat') = solverStat ;
+      solveReport(allSolves,'genSecs') = genSecs ;             solveReport(allSolves,'Time')    = numSecs ;
+      solveReport(allSolves,'Iter')    = numIters ;
+
+      counter$( solverStat <> 1 and modelStat <> 1 and modelStat <> 8 ) = 1 ;
+
+      if(slacks > 0,    solveReport(allSolves,'Slacks') = 1    else solveReport(allSolves,'Slacks') = -99 ) ;
+      if(penalties > 0, solveReport(allSolves,'Penalties') = 1 else solveReport(allSolves,'Penalties') = -99 ) ;
+
+      display 'solve report:', slacks, penalties, solveReport ;
+
+*     Post a progress/status message to the console.
+      putclose con // '   Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' from the run %runName% and the run version %runVersionName% has finished' /
+                      '   Objective function value: ' TOTALCOST.l:<12:1 // ;
+
+*     If job is about to be aborted, post an error message in GEMsolveReport.
       if(counter = 1,
         putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' finished with some sort of problem and the job is now going to abort.' /
                        'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
-        else
-        putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' (', system.time ')' / '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
       ) ;
-      putclose con // '   Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' from the %runName%_%runVersionName% run has finished' /
-                      '   Objective function value: ' TOTALCOST.l:<12:1 // ;
 
       if(sameas(steps,'dispatch'),
         abort$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) "Problem encountered when solving DISP..." ;
@@ -309,34 +333,25 @@ $ label noGRschedule2
         abort$( GEM.modelstat <> 1 and GEM.modelstat <> 8 ) "Problem encountered solving GEM..." ;
       ) ;
 
-*     Collect information for solve summary report
-      solveReport(allSolves,'ObjFnValue') = TOTALCOST.l ;    solveReport(allSolves,'SCcosts') = sum(sc(scen), SCENARIO_COSTS.l(sc) ) ;
-      solveReport(allSolves,'OptFile')    = gem.optfile ;    solveReport(allSolves,'OptCr')   = gem.optcr ;
-      solveReport(allSolves,'ModStat')    = gem.modelstat ;  solveReport(allSolves,'SolStat') = gem.solvestat ;
-      solveReport(allSolves,'Vars')       = gem.numvar ;     solveReport(allSolves,'DVars')   = gem.numdvar ;
-      solveReport(allSolves,'Eqns')       = gem.numequ ;     solveReport(allSolves,'Iter')    = gem.iterusd ;
-      solveReport(allSolves,'Time')       = gem.resusd ;     solveReport(allSolves,'GapAbs')  = abs( gem.objest - gem.objval ) ;
-      solveReport(allSolves,'Gap%')$gem.objval = 100 * abs( gem.objest - gem.objval ) / gem.objval ;
-      if(slacks > 0,    solveReport(allSolves,'Slacks') = 1    else solveReport(allSolves,'Slacks') = -99 ) ;
-      if(penalties > 0, solveReport(allSolves,'Penalties') = 1 else solveReport(allSolves,'Penalties') = -99 ) ;
-      display 'solve report:', slacks, penalties, solveReport ;
-
-*     Put some more information about this solve into the solve report:
-      put rep
+*     Write current model summary information to GEMsolveReport:
+      put rep / 'Experiment: ' experiments.tl '.  Step: ' steps.tl '.  Scenario set: ' scenSet.tl '.' /
+      '  Objective function value: ' @32 TOTALCOST.l:>12:1 / ;
 $     if "%GEMtype%"=="RMIP" $goto skipThis
       if(not sameas(steps,'dispatch'),
-        put'  Percent gap:'           @33 solveReport(allSolves,'Gap%'):12:2 /
-        put'  Absolute gap:'          @30 solveReport(allSolves,'GapAbs'):12:0 /
+        put '  Percent gap:'                @33 solveReport(allSolves,'Gap%'):12:2 /
+            '  Absolute gap:'               @30 solveReport(allSolves,'GapAbs'):12:0 /
+            '  Number of binary variables:' @30 solveReport(allSolves,'DVars'):12:0 /
       ) ;
 $     label skipThis
       put rep
       '  Number of variables:'        @30 solveReport(allSolves,'Vars'):12:0 /
-      '  Number of binary variables:' @30 solveReport(allSolves,'DVars'):12:0 /
       '  Number of equations:'        @30 solveReport(allSolves,'Eqns'):12:0 /
       '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
+      '  Model generation seconds:'   @30 solveReport(allSolves,'genSecs'):12:0 /
       '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 /
-      '  MIP/RMIP:' @42 if(sameas(steps,'dispatch'), put "%DISPtype%" / else put "%GEMtype%" / ) ;
-      if(%GRscheduleRead%=0, put / else put '  Fixed investment schedule:' @42 "%GRscheduleFile%" // ) ; 
+      '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
+      '  MIP/RMIP:' @38 if(sameas(steps,'dispatch'), put "%DISPtype%" / else put "%GEMtype%" / ) ;
+      if(%GRscheduleRead%=0, put / else put '  Fixed investment schedule:' @30 "%GRscheduleFile%" // ) ; 
 
 *     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRscheduleWrite = 1).
       if(GRscheduleWrite,
@@ -414,6 +429,7 @@ $     include CollectResults.inc
 * End of experiments loop.
 ) ;
 
+putclose rep /// ;
 
 * Merge the GDX files from each experiment into a single GDX - one for all output and once for the 'report only' output. Call the files 'allExperimentsXXX.gdx'.
 execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\AllOut\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsAllOutput - %runName%_%runVersionName%.gdx" big=100000'
@@ -422,10 +438,6 @@ execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\RepOut\"*.gdx output="%OutPath%\
 * NB: The big parameter is used to specify a cutoff for symbols that will be written one at a time. Each symbol
 * that exceeds the size will be processed by reading each gdx file and only process the data for that symbol. This
 * can lead to reading the same gdx file many times, but it allows the merging of large data sets.
-
-
-* Stamp the finishing time of current run version into solve summary report.
-putclose / rep 'Run version ' "%runVersionName%" ' finished at ' system.time /// ;
 
 
 
