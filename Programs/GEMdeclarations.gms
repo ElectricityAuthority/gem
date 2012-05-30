@@ -1,7 +1,7 @@
 * GEMdeclarations.gms
 
 
-* Last modified by Dr Phil Bishop, 29/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 30/05/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -243,9 +243,6 @@ Sets
                                                                                         dHigh      'Upper discount rate for sensitivity analysis'    /
   dt                                            'Types of discounting'                / mid        'Middle of the period within each year'
                                                                                         eoy        'End of year'   /
-  goal                                          'Goals for MIP solution procedure'    / QDsol      'Find a quick and dirty solution using a user-specified optcr'
-                                                                                        VGsol      'Find a very good solution reasonably quickly'
-                                                                                        MinGap     'Minimize the gap between best possible and best found'  /
   steps                                         'Steps in an experiment'              / timing     'Solve the timing problem, i.e. timing of new generation/or transmission investment'
                                                                                         reopt      'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
                                                                                         dispatch   'Solve for the dispatch only with investment timing fixed'  /
@@ -316,9 +313,6 @@ Parameters
   solveReport(experiments,steps,scenarioSets,*) 'Collect various details about each solve of the models (both GEM and DISP)' ;
 
 * c) Various GEM configuration sets and parameters - see (mostly) GEMsettings.
-Sets
-  solveGoal(goal)                               'The user-selected solve goal'  ;
-
 Parameters
   firstYear                                     'First modelled year - as a scalar, not a set'
   lastYear                                      'Last modelled year - as a scalar, not a set'

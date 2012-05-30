@@ -10,7 +10,6 @@ if exist GEMdata.g00          erase GEMdata.g00 /q
 if exist GEMsolve.g00         erase GEMsolve.g00 /q
 if exist GEMreports.g00       erase GEMreports.g00 /q
 if exist GEMsolve.log         erase GEMsolve.log /q
-if exist MIPtrace.txt         erase MIPtrace.txt /q
 if exist Report.txt           erase Report.txt /q
 if exist VOLLplant.inc        erase VOLLplant.inc /q
 if exist *.gdx                erase *.gdx /q

@@ -66,19 +66,13 @@ $setglobal AClossesSI 0.0
 
 
 *+++ Solver +++
-$setglobal Solver Cplex
-* Specify which LP and MIP solver to use - Cplex, Gurobi, or Xpress.
-$setglobal SolveGoal QDsol
-* Select either QDsol, VGsol, or MinGap
-$setglobal QDoptCr .0075
-* Quick and dirty relative optimality criterion for MIP (i.e. .003 equals .3%)
-$setglobal QDsolSecs 20000
-* CPU seconds available for solver to spend solving GEM for solve goal QDsol.
-$setglobal VGsolSecs 7200
-* CPU seconds available for solver to spend solving GEM for solve goal VGsol.
+$setglobal Solver Gurobi
+* Choose solver - Gurobi, Cplex, or Xpress
+$setglobal optcr .0075
+* Relative optimality criterion for MIP (i.e. .003 equals .3%)
+$setglobal CPUsecsGEM 20000
+* CPU seconds available for solver to spend solving GEM
 $setglobal Threads 4
 * Number of threads your MIP solver is licensed to use.
-$setglobal MinGapSecs 10800
-* CPU seconds available for solver to spend solving GEM for solve goal MinGap.
 $setglobal limitOutput 0
 * Set to 1 to limit the amount of output written to the listing file
