@@ -791,6 +791,7 @@ $offtext
 
 * a) Declare input data summary files.
 Files
+  rvs            / "%OutPath%\%runName%\runVersions.txt" /
   configInfo     / "%OutPath%\%runName%\Input data checks\Configuration info for GEMreports - %runName%_%runVersionName%.inc" /
   runConfig      / "%OutPath%\%runName%\Input data checks\Run configuration summary - %runName%_%runVersionName%.txt" /
   txData         / "%OutPath%\%runName%\Input data checks\Transmission summary - %runName%_%runVersionName%.txt" /
@@ -799,6 +800,7 @@ Files
   loadSummary    / "%OutPath%\%runName%\Input data checks\Load summary - %runName%_%runVersionName%.txt" /
   lrmc_inData    / "%OutPath%\%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" / ;
 
+rvs.lw = 0 ;            rvs.ap = 1 ;
 configInfo.lw = 0 ;     configInfo.pw = 999 ;
 runConfig.lw = 0 ;      runConfig.pw = 999 ;
 txData.lw = 0 ;         txData.pw = 999 ;
