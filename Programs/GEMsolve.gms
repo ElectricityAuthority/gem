@@ -95,7 +95,7 @@ gem.optfile = 1 ;     gem.optca = 0 ;
 gem.optcr = 0.00001 ; gem.reslim = 500 ;
 gem.optcr = %optcr% ; gem.reslim = %CPUsecsGEM% ;
 
-disp.reslim = 300 ;     disp.optfile = 0 ;
+disp.reslim = 300 ;   disp.optfile = 0 ;
 
 * Turn on the following to use the GAMSCHK routines (need to also comment out abort statements).
 *option MIP=GAMSCHK ;
@@ -347,9 +347,15 @@ $ label noGRschedule2
 
       if(sameas(steps,'dispatch'),
         abort$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) "Problem encountered when solving DISP..." ;
+        abort$( DISP.solvestat = 2 ) "The iteration limit is insufficient. Increase iterlim in GEMsolve.gms" ;
+        abort$( DISP.solvestat = 3 ) "The CPU seconds for DISP are insufficient. Increase disp.reslim in GEMsolve.gms" ;
+        abort$( DISP.solvestat = 7 ) "The license file does not support your solver selections" ;
         else
         abort$( GEM.modelstat = 10 ) "GEM is infeasible - check out GEMsolve.log to see what you've done wrong in configuring a model that is infeasible" ;
         abort$( GEM.modelstat <> 1 and GEM.modelstat <> 8 ) "Problem encountered solving GEM..." ;
+        abort$( GEM.solvestat = 2 )  "The iteration limit is insufficient. Increase iterlim in GEMsolve.gms" ;
+        abort$( GEM.solvestat = 3 )  "The CPU seconds for GEM are insufficient. Increase CPUsecsGEM in GEMssttings.inc" ;
+        abort$( GEM.solvestat = 7 )  "The license file does not support your solver selections" ;
       ) ;
 
 *     Write current model summary information to GEMsolveReport:
@@ -505,6 +511,9 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
 * Penalties
   penaltyViolatePeakLoad penaltyViolateRenNrg penaltyViolateReserves
   ;
+
+* Stamp run version name, description and colour scheme in runVersions.txt
+putclose rvs "%runVersionName%" ' | ' "%runVersionDesc%" ' | ' "%runVersionRGB%" / ;
 
 bat.ap = 0 ;
 putclose bat
