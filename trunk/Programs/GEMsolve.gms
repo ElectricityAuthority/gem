@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 29/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 30/05/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -11,14 +11,13 @@ $ontext
   invocation of GEMdata/GEMsolve - i.e. if multiple run versions - or by runMergeGDXs and then GEMreports.
 
   Notes:
-  1. Make sure that each model type has the correct modelstat error condition driving the abort statements. Also, does it make
-     sense to have a .optcr for DISP? And/or report it? The assumption is that DISP is solved as an RMIP so the solver reporting
-     related to MIPs is skipped for DISP. Is this o.k.? Should we force, perhaps in EMI, DISP to never be an LP. As an RMIP, it's
-     an LP anyway. Allowing LP as a solve type requires more modelstat error conditions.
+  1. Make sure that each model type has the correct modelstat error condition driving the abort statements. The assumption is that
+     DISP is solved as an RMIP so the solver reporting related to MIPs is skipped for DISP. Is this o.k.? Should we force, perhaps
+     in EMI, DISP to never be an LP. As an RMIP, it's an LP anyway. Allowing LP as a solve type requires more modelstat error conditions.
   2. The 'abort if slacks are present' statement has been removed. Perhaps it should be reinstated? Add a warning if penalties
      are present?
   3. Code at very end of file relates to counting integer solutions from log file. Decide whether to keep this or ditch it. 
-  4. Users should be aware that GEMdata may have changed the data assoicated with the following symbol sin the input data:
+  4. Users should be aware that GEMdata may have changed the data associated with the following symbols in the input data:
        Sets: y and exist.
        Parameters: i_fixedOM, i_txCapacity, i_txCapacityPO and i_txEarlyComYr.
   5. ...
@@ -55,28 +54,48 @@ $include VOLLplant.inc
 * Stamp header for current run/runVersion into GEMsolveReport.
 putclose rep 'Run name:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / 'Date/time:' @15 system.date, ' - ' system.time / ;
 
-* Specify various .lst file and solver-related options.
+* Specify various .lst file options.
 if(%limitOutput% = 1, option limcol = 0, limrow = 0, sysout = off, solprint = off ; ) ; 
-option reslim = 500, iterlim = 10000000 ;
 *option solprint = on ;
 
-* Select the solver and include the relevant solver options files:
-option LP = %Solver%, MIP = %Solver%, RMIP = %Solver% ;
-$include 'GEM%Solver%.gms'
+* Specify the MIP/RMIP solver to use.
+option MIP = %Solver%, RMIP = %Solver%, LP = %Solver% ;
 
-* Capture the specified solve goal (for GEM, not DISP) and intialise various model solve settings.
-Set solveGoal(goal) 'User-selected solve goal' / %solveGoal% / ;
-gem.reslim = 500 ;     disp.reslim = 300 ;
-gem.optfile = 1 ;      disp.optfile = 0 ;
-gem.optcr = 0.00001 ;  gem.optca = 0 ;
-loop(solveGoal(goal),
-  if(sameas(solveGoal,'QDsol'),  gem.optfile = 2 ; gem.optcr = %QDoptCr% ; gem.reslim = %QDsolSecs% ) ;
-  if(sameas(solveGoal,'VGsol'),  gem.optfile = 3 ; gem.reslim = %VGsolSecs% ) ;
-  if(sameas(solveGoal,'MinGap'), gem.optfile = 4 ; gem.reslim = %MinGapSecs% ) ;
-) ;
+* Create solver options file on the fly
+$onecho > gurobi.opt
+  threads     %threads%
+$offecho
+$onecho > cplex.opt
+  threads     %threads%
+  mipemphasis  2
+  heurfreq     500
+  rinsheur     500
+  scaind       0
+  mipstart     1
+  repairtries  5
+  lpmethod     2
+$offecho
+$onecho > xpress.opt
+  threads     %threads%
+  loadmipsol   0
+  mipcleanup   0
+  covercuts    1000
+  cutdepth     50
+  cutfreq      8
+  cutstrategy  2
+  gomcuts      100
+  algorithm    barrier
+$offecho
 
-* To suppress use of an options file, use the command: 'xxx.OptFile = 0 ;'. Or simply comment out the
-* command that calls the options file for the specific model name.
+* Specify default solver options.
+option reslim = 500, iterlim = 10000000 ;
+
+* Specified various solve settings for each model type.
+gem.optfile = 1 ;     gem.optca = 0 ;
+gem.optcr = 0.00001 ; gem.reslim = 500 ;
+gem.optcr = %optcr% ; gem.reslim = %CPUsecsGEM% ;
+
+disp.reslim = 300 ;     disp.optfile = 0 ;
 
 * Turn on the following to use the GAMSCHK routines (need to also comment out abort statements).
 *option MIP=GAMSCHK ;
@@ -343,14 +362,16 @@ $     if "%GEMtype%"=="RMIP" $goto skipThis
             '  Number of binary variables:' @30 solveReport(allSolves,'DVars'):12:0 /
       ) ;
 $     label skipThis
-      put rep
+      put
       '  Number of variables:'        @30 solveReport(allSolves,'Vars'):12:0 /
       '  Number of equations:'        @30 solveReport(allSolves,'Eqns'):12:0 /
       '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
       '  Model generation seconds:'   @30 solveReport(allSolves,'genSecs'):12:0 /
       '  CPU seconds:'                @30 solveReport(allSolves,'Time'):12:0 /
       '  Number of iterations:'       @30 solveReport(allSolves,'Iter'):12:0 /
-      '  MIP/RMIP:' @38 if(sameas(steps,'dispatch'), put "%DISPtype%" / else put "%GEMtype%" / ) ;
+      '  Slacks present: '            @39 if(slacks > 0, put 'Yes' else put @40 'No' ) put /
+      '  Penalties present: '         @39 if(penalties > 0, put 'Yes' else put @40 'No' ) put /
+      '  MIP/RMIP:' @38 if(sameas(steps,'dispatch'), put "%DISPtype%" else put "%GEMtype%" ) ;
       if(%GRscheduleRead%=0, put / else put '  Fixed investment schedule:' @30 "%GRscheduleFile%" // ) ; 
 
 *     Write a GAMS-readable file of variable levels for fixing variables in subsequent models (requires GRscheduleWrite = 1).
@@ -429,7 +450,12 @@ $     include CollectResults.inc
 * End of experiments loop.
 ) ;
 
+
+* Place some white space in GEMsolveReport ahead of the next run version. Also, note whether any models in this run version contain slacks or penalties. 
+if(sum(allSolves, solveReport(allSolves,'Penalties')) > 0, putclose rep / '+++ At least one of the above models contains penalty variables +++' ) ;
+if(sum(allSolves, solveReport(allSolves,'Slacks')) > 0,    putclose rep / '+++ At least one of the above models contains slack variables +++' ) ;
 putclose rep /// ;
+
 
 * Merge the GDX files from each experiment into a single GDX - one for all output and once for the 'report only' output. Call the files 'allExperimentsXXX.gdx'.
 execute 'gdxmerge "%OutPath%\%runName%\GDX\temp\AllOut\"*.gdx output="%OutPath%\%runName%\GDX\allExperimentsAllOutput - %runName%_%runVersionName%.gdx" big=100000'

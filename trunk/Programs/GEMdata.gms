@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 22/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 30/05/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -949,12 +949,9 @@ $ label noGRschedule
 *Scalar noVOLLblks / 0 / ;
 *+++ Solver +++
 *$setglobal Solver Cplex
-*$setglobal SolveGoal QDsol
-*$setglobal QDoptCr .0075
-*$setglobal QDsolSecs 20000
-*$setglobal VGsolSecs 7200
+*$setglobal optcr .0075
+*$setglobal CPUsecsGEM 20000
 *$setglobal Threads 4
-*$setglobal MinGapSecs 10800
 *$setglobal limitOutput 0
 
 put  /// 'Scenario weights and factors by experiment.' / @54 'Scenario' @66 'Scenario factors:' /
