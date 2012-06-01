@@ -7,7 +7,6 @@ $if errorlevel 1 $abort +++ Check GEMdeclarations.lst for errors +++
 * Create a couple of files.
 File bat "A recyclable batch file"   / "%ProgPath%\temp.bat" / ;     bat.lw = 0 ;
 File rep "Write a progess report"    / "runGEMsetupProgress.txt" / ; rep.lw = 0 ;
-*File rvs "Collect run version names" / "%OutPath%\%runName%\runVersions.txt" / ; rvs.lw = 0 ;
 
 * Create and execute a batch file to:
 * - remove any output directory with the extant runName;
@@ -21,7 +20,6 @@ putclose bat
   'mkdir "%OutPath%\%runName%"' /
   'mkdir "%OutPath%\%runName%\Archive"' /
   'mkdir "%OutPath%\%runName%\GDX"' /
-  'mkdir "%OutPath%\%runName%\Figures"' /
   'mkdir "%OutPath%\%runName%\GDX\temp\AllOut"' /
   'mkdir "%OutPath%\%runName%\GDX\temp\RepOut"' /
   'mkdir "%OutPath%\%runName%\Processed files"' /
@@ -33,13 +31,9 @@ putclose bat
   'copy "%ProgPath%\GEMdata.gms"         "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMsolve.gms"        "%OutPath%\%runName%\Archive\"' /
   'copy "%ProgPath%\GEMreports.gms"      "%OutPath%\%runName%\Archive\"' /
-  'copy "%ProgPath%\GEMlrmc.gms"         "%OutPath%\%runName%\Archive\"' /
-  'move "%ProgPath%\runVersions.txt"     "%OutPath%\%runName%\runVersions.txt"' ;
+  'copy "%ProgPath%\GEMlrmc.gms"         "%OutPath%\%runName%\Archive\"' / ;
 
 execute 'temp.bat' ;
-
-* Place an empty version of runVersions.txt in output directory.
-*putclose rvs "" ;
 
 * Indicate that runGEMsetup is finished.
 putclose rep "runGEMsetup has now finished..." / "Time: " system.time / "Date: " system.date ;

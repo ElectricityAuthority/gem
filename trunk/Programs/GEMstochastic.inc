@@ -14,6 +14,9 @@ Sets
     h2006
     h2007 /
 
+  defaultScenario(scenarios) 'Identify a default scenario to use when reporting input data summaries. Applies only to input data defined over scenarios (see GEMdata)' /
+    avgHydro /
+
   scenarioSets 'A coherent collection of scenarios to be simultaneously solved over' /
     averageHydro 
     dryYrHydro
@@ -127,6 +130,7 @@ allSolves(experiments,'reopt',scenarioSets)    = reoptSolves(experiments,scenari
 allSolves(experiments,'dispatch',scenarioSets) = dispatchSolves(experiments,scenarioSets) ;
 
 Display allSolves ;
+
 
 
 * End of file.

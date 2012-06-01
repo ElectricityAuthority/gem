@@ -1,9 +1,9 @@
 $inlinecom { }
 $eolcom !
 $setglobal runName         "Test"
-$setglobal runVersionName  "mds5"
-$setglobal runVersionDesc  "High gas discovery"
-$setglobal runVersionRGB   "255.0.255"
+$setglobal runVersionName  "mds3"
+$setglobal runVersionDesc  "Medium renewables"
+$setglobal runVersionRGB   "0.255.0"
 
 * mds1 'Sustainable path'   0.0.255
 * mds2 'South Island wind'  255.0.0
@@ -15,13 +15,11 @@ $setglobal GEMinputGDX     "standardGEMinput9LB.gdx"
 $setglobal GEMnetworkGDX   "2RegionNetwork.gdx"
 $setglobal GEMdemandGDX    "NRG_2Region9LB_TiwaiGoes.gdx"
 
-$setglobal GEMoverrideGDX  "mds5_Override.gdx"
+$setglobal GEMoverrideGDX  "mds3_Override.gdx"
 
 $setglobal useOverrides     1
 $setglobal sprsGEMsolve     0
 $setglobal Mode             0
-
-$setglobal defaultScenario "avgHydro"
 
 $setglobal GRscheduleFile  "C:\a\GEM\Output\testGR\Processed files\GRschedule - mds5_standardExp_timing_standardAvg.gms"
 $setglobal GRscheduleRead   0

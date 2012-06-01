@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 30/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 01/06/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -50,6 +50,7 @@ $offsymxref offsymlist
 * 1. Take care of preliminaries.
 
 $include VOLLplant.inc
+$include tempSets.inc
 
 * Stamp header for current run/runVersion into GEMsolveReport.
 putclose rep 'Run name:' @15 "%runName%" / 'Run version:' @15 "%runVersionName%" / 'Date/time:' @15 system.date, ' - ' system.time / ;
@@ -481,7 +482,8 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
 * Basic sets, subsets, and mapping sets.
   y t f k g o lb i r e ild ps tupg scen rc n tgc hY s
   techColor fuelColor fuelGrpColor
-  mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r isIldEqReg firstPeriod firstYr lastYr allButFirstYr
+  mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r avgDispatchSteptoNewstep allAvgDispatchSolves allNotAvgDispatchSolves
+  isIldEqReg firstPeriod firstYr lastYr allButFirstYr
   paths nwd swd interIsland pumpedHydroPlant wind gas diesel
   thermalFuel i_fuelQuantities renew schedHydroPlant trnch demandGen 
   allSolves weightScenariosBySet numExperiments numSteps numScenarioSets numScenarios
