@@ -1,7 +1,7 @@
 * GEMdeclarations.gms
 
 
-* Last modified by Dr Phil Bishop, 30/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 31/05/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -295,7 +295,7 @@ Sets
   mapSC_hydroSeqTypes(scenarios,hydroSeqTypes)  'Map the hydrology sequence types (same or sequential) to scenarios'
   mapHydroYearsToModelledYears(experiments,steps,scenarioSets,scenarios,y,hY) 'Collect the mapping of historical hydro years to modelled years for all experiments-steps-scenarioSets tuples'
   sumSolves(scenarioSets)                       'Figure out which solves to sum over when computing post-solve results averaged over scenarioSets'
-  defaultScenario(scenarios)                    'Identify a default scenario to use when reporting summaries of input data (see GEMdata)' ;
+  defaultScenario(scenarios)                    'Identify a default scenario to use when reporting input data summaries. Applies only to input data defined over scenarios (see GEMdata)' ;
 
 Alias(scenarios,scen), (scenarioSets,scenSet) ;
 

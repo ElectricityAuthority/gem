@@ -1,7 +1,7 @@
 * GEMdata.gms
 
 
-* Last modified by Dr Phil Bishop, 30/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 01/06/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -37,8 +37,9 @@ $ontext
      g) Non-free reserves
      h) Create set of VOLL plant - one per region.
   4. Prepare the scenario-dependent input data; key user-specified settings are obtained from GEMstochastic.inc.
-  5. Display sets and parameters.
-  6. Create input data summaries.
+  5. Ascertain which dispatch solves ought to be summed and averaged for reporting purposes...
+  6. Display sets and parameters.
+  7. Create input data summaries.
      a) Declare input data summary files.
      b) Do the calculations.
      c) Write miscellaneous configuration information required later by GEMreports.
@@ -667,24 +668,24 @@ freeReserves(swd(r,rr),ps)$allowedStates(swd,ps) = i_txCapacityPO(swd,ps) + larg
 * Estimate non-free reserves by path state.
 nonFreeReservesCap(paths(r,rr),ps)$( allowedStates(paths,ps) and (nwd(paths) or swd(paths)) ) = i_txCapacity(paths,ps) - freeReserves(paths,ps) ;
 
-* Figure out capacities (really, upper bounds) of non-free reserves by step.
+* Figure out capacities (really, upper bounds) of non-free reserves by level.
 * i) Find the biggest value in each direction
 bigSwd(swd) = smax(ps, nonFreeReservesCap(swd,ps)) ;
 bigNwd(nwd) = smax(ps, nonFreeReservesCap(nwd,ps)) ;
 
-* ii) Set the first step to be 100
+* ii) Set the first level to be 100
 pNFresvCap(paths(r,rr),lvl)$( nwd(paths) or swd(paths) ) = 100 ;
 
-* iii) Set subsequent steps to be 100 more than the previous step
+* iii) Set subsequent levels to be 100 more than the previous level
 loop(lvl$( ord(lvl) > 1),
   pNFresvCap(paths(r,rr),lvl)$( ord(lvl) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCap(paths,lvl-1) + 100 ;
 ) ;
 
-* iv) Set the last step to be the biggest value over all states
+* iv) Set the last level to be the biggest value over all states
 pNFresvCap(swd,lvl)$( ord(lvl) = card(lvl) ) = bigswd(swd) ;
 pNFresvCap(nwd,lvl)$( ord(lvl) = card(lvl) ) = bignwd(nwd) ;
 
-* Figure out costs by step - increment by $5/MWh each step.
+* Figure out costs by level - increment by $5/MWh each level.
 pNFresvCost(paths(r,rr),lvl)$( (ord(lvl) = 1 ) and (nwd(paths) or swd(paths)) ) = 5 ;
 loop(lvl$( ord(lvl) > 1),
   pNFresvCost(paths(r,rr),lvl)$( ord(lvl) > 1 and (nwd(paths) or swd(paths)) ) = pNFresvCost(paths,lvl-1) + 5 ;
@@ -740,7 +741,44 @@ historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 
 
 *===============================================================================================
-* 5. Display sets and parameters.
+* 5. Ascertain which dispatch solves ought to be summed and averaged for reporting purposes, i.e. pick out all cases where the scenario
+*    to scenarioSet mapping is one-to-one and exists solely for the purpose of introducing variability in hydrology. 
+Sets
+  allAvgDispatchSolves(experiments,steps,scenSet)                            'All solves for which the scenario sets are to be averaged'
+  allNotAvgDispatchSolves(experiments,steps,scenSet)                         'All solves for which the scenario sets are not to be averaged'
+  figureOutAvgDispatch(experiments,steps,scenSet,scenarios,hydroSeqTypes,hY) 'All solves for which the scenario sets are to be averaged - mapped to associated scenarios'
+  ;
+
+loop((allSolves(experiments,steps,scenSet),scenarios,hydroSeqTypes,hY)$(
+*     steps = dispatch, hydro sequence type = sequential, and sequential sequences types are mapped to scenarios
+      sameas(steps,'dispatch') * mapSC_hydroSeqTypes(scenarios,hydroSeqTypes) * sameas(hydroSeqTypes,'sequential') *
+*     scenarios are mapped to scenario sets and the weighting on each scenario = 1
+      mapScenarios(scenSet,scenarios) * (weightScenariosBySet(scenSet,scenarios) = 1) *
+*     the scenario has historical hydro years mapped to it
+      mapSC_hY(scenarios,hY)                                           ),
+
+  figureOutAvgDispatch(experiments,steps,scenSet,scenarios,hydroSeqTypes,hY) = yes ;
+
+  allAvgDispatchSolves(experiments,steps,scenSet) = yes ;
+
+) ;
+
+allNotAvgDispatchSolves(experiments,steps,scenSet)$allSolves(experiments,steps,scenSet) = yes ;
+
+allNotAvgDispatchSolves(experiments,steps,scenSet)$allAvgDispatchSolves(experiments,steps,scenSet) = no ;
+
+file tempSets / tempSets.inc / ; tempSets.lw = 0 ; put tempSets ;
+put "Set newSteps 'Steps in an experiment' / timing, reopt, dispatch, avgDispatch / ;" //
+    'Set avgDispatchSteptoNewstep(experiments,newSteps,steps,scenSet,scenarios) "Map new step to old step for dispatch solves to be averaged" /'
+loop(figureOutAvgDispatch(experiments,steps,scenSet,scenarios,hydroSeqTypes,hY),
+  put / '  ' experiments.tl '.avgDispatch.' steps.tl, '.' scenSet.tl, '.' scenarios.tl ;
+) ;
+put ' /;' ;
+
+
+
+*===============================================================================================
+* 6. Display sets and parameters.
 
 $ontext 
 
@@ -787,13 +825,13 @@ $offtext
 
 
 *===============================================================================================
-* 6. Create input data summaries.
+* 7. Create input data summaries.
 
 * a) Declare input data summary files.
 Files
   rvs            / "%OutPath%\%runName%\runVersions.txt" /
-  configInfo     / "%OutPath%\%runName%\Input data checks\Configuration info for GEMreports - %runName%_%runVersionName%.inc" /
-  runConfig      / "%OutPath%\%runName%\Input data checks\Run configuration summary - %runName%_%runVersionName%.txt" /
+  GEMrepConfig   / "%OutPath%\%runName%\Input data checks\Configuration info for use in GEMreports - %runName%_%runVersionName%.inc" /
+  rvConfig       / "%OutPath%\%runName%\Input data checks\Run version configuration summary - %runName%_%runVersionName%.txt" /
   txData         / "%OutPath%\%runName%\Input data checks\Transmission summary - %runName%_%runVersionName%.txt" /
   plantData      / "%OutPath%\%runName%\Input data checks\Plant summary - %runName%_%runVersionName%.txt" /
   capexStats     / "%OutPath%\%runName%\Input data checks\Capex, MW and GWh summaries - %runName%_%runVersionName%.txt" /
@@ -801,8 +839,8 @@ Files
   lrmc_inData    / "%OutPath%\%runName%\Input data checks\LRMC estimates based on GEM input data (non-existing plant only) - %runName%_%runVersionName%.csv" / ;
 
 rvs.lw = 0 ;            rvs.ap = 1 ;
-configInfo.lw = 0 ;     configInfo.pw = 999 ;
-runConfig.lw = 0 ;      runConfig.pw = 999 ;
+GEMrepConfig.lw = 0 ;   GEMrepConfig.pw = 999 ;
+rvConfig.lw = 0 ;       rvConfig.pw = 999 ;
 txData.lw = 0 ;         txData.pw = 999 ;
 plantData.lw = 0 ;      plantData.pw = 999 ;
 capexStats.lw = 0 ;     capexStats.pw = 999 ;
@@ -831,7 +869,6 @@ assumedGWh(pumpedHydroPlant(g)) = i_PumpedHydroEffic(g) * sum(mapm_t(m,t), 1) * 
 MWtoBuild(k,aggR)  = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), i_nameplate(g)) ;
 GWhtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), assumedGWh(g)) ;
 
-defaultScenario("%defaultScenario%") = yes ;
 loop(defaultScenario(scen),
 
   avgSRMC(g) = sum(y, SRMC(g,y,scen)) / card(y) ;
@@ -858,18 +895,25 @@ capexStatistics(k,aggR,'stdDev%')$capexStatistics(k,aggR,'mean') = 100 * capexSt
 
 
 * c) Write miscellaneous configuration information required later by GEMreports.
-put configInfo ;
-put 'Set experiments "A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps" /' ;
-loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' experiments.tl, '" "', experiments.te(experiments), '"' ) put ' /;' // ;  
-put 'Set scenarioSets "Sets of scenarios to be used in the same solve" /' ;
-loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' scenSet.tl, '" "', scenSet.te(scenSet), '"' ) put ' /;' // ;  
+put GEMrepConfig ;
 put 'Set scenarios "The various individual stochastic scenarios, or futures, or states of uncertainty" /' ;
 loop(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1), put / '  "' scen.tl, '" "', scen.te(scen), '"' ) put ' /;' // ;  
+
+put 'Set defaultScenario(scenarios) "Identify a default scenario to use when reporting input data summaries. Applies only to input data defined over scenarios (see GEMdata)" /' ;
+loop(defaultScenario(scen), put / '  "' scen.tl '"' ) put ' /;' // ;  
+
+put 'Set scenarioSets "Sets of scenarios to be used in the same solve" /' ;
+loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' scenSet.tl, '" "', scenSet.te(scenSet), '"' ) put ' /;' // ;  
+
+put 'Set experiments "A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps" /' ;
+loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' experiments.tl, '" "', experiments.te(experiments), '"' ) put ' /;' // ;  
+
 put 'Set mapScenarios(scenarioSets,scenarios) "Map each scenario to a scenarioSet (i.e. 1 or more scenarios make up an scenario set)" /' ;
 loop(mapScenarios(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"' ) put ' /;' // ;  
-put 'Alias (experiments,expts), (scenarioSets,scenSet), (scenarios,scen) ; ' // ;
+
 put 'Parameter weightScenariosBySet(scenarioSets,scenarios) "Assign weights to the scenarios comprising each set of scenarios" /' ;
 loop((scenSet,scen)$weightScenariosBySet(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"  ', weightScenariosBySet(scenSet,scen):<10:8 ) put ' /;' // ;  
+
 put '$setglobal firstYear %firstYear%' / '$setglobal lastYear %lastYear%' //
     'Scalar taxRate / ',                taxRate:<5:2, ' /;' /
     'Scalar VOLLcost / ',               VOLLcost:<10:1, ' /;' /
@@ -879,7 +923,7 @@ put '$setglobal firstYear %firstYear%' / '$setglobal lastYear %lastYear%' //
 
 
 * d) Write the run configuration summary.
-put runConfig 'Run name:' @26 "%runName%" / 'Run version:' @26 "%runVersionName%" / 'Initiated at:' @26 system.time ' on ' system.date //
+put rvConfig 'Run name:' @26 "%runName%" / 'Run version:' @26 "%runVersionName%" / 'Initiated at:' @26 system.time ' on ' system.date //
   'Main input GDX:' @26 "%DataPath%\%GEMinputGDX%" / 'Region/network GDX:' @26 "%DataPath%\%GEMnetworkGDX%" / 'Demand GDX:' @26 "%DataPath%\%GEMdemandGDX%" / 
 $ if %useOverrides%==0 $goto noOverrides3
   'Override GDX:' @26 "%DataPath%\%GEMoverrideGDX%" / 
@@ -901,7 +945,7 @@ $ label noGRschedule
     put / @29 counter:<3:0 experiments.tl @45 steps.tl @55 scenSet.tl @69 '<-- ' ;
     loop(scen$mapScenarios(scenSet,scen), put scen.tl ' ' )
   ) ; put //
-  'Default scenario:'        @26 "%defaultScenario%"  ' - only used for input data reporting' //
+  'Default scenario:' @26 loop(defaultScenario(scen), put scen.tl ) put ' - only used for input data reporting' //
   'Switches' /
   'Integerized loss functions:'           @40 if(txLossesRMIP,         put 'no'  else put 'yes' ) put /
   'Use V2G generation plant:'             @40 if(V2GtechnologyOn,      put 'yes' else put 'no' ) put /

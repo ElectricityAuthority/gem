@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 21/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 01/06/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -9,7 +9,7 @@ $ontext
   It is to be invoked subsequent to the solving of all runs and run versions that are to be reported on. Note that GEMreports
   effectively starts afresh as a standalone program - it does "not" start from any previously created GAMS work files, and it
   imports or loads all of the data it requires. All symbols required in this program are declared here. Set membership and data
-  values are imported from the default (or base case) run version input GDX file or merged GDX files.
+  values are imported from the designated base case input GDX file or the merged GDX files.
 
   Notes:
   1. ...
@@ -17,6 +17,12 @@ $ontext
  Code sections:
   1. Take care of preliminaries and declare output file names.
   2. Declare required symbols and load data.
+     a) Declare and initialise hard-coded sets - cut and paste from GEMdeclarations.
+     b) Declare the required fundamental sets - cut and paste from GEMdeclarations.
+     c) Declare the required subsets and mapping sets - cut and paste from GEMdeclarations.
+     d) Load set membership, i.e. fundamental, subsets, and mapping sets, from the designated base case GDX file.
+     e) Declare and load sets and parameters from the merged 'selectedInputData' GDX file.
+     f) Declare and load the parameters (variable levels and marginals) to be found in the merged 'reportOutput' GDX file.
   3. Undertake the declarations and calculations necesary to prepare all that is to be reported.
   4. Write key results to a CSV file.
   5. Write results to be plotted to a single csv file.
@@ -30,10 +36,6 @@ $ontext
 $offtext
 
 
-*** For now, the order of elements in set 'runVersions' in GEMreportSettings.inc must be consistent
-*** with the order of the elements specified below in set rep (circa line 293).
-
-
 
 *===============================================================================================
 * 1. Take care of preliminaries and declare output file names.
@@ -41,19 +43,21 @@ $offtext
 option seed = 101 ;
 
 $include GEMreportSettings.inc
-$include "%OutPath%\%runName%\Input data checks\Configuration info for GEMreports - %runName%_%baseRunVersion%.inc"
+$include "%OutPath%\rep%reportName%\repData\Configuration info.inc"
 $offupper offsymxref offsymlist offuellist offuelxref onempty inlinecom { } eolcom !
+
+Alias(runVersions,rv), (experiments,expts), (scenarioSets,scenSet), (scenarios,scen) ;
 
 * Declare output files to be created by GEMreports.
 Files
-  keyResults     / "%OutPath%\%runName%\A collection of key results - %runName%.csv" /
-  plotResults    / "%OutPath%\%runName%\Processed files\Results to be plotted - %runName%.csv" /
-  expandSchedule / "%OutPath%\%runName%\Capacity expansion by year - %runName%.csv" /
-  capacityPlant  / "%OutPath%\%runName%\Processed files\Capacity by plant and year (net of retirements) - %runName%.csv" /
-  genPlant       / "%OutPath%\%runName%\Processed files\Generation and utilisation by plant - %runName%.csv" /
-  tempTX         / "%OutPath%\%runName%\Processed files\Transmission build - %runName%.csv" /
-  genPlantYear   / "%OutPath%\%runName%\Processed files\Generation and utilisation by plant (annually) - %runName%.csv" /
-  variousAnnual  / "%OutPath%\%runName%\Processed files\Various annual results - %runName%.csv" /  ;
+  keyResults     / "%OutPath%\rep%reportName%\A collection of key results - %reportName%.csv" /
+  plotResults    / "%OutPath%\rep%reportName%\Processed files\Results to be plotted - %reportName%.csv" /
+  expandSchedule / "%OutPath%\rep%reportName%\Capacity expansion by year - %reportName%.csv" /
+  capacityPlant  / "%OutPath%\rep%reportName%\Processed files\Capacity by plant and year (net of retirements) - %reportName%.csv" /
+  genPlant       / "%OutPath%\rep%reportName%\Processed files\Generation and utilisation by plant - %reportName%.csv" /
+  tempTX         / "%OutPath%\rep%reportName%\Processed files\Transmission build - %reportName%.csv" /
+  genPlantYear   / "%OutPath%\rep%reportName%\Processed files\Generation and utilisation by plant (annually) - %reportName%.csv" /
+  variousAnnual  / "%OutPath%\rep%reportName%\Processed files\Various annual results - %reportName%.csv" /  ;
 
 keyResults.pc = 5 ;      keyResults.pw = 999 ;
 plotResults.pc = 5 ;     plotResults.pw = 999 ;
@@ -69,25 +73,30 @@ variousAnnual.pc = 5 ;   variousAnnual.pw = 999 ;
 *===============================================================================================
 * 2. Declare required symbols and load data.
 
-* Declare and initialise hard-coded sets - copied from GEMdeclarations.
+* a) Declare and initialise hard-coded sets - cut and paste from GEMdeclarations.
 Sets
-  steps             'Steps in an experiment'              / timing     'Solve the timing problem, i.e. timing of new generation/or transmission investment'
-                                                            reopt      'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
-                                                            dispatch   'Solve for the dispatch only with investment timing fixed'  /
-  hydroSeqTypes     'Types of hydro sequences to use'     / Same       'Use the same sequence of hydro years to be used in every modelled year'
-                                                            Sequential 'Use a sequentially developed mapping of hydro years to modelled years' /
-  ild               'Islands'                             / ni         'North Island'
-                                                            si         'South Island' /
-  aggR              'Aggregate regional entities'         / ni         'North Island'
-                                                            si         'South Island'
-                                                            nz         'New Zealand' /
+  steps             'Steps in an experiment'              / timing      'Solve the timing problem, i.e. timing of new generation/or transmission investment'
+                                                            reopt       'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
+                                                            dispatch    'Solve for the dispatch only with investment timing fixed'  /
+  newSteps          'Steps in an experiment'              / timing      'Solve the timing problem, i.e. timing of new generation/or transmission investment'
+                                                            reopt       'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
+                                                            dispatch    'Solve for the dispatch only with investment timing fixed'
+                                                            avgDispatch 'Average over all dispatch solves for a given experiment' /
+  hydroSeqTypes     'Types of hydro sequences to use'     / Same        'Use the same sequence of hydro years to be used in every modelled year'
+                                                            Sequential  'Use a sequentially developed mapping of hydro years to modelled years' /
+  ild               'Islands'                             / ni          'North Island'
+                                                            si          'South Island' /
+  aggR              'Aggregate regional entities'         / ni          'North Island'
+                                                            si          'South Island'
+                                                            nz          'New Zealand' /
   col               'RGB color codes'                     / 0 * 256 /
   lvl               'Levels of non-free reserves'         / lvl1 * lvl5 / ;
 
-* Initialise set y with values from GEMsettings.inc.
+* Initialise set y with values read from 'Configuration info.txt'.
 Set y 'Modelled calendar years' / %firstYear% * %lastYear% / ;
 
-* Declare the fundamental sets that are required for reports.
+
+* b) Declare the required fundamental sets - cut and paste from GEMdeclarations.
 Sets
   k                 'Generation technologies'
   f                 'Fuels'
@@ -104,9 +113,10 @@ Sets
   rc                'Reserve classes'
   hY                'Hydrology output years' ;
 
-Alias (i,ii), (r,rr), (ps,pss), (col,red,green,blue) ;
+Alias (newSteps,ns), (i,ii), (r,rr), (ps,pss), (col,red,green,blue) ;
 
-* Declare the selected subsets and mapping sets that are required for reports.
+
+* c) Declare the required subsets and mapping sets - cut and paste from GEMdeclarations.
 Sets
   techColor(k,red,green,blue)      'RGB color mix for technologies - to pass to plotting applications'
 * fuelColor(f,red,green,blue)      'RGB color mix for fuels - to pass to plotting applications'
@@ -128,54 +138,100 @@ Sets
   exist(g)                         'Generation plant that are presently operating'
   sigen(g)                         'South Island generation plant' ;
 
-* Load set membership from the GDX file containing the base case run version (the default GDX).
-$gdxin "%OutPath%\%runName%\Input data checks\Selected prepared input data - %runName%_%baseRunVersion%.gdx"
+
+* d) Load set membership, i.e. fundamental, subsets, and mapping sets, from the designated base case GDX file.
+$gdxin "%OutPath%\rep%reportName%\repData\Base case input data.gdx"
 $loaddc k f g s o i r e ps tupg t lb rc hY
 $loaddc firstYr firstPeriod thermalFuel nwd swd paths mapg_k mapg_f mapg_o mapg_r mapg_e mapAggR_r isIldEqReg demandGen exist sigen
 $loaddc techColor
-* fuelColor fuelGrpColor
 
-* Declare and load the parameters (variable levels and marginals) to be found in the merged 'allRV_ReportOutput' GDX file.
+
+* e) Declare and load sets and parameters from the merged 'selectedInputData' GDX file.
+Sets
+  possibleToBuild(rv,g)                       'Generating plant that may possibly be built in any valid build year'
+  possibleToRefurbish(rv,g)                   'Generating plant that may possibly be refurbished in any valid modelled year'
+  possibleToEndogRetire(rv,g)                 'Generating plant that may possibly be endogenously retired'
+  possibleToRetire(rv,g)                      'Generating plant that may possibly be retired (exogenously or endogenously)'
+  validYrOperate(rv,g,y)                      'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years'
+  transitions(rv,tupg,r,rr,ps,pss)            'For all transmission paths, define the allowable transitions from one upgrade state to another'
+  allSolves(rv,expts,steps,scenSet)           'Scenario sets by experiment and step'
+  allAvgDispatchSolves(rv,expts,steps,scenSet)    'All solves for which the scenario sets are to be averaged'
+  allNotAvgDispatchSolves(rv,expts,steps,scenSet) 'All solves for which the scenario sets are not to be averaged'
+  avgDispatchSteptoNewstep(rv,expts,ns,steps,scenSet,scen) 'Map average dispatch step to (old) dispatch step for an experiment' ;
+
 Parameters
-  s_TOTALCOST(runVersions,experiments,steps,scenSet)                           'Discounted total system costs over all modelled years, $m (objective function value)'
-  s_TX(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
-  s_BTX(runVersions,experiments,steps,scenSet,r,rr,ps,y)                       'Binary variable indicating the current state of a transmission path'
-  s_REFURBCOST(runVersions,experiments,steps,scenSet,g,y)                      'Annualised generation plant refurbishment expenditure charge, $'
-  s_BUILD(runVersions,experiments,steps,scenSet,g,y)                           'New capacity installed by generating plant and year, MW'
-  s_RETIRE(runVersions,experiments,steps,scenSet,g,y)                          'Capacity endogenously retired by generating plant and year, MW'
-  s_CAPACITY(runVersions,experiments,steps,scenSet,g,y)                        'Cumulative nameplate capacity at each generating plant in each year, MW'
-  s_TXCAPCHARGES(runVersions,experiments,steps,scenSet,r,rr,y)                 'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  s_GEN(runVersions,experiments,steps,scenSet,g,y,t,lb,scen)                   'Generation by generating plant and block, GWh'
-  s_VOLLGEN(runVersions,experiments,steps,scenSet,s,y,t,lb,scen)               'Generation by VOLL plant and block, GWh'
-  s_LOSS(runVersions,experiments,steps,scenarioSets,r,rr,y,t,lb,scenarios)     'Transmission losses along each path, MW'
-  s_TXPROJVAR(runVersions,experiments,steps,scenarioSets,tupg,y)               'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  s_RESV(runVersions,experiments,steps,scenSet,g,rc,y,t,lb,scen)               'Reserve energy supplied, MWh'
-  s_RESVVIOL(runVersions,experiments,steps,scenSet,rc,ild,y,t,lb,scen)         'Reserve energy supply violations, MWh'
-  s_RESVCOMPONENTS(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen,lvl) 'Non-free reserve components, MW'
-  s_RENNRGPENALTY(runVersions,experiments,steps,scenSet,y)                     'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  s_PEAK_NZ_PENALTY(runVersions,experiments,steps,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
-  s_PEAK_NI_PENALTY(runVersions,experiments,steps,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
-  s_NOWINDPEAK_NI_PENALTY(runVersions,experiments,steps,scenSet,y,scen)        'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
-  s_ANNMWSLACK(runVersions,experiments,steps,scenSet,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  s_RENCAPSLACK(runVersions,experiments,steps,scenSet,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  s_HYDROSLACK(runVersions,experiments,steps,scenSet,y)                        'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  s_MINUTILSLACK(runVersions,experiments,steps,scenSet,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  s_FUELSLACK(runVersions,experiments,steps,scenSet,y)                         'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
-  s_bal_supdem(runVersions,experiments,steps,scenSet,r,y,t,lb,scen)            'Balance supply and demand in each region, year, time period and load block'
-  s_peak_nz(runVersions,experiments,steps,scenSet,y,scen)                      'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
-  s_peak_ni(runVersions,experiments,steps,scenSet,y,scen)                      'Ensure enough capacity to meet peak demand in NI subject to contingencies'
-  s_noWindPeak_ni(runVersions,experiments,steps,scenSet,y,scen)                'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
-  s_limit_maxgen(runVersions,experiments,steps,scenSet,g,y,t,lb,scen)          'Ensure generation in each block does not exceed capacity implied by max capacity factors'
-  s_limit_mingen(runVersions,experiments,steps,scenSet,g,y,t,lb,scen)          'Ensure generation in each block exceeds capacity implied by min capacity factors'
-  s_minutil(runVersions,experiments,steps,scenSet,g,y,scen)                    'Ensure certain generation plant meets a minimum utilisation'
-  s_limit_fueluse(runVersions,experiments,steps,scenSet,f,y,scen)              'Quantum of each fuel used and possibly constrained, PJ'
-  s_limit_nrg(runVersions,experiments,steps,scenSet,f,y,scen)                  'Impose a limit on total energy generated by any one fuel type'
-  s_minreq_rennrg(runVersions,experiments,steps,scenSet,y,scen)                'Impose a minimum requirement on total energy generated from all renewable sources'
-  s_minreq_rencap(runVersions,experiments,steps,scenSet,y)                     'Impose a minimum requirement on installed renewable capacity'
-  s_limit_hydro(runVersions,experiments,steps,scenSet,g,y,t,scen)              'Limit hydro generation according to inflows'
-  s_tx_capacity(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)        'Calculate the relevant transmission capacity' ;
+  i_fuelQuantities(rv,f,y)                    'Quantitative limit on availability of various fuels by year, PJ'
+  i_namePlate(rv,g)                           'Nameplate capacity of generating plant, MW'
+  i_heatrate(rv,g)                            'Heat rate of generating plant, GJ/GWh (default = 3600)'
+  i_txCapacity(rv,r,rr,ps)                    'Transmission path capacities (bi-directional), MW'
+  txCapitalCost(rv,r,rr,ps)                   'Capital cost of transmission upgrades by path and state, $m'
+  totalFuelCost(rv,g,y,scen)                  'Total fuel cost - price plus fuel production and delivery charges all times heatrate - by plant, year and scenario, $/MWh'
+  CO2taxByPlant(rv,g,y,scen)                  'CO2 tax by plant, year and scenario, $/MWh'
+  SRMC(rv,g,y,scen)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
+  i_fixedOM(rv,g)                             'Fixed O&M costs by plant, $/kW/year'
+  ensembleFactor(rv,g)                        'Collection of total cost adjustment factors by plant (e.g. location factors and hydro peaking factors)'
+  i_HVDCshr(rv,o)                             'Share of HVDC charge to be incurred by plant owner'
+  i_HVDClevy(rv,y)                            'HVDC charge levied on new South Island plant by year, $/kW'
+  i_plantReservesCost(rv,g,rc)                'Plant-specific cost per reserve class, $/MWh'
+  hoursPerBlock(rv,t,lb)                      'Hours per load block by time period'
+  NrgDemand(rv,r,y,t,lb,scen)                 'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
+  yearNum(rv,y)                               'Real number associated with each year'
+  PVfacG(rv,y,t)                              "Generation investor's present value factor by period"
+  PVfacT(rv,y,t)                              "Transmission investor's present value factor by period"
+  capCharge(rv,g,y)                           'Annualised or levelised capital charge for new generation plant, $/MW/yr'
+  refurbCapCharge(rv,g,y)                     'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
+  MWtoBuild(rv,k,aggR)                        'MW available for installation by technology, island and NZ'
+  penaltyViolateReserves(rv,ild,rc)           'Penalty for failing to meet certain reserve classes, $/MW'
+  pNFresvCost(rv,r,rr,lvl)                    'Constant cost of each non-free piece (or level) of function, $/MWh'
+  exogMWretired(rv,g,y)                       'Exogenously retired MW by plant and year, MW' ;
 
-$gdxin "%OutPath%\%runName%\GDX\allRV_ReportOutput_%runName%.gdx"
+$gdxin "%OutPath%\rep%reportName%\repData\selectedInputData.gdx"
+$loaddc possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate transitions allSolves allAvgDispatchSolves allNotAvgDispatchSolves avgDispatchSteptoNewstep
+$loaddc i_fuelQuantities i_namePlate i_heatrate i_txCapacity txCapitalCost totalFuelCost CO2taxByPlant SRMC i_fixedOM ensembleFactor i_HVDCshr i_HVDClevy
+$loaddc i_plantReservesCost hoursPerBlock NrgDemand yearNum PVfacG PVfacT capCharge refurbCapCharge MWtoBuild penaltyViolateReserves pNFresvCost exogMWretired
+
+
+* f) Declare and load the parameters (variable levels and marginals) to be found in the merged 'reportOutput' GDX file.
+Parameters
+  s_TOTALCOST(rv,expts,steps,scenSet)                           'Discounted total system costs over all modelled years, $m (objective function value)'
+  s_TX(rv,expts,steps,scenSet,r,rr,y,t,lb,scen)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  s_BTX(rv,expts,steps,scenSet,r,rr,ps,y)                       'Binary variable indicating the current state of a transmission path'
+  s_REFURBCOST(rv,expts,steps,scenSet,g,y)                      'Annualised generation plant refurbishment expenditure charge, $'
+  s_BUILD(rv,expts,steps,scenSet,g,y)                           'New capacity installed by generating plant and year, MW'
+  s_RETIRE(rv,expts,steps,scenSet,g,y)                          'Capacity endogenously retired by generating plant and year, MW'
+  s_CAPACITY(rv,expts,steps,scenSet,g,y)                        'Cumulative nameplate capacity at each generating plant in each year, MW'
+  s_TXCAPCHARGES(rv,expts,steps,scenSet,r,rr,y)                 'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  s_GEN(rv,expts,steps,scenSet,g,y,t,lb,scen)                   'Generation by generating plant and block, GWh'
+  s_VOLLGEN(rv,expts,steps,scenSet,s,y,t,lb,scen)               'Generation by VOLL plant and block, GWh'
+  s_LOSS(rv,expts,steps,scenSet,r,rr,y,t,lb,scenarios)          'Transmission losses along each path, MW'
+  s_TXPROJVAR(rv,expts,steps,scenSet,tupg,y)                    'Continuous 0-1 variable indicating whether an upgrade project is applied'
+  s_RESV(rv,expts,steps,scenSet,g,rc,y,t,lb,scen)               'Reserve energy supplied, MWh'
+  s_RESVVIOL(rv,expts,steps,scenSet,rc,ild,y,t,lb,scen)         'Reserve energy supply violations, MWh'
+  s_RESVCOMPONENTS(rv,expts,steps,scenSet,r,rr,y,t,lb,scen,lvl) 'Non-free reserve components, MW'
+  s_RENNRGPENALTY(rv,expts,steps,scenSet,y)                     'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  s_PEAK_NZ_PENALTY(rv,expts,steps,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
+  s_PEAK_NI_PENALTY(rv,expts,steps,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
+  s_NOWINDPEAK_NI_PENALTY(rv,expts,steps,scenSet,y,scen)        'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
+  s_ANNMWSLACK(rv,expts,steps,scenSet,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  s_RENCAPSLACK(rv,expts,steps,scenSet,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  s_HYDROSLACK(rv,expts,steps,scenSet,y)                        'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  s_MINUTILSLACK(rv,expts,steps,scenSet,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  s_FUELSLACK(rv,expts,steps,scenSet,y)                         'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  s_bal_supdem(rv,expts,steps,scenSet,r,y,t,lb,scen)            'Balance supply and demand in each region, year, time period and load block'
+  s_peak_nz(rv,expts,steps,scenSet,y,scen)                      'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
+  s_peak_ni(rv,expts,steps,scenSet,y,scen)                      'Ensure enough capacity to meet peak demand in NI subject to contingencies'
+  s_noWindPeak_ni(rv,expts,steps,scenSet,y,scen)                'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
+  s_limit_maxgen(rv,expts,steps,scenSet,g,y,t,lb,scen)          'Ensure generation in each block does not exceed capacity implied by max capacity factors'
+  s_limit_mingen(rv,expts,steps,scenSet,g,y,t,lb,scen)          'Ensure generation in each block exceeds capacity implied by min capacity factors'
+  s_minutil(rv,expts,steps,scenSet,g,y,scen)                    'Ensure certain generation plant meets a minimum utilisation'
+  s_limit_fueluse(rv,expts,steps,scenSet,f,y,scen)              'Quantum of each fuel used and possibly constrained, PJ'
+  s_limit_nrg(rv,expts,steps,scenSet,f,y,scen)                  'Impose a limit on total energy generated by any one fuel type'
+  s_minreq_rennrg(rv,expts,steps,scenSet,y,scen)                'Impose a minimum requirement on total energy generated from all renewable sources'
+  s_minreq_rencap(rv,expts,steps,scenSet,y)                     'Impose a minimum requirement on installed renewable capacity'
+  s_limit_hydro(rv,expts,steps,scenSet,g,y,t,scen)              'Limit hydro generation according to inflows'
+  s_tx_capacity(rv,expts,steps,scenSet,r,rr,y,t,lb,scen)        'Calculate the relevant transmission capacity' ;
+
+$gdxin "%OutPath%\rep%reportName%\repData\reportOutput.gdx"
 $loaddc s_TOTALCOST s_TX s_BTX s_REFURBCOST s_BUILD s_RETIRE s_CAPACITY s_TXCAPCHARGES s_GEN s_VOLLGEN s_LOSS s_TXPROJVAR s_RESV s_RESVVIOL s_RESVCOMPONENTS
 $loaddc s_RENNRGPENALTY s_PEAK_NZ_PENALTY s_PEAK_NI_PENALTY s_NOWINDPEAK_NI_PENALTY
 $loaddc s_ANNMWSLACK s_RENCAPSLACK s_HYDROSLACK s_MINUTILSLACK s_FUELSLACK
@@ -183,50 +239,87 @@ $loaddc s_bal_supdem s_peak_nz s_peak_ni s_noWindPeak_ni s_limit_maxgen s_limit_
 $loaddc s_minReq_RenNrg s_minReq_RenCap s_limit_hydro s_tx_capacity
 
 
-* Declare and load sets and parameters from the merged 'allRV_SelectedInputData' GDX file.
+
+*===============================================================================================
+* 3. Sum model results and compute the average over dispatch simulations where certain conditions are true.
+*    Conditions:
+*    - scenario to scenarioSet mapping is one-to-one and exists solely for the purpose of introducing variability in hydrology;
+*    - each scenario has a weight of 1 in it's mapping to scenario sets, i.e. it's a one-to-one mapping!;
+*    - step = dispatch;
+*    - hydro sequence type = sequential; and
+*    - sequential sequences types are mapped to scenarios.
+
+*  allAvgDispatchSolves(rv,expts,steps,scenSet)    'All solves for which the scenario sets are to be averaged'
+*  avgDispatchSteptoNewstep(rv,expts,ns,steps,scenSet,scen) 'Map average dispatch step to (old) dispatch step for an experiment' ;
+
 Sets
-  possibleToBuild(runVersions,g)                       'Generating plant that may possibly be built in any valid build year'
-  possibleToRefurbish(runVersions,g)                   'Generating plant that may possibly be refurbished in any valid modelled year'
-  possibleToEndogRetire(runVersions,g)                 'Generating plant that may possibly be endogenously retired'
-  possibleToRetire(runVersions,g)                      'Generating plant that may possibly be retired (exogenously or endogenously)'
-  validYrOperate(runVersions,g,y)                      'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years'
-  transitions(runVersions,tupg,r,rr,ps,pss)            'For all transmission paths, define the allowable transitions from one upgrade state to another' ;
+  mapStepsToNewSteps(rv,expts,ns,steps)
+  ;
+
+mapStepsToNewSteps(rv,expts,ns,steps)$( (ord(ns) = ord(steps))   and sum(scenSet$allNotAvgDispatchSolves(rv,expts,steps,scenSet), 1) ) = yes ;
+mapStepsToNewSteps(rv,expts,ns,steps)$( sameas(ns,'avgDispatch') and sum(scenSet$allAvgDispatchSolves(rv,expts,steps,scenSet), 1) ) = yes ;
+
+
 
 Parameters
-  i_fuelQuantities(runVersions,f,y)                    'Quantitative limit on availability of various fuels by year, PJ'
-  i_namePlate(runVersions,g)                           'Nameplate capacity of generating plant, MW'
-  i_heatrate(runVersions,g)                            'Heat rate of generating plant, GJ/GWh (default = 3600)'
-  i_txCapacity(runVersions,r,rr,ps)                    'Transmission path capacities (bi-directional), MW'
-  txCapitalCost(runVersions,r,rr,ps)                   'Capital cost of transmission upgrades by path and state, $m'
-  totalFuelCost(runVersions,g,y,scen)                  'Total fuel cost - price plus fuel production and delivery charges all times heatrate - by plant, year and scenario, $/MWh'
-  CO2taxByPlant(runVersions,g,y,scen)                  'CO2 tax by plant, year and scenario, $/MWh'
-  SRMC(runVersions,g,y,scen)                           'Short run marginal cost of each generation project by year and scenario, $/MWh'
-  i_fixedOM(runVersions,g)                             'Fixed O&M costs by plant, $/kW/year'
-  ensembleFactor(runVersions,g)                        'Collection of total cost adjustment factors by plant (e.g. location factors and hydro peaking factors)'
-  i_HVDCshr(runVersions,o)                             'Share of HVDC charge to be incurred by plant owner'
-  i_HVDClevy(runVersions,y)                            'HVDC charge levied on new South Island plant by year, $/kW'
-  i_plantReservesCost(runVersions,g,rc)                'Plant-specific cost per reserve class, $/MWh'
-  hoursPerBlock(runVersions,t,lb)                      'Hours per load block by time period'
-  NrgDemand(runVersions,r,y,t,lb,scen)                 'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
-  yearNum(runVersions,y)                               'Real number associated with each year'
-  PVfacG(runVersions,y,t)                              "Generation investor's present value factor by period"
-  PVfacT(runVersions,y,t)                              "Transmission investor's present value factor by period"
-  capCharge(runVersions,g,y)                           'Annualised or levelised capital charge for new generation plant, $/MW/yr'
-  refurbCapCharge(runVersions,g,y)                     'Annualised or levelised capital charge for refurbishing existing generation plant, $/MW/yr'
-  MWtoBuild(runVersions,k,aggR)                        'MW available for installation by technology, island and NZ'
-  penaltyViolateReserves(runVersions,ild,rc)           'Penalty for failing to meet certain reserve classes, $/MW'
-  pNFresvCost(runVersions,r,rr,lvl)                    'Constant cost of each non-free piece (or level) of function, $/MWh'
-  exogMWretired(runVersions,g,y)                       'Exogenously retired MW by plant and year, MW' ;
+  r_TOTALCOST(rv,expts,ns,*)                           'Discounted total system costs over all modelled years, $m (objective function value)'
+  r_TX(rv,expts,ns,*,r,rr,y,t,lb,scen)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  r_BTX(rv,expts,ns,*,r,rr,ps,y)                       'Binary variable indicating the current state of a transmission path'
+  r_REFURBCOST(rv,expts,ns,*,g,y)                      'Annualised generation plant refurbishment expenditure charge, $'
+  r_BUILD(rv,expts,ns,*,g,y)                           'New capacity installed by generating plant and year, MW'
+  r_RETIRE(rv,expts,ns,*,g,y)                          'Capacity endogenously retired by generating plant and year, MW'
+  r_CAPACITY(rv,expts,ns,*,g,y)                        'Cumulative nameplate capacity at each generating plant in each year, MW'
+  r_TXCAPCHARGES(rv,expts,ns,*,r,rr,y)                 'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  r_GEN(rv,expts,ns,*,g,y,t,lb,scen)                   'Generation by generating plant and block, GWh'
+  ;
 
-$gdxin "%OutPath%\%runName%\Input data checks\allRV_SelectedInputData_%runName%.gdx"
-$loaddc possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate transitions
-$loaddc i_fuelQuantities i_namePlate i_heatrate i_txCapacity txCapitalCost totalFuelCost CO2taxByPlant SRMC i_fixedOM ensembleFactor i_HVDCshr i_HVDClevy
-$loaddc i_plantReservesCost hoursPerBlock NrgDemand yearNum PVfacG PVfacT capCharge refurbCapCharge MWtoBuild penaltyViolateReserves pNFresvCost exogMWretired
+loop((rv,expts,ns,steps)$mapStepsToNewSteps(rv,expts,ns,steps),
+  if(not sameas(ns,'avgDispatch'),
+    r_TOTALCOST(rv,expts,ns,scenSet) = s_TOTALCOST(rv,expts,steps,scenSet) ;
+    r_BUILD(rv,expts,ns,scenSet,g,y) = s_BUILD(rv,expts,steps,scenSet,g,y) ;
+    r_RETIRE(rv,expts,ns,scenSet,g,y) = s_RETIRE(rv,expts,steps,scenSet,g,y) ;
+    r_CAPACITY(rv,expts,ns,scenSet,g,y) = s_CAPACITY(rv,expts,steps,scenSet,g,y) ; 
+    r_TXCAPCHARGES(rv,expts,ns,scenSet,r,rr,y) = s_TXCAPCHARGES(rv,expts,steps,scenSet,r,rr,y) ;
+    r_GEN(rv,expts,ns,scenSet,g,y,t,lb,scen) = s_GEN(rv,expts,steps,scenSet,g,y,t,lb,scen) ;
+  else
+    r_TOTALCOST(rv,expts,ns,'avg') = (1/7) * sum(scenSet, s_TOTALCOST(rv,expts,steps,scenSet)) ;
+    r_BUILD(rv,expts,ns,'avg',g,y) =  (1/7) * sum(scenSet, s_BUILD(rv,expts,steps,scenSet,g,y)) ;
+    r_RETIRE(rv,expts,ns,'avg',g,y) =  (1/7) * sum(scenSet, s_RETIRE(rv,expts,steps,scenSet,g,y)) ;
+    r_CAPACITY(rv,expts,ns,'avg',g,y) =  (1/7) * sum(scenSet, s_CAPACITY(rv,expts,steps,scenSet,g,y)) ; 
+    r_TXCAPCHARGES(rv,expts,ns,'avg',r,rr,y) =  (1/7) * sum(scenSet, s_TXCAPCHARGES(rv,expts,steps,scenSet,r,rr,y)) ;
+    r_GEN(rv,expts,ns,'avg',g,y,t,lb,scen) =  (1/7) * sum(scenSet, s_GEN(rv,expts,steps,scenSet,g,y,t,lb,scen)) ;
+  ) ;
+) ;
+
+display allNotAvgDispatchSolves, s_TOTALCOST, r_TOTALCOST, r_BUILD, r_RETIRE, r_CAPACITY, r_TXCAPCHARGES, r_GEN ;
+ ;
+
+option mapStepsToNewSteps:0:0:1 ;
+display mapStepsToNewSteps ;
+
+$stop
+
+
+***** See code below for summing over and weighting by scenario = need to do this at the same time as the above. ******* 
 
 
 
 *===============================================================================================
-* 3. Undertake the declarations and calculations necesary to prepare all that is to be reported.
+* 4. Figure out the (rv-experiments-steps-scenSet) domain to report on.
+
+Sets
+  sc(scen)                                                      '(Dynamically) selected subsets of elements of scenarios'
+  repDom(rv,experiments,steps,scenSet)                 'The user-specified rv-experiments-steps-scenarioSets subset to be reported on'
+  ;
+
+* Here's where we need to compress/reduce scenSet, i.e. for step=dispatch AND for scenarios that have seqType = seqientioal, get rid
+* of the 1-1 scen->scenSet tuples and compute an average
+
+
+
+
+*===============================================================================================
+* 5. Undertake the declarations and calculations necesary to prepare all that is to be reported.
 
 Sets
   sc(scen)                                                      '(Dynamically) selected subsets of elements of scenarios'
