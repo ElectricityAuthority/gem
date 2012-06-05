@@ -1,5 +1,7 @@
 $setglobal reportName  "TestReport"
-$setglobal baseCase    "mds3"
+
+$setglobal BaseCaseRun "Test"
+$setglobal BaseCaseRV  "mds3"
 
 Set runVersions "Variants or instances of the run - all stored in the 'runName' output directory" /
   mds1 'Sustainable path'

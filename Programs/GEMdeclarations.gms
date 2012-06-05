@@ -1,16 +1,16 @@
 * GEMdeclarations.gms
 
 
-* Last modified by Dr Phil Bishop, 31/05/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/06/2012 (imm@ea.govt.nz)
 
 
 $ontext
   This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
-  and including GEMsolve. A few symbols declared here are also used by GEMreports. Symbols required only for post-solve
-  reporting purposes are declared in GEMreports. In a very few cases (a handful of sets whose membership never changes),
-  the symbols are intialised here as well. In other words, the membership of those sets is assigned at the time of declaration.
-  In all other cases, set membership and scalar/parameter values are obtained from user-specified input files, or are
-  computed within GEMdata using the imported data.
+  and including GEMsolve. Symbols required only for post-solve reporting purposes are generally declared in GEMreports. However,
+  there are a few reporting-related declarations in this program, as GEMdata and GEMsolve do some preparatory work for GEMreports.
+  In a few cases, a handful of sets whose membership never changes, symbols are intialised as well as declared in this program.
+  In other words, the membership of those sets is assigned at the time of declaration. In all other cases, set membership and
+  scalar/parameter values are obtained from user-specified input files, or are computed within GEMdata using the imported data.
 
   The GEMdeclarations work file (GEMdeclarations.g00) is saved and used at invocation to restart GEMdata.
 
@@ -219,8 +219,7 @@ Parameters
   i_P200ratioNI(y)                              'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), North Island'
 * 2 hydrology
   i_firstHydroYear                              'First year of historical hydrology data'
-  i_historicalHydroOutput(v,hY,m)               'Historical hydro output sequences by reservoir and month, GWh'
-  ;
+  i_historicalHydroOutput(v,hY,m)               'Historical hydro output sequences by reservoir and month, GWh' ;
 
 
 
@@ -293,9 +292,11 @@ Sets
   allSolves(experiments,steps,scenarioSets)     'Scenario sets by experiment and step'
   mapSC_hY(scenarios,hY)                        'Map historical hydro years to scenarios (compute the average if more than one historical year is specified)'
   mapSC_hydroSeqTypes(scenarios,hydroSeqTypes)  'Map the hydrology sequence types (same or sequential) to scenarios'
-  mapHydroYearsToModelledYears(experiments,steps,scenarioSets,scenarios,y,hY) 'Collect the mapping of historical hydro years to modelled years for all experiments-steps-scenarioSets tuples'
-  sumSolves(scenarioSets)                       'Figure out which solves to sum over when computing post-solve results averaged over scenarioSets'
-  defaultScenario(scenarios)                    'Identify a default scenario to use when reporting input data summaries. Applies only to input data defined over scenarios (see GEMdata)' ;
+  defaultScenario(scenarios)                    'Identify a default scenario to use when reporting input data summaries. Applies only to input data defined over scenarios (see GEMdata)'
+  mapHydroYearsToModelledYears(experiments,steps,scenarioSets,scenarios,y,hY)     'Collect the mapping of historical hydro years to modelled years for all experiments-steps-scenarioSets tuples'
+  allAvgDispatchSolves(experiments,steps,scenarioSets)                            'All solves for which the dispatch simulations are to be averaged over all scenarios mapped to each scenario set'
+  allNotAvgDispatchSolves(experiments,steps,scenarioSets)                         'All solves for which the dispatch simulations are not to be averaged over all scenarios mapped to each scenario set'
+  figureOutAvgDispatch(experiments,steps,scenarioSets,scenarios,hydroSeqTypes,hY) 'All solves for which the dispatch simulations are to be averaged over all scenarios mapped to each scenario set - and associated mappings'  ;
 
 Alias(scenarios,scen), (scenarioSets,scenSet) ;
 
@@ -339,9 +340,7 @@ Parameters
   penalties                                     'A flag indicating penalty variables exist in at least one solution'
   genSecs                                       'Number of seconds required to generate the current model'
   numSecs                                       'Number of CPU seconds required to solve the current model'
-  numIters                                      'Number of iterations required to solve the current model'
-  solverStat                                    'Solver status flag for the current model'
-  modelStat                                     'Model status flag for the current model' ;
+  numIters                                      'Number of iterations required to solve the current model' ;
 
 * d) Declare all remaining sets and parameters - to be initialised/computed in GEMdata or GEMsolve.
 Sets
@@ -517,7 +516,9 @@ Parameters
   loadByAggRegionYear(aggR,y)                   'Load by aggregated region and year, GWh'
   peakLoadByYearAggR(y,aggR)                    'Peak load by year for each island and NZ as a whole, MW'
   capexStatistics(k,aggR,stat)                  'Descriptive statistics of plant capex (lumpy and including grid connection costs) by technology, island and NZ'
-  ;
+* Solution reporting
+  solverStat                                    'Solver status flag for the current model'
+  modelStat                                     'Model status flag for the current model' ;
 
 
 
@@ -622,8 +623,7 @@ Equations
   resvtrfr4(ild1,ild,y,t,lb,scenarios)          'Limit on the amount of reserve energy transfer - constraint 4'
   resvtrfrdef(ild,ild1,y,t,lb,scenarios)        'Constraint that defines if reserve energy transfer is available'
   resvoffcap(g,y,t,lb,scenarios)                'Offline energy reserve capability'
-  resvreqwind(rc,ild,y,t,lb,scenarios)          'Reserve energy requirement based on a specified proportion of dispatched wind generation'
-  ;
+  resvreqwind(rc,ild,y,t,lb,scenarios)          'Reserve energy requirement based on a specified proportion of dispatched wind generation' ;
 
 
 
