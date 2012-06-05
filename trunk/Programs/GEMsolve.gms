@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 01/06/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 05/06/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -482,7 +482,7 @@ Execute_Unload "%OutPath%\%runName%\Input data checks\Selected prepared input da
 * Basic sets, subsets, and mapping sets.
   y t f k g o lb i r e ild ps tupg scen rc n tgc hY s
   techColor fuelColor fuelGrpColor
-  mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r avgDispatchSteptoNewstep allAvgDispatchSolves allNotAvgDispatchSolves
+  mapg_k mapg_o mapg_e mapg_f maps_r mapg_r mapild_r mapAggR_r avgDispatchSteptoRepStep allAvgDispatchSolves allNotAvgDispatchSolves
   isIldEqReg firstPeriod firstYr lastYr allButFirstYr
   paths nwd swd interIsland pumpedHydroPlant wind gas diesel
   thermalFuel i_fuelQuantities renew schedHydroPlant trnch demandGen 

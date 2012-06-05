@@ -743,19 +743,16 @@ historicalHydroOutput(v,hY,m) = i_historicalHydroOutput(v,hY,m) ;
 *===============================================================================================
 * 5. Ascertain which dispatch solves ought to be summed and averaged for reporting purposes, i.e. pick out all cases where the scenario
 *    to scenarioSet mapping is one-to-one and exists solely for the purpose of introducing variability in hydrology. 
-Sets
-  allAvgDispatchSolves(experiments,steps,scenSet)                            'All solves for which the scenario sets are to be averaged'
-  allNotAvgDispatchSolves(experiments,steps,scenSet)                         'All solves for which the scenario sets are not to be averaged'
-  figureOutAvgDispatch(experiments,steps,scenSet,scenarios,hydroSeqTypes,hY) 'All solves for which the scenario sets are to be averaged - mapped to associated scenarios'
-  ;
 
-loop((allSolves(experiments,steps,scenSet),scenarios,hydroSeqTypes,hY)$(
-*     steps = dispatch, hydro sequence type = sequential, and sequential sequences types are mapped to scenarios
-      sameas(steps,'dispatch') * mapSC_hydroSeqTypes(scenarios,hydroSeqTypes) * sameas(hydroSeqTypes,'sequential') *
-*     scenarios are mapped to scenario sets and the weighting on each scenario = 1
-      mapScenarios(scenSet,scenarios) * (weightScenariosBySet(scenSet,scenarios) = 1) *
-*     the scenario has historical hydro years mapped to it
-      mapSC_hY(scenarios,hY)                                           ),
+loop((allSolves(experiments,steps,scenSet),scenarios,hydroSeqTypes,hY)$
+      (
+*       Condition: steps = dispatch; hydro sequence type = sequential; and sequential sequence types are mapped to scenarios
+        sameas(steps,'dispatch') * sameas(hydroSeqTypes,'sequential') * mapSC_hydroSeqTypes(scenarios,hydroSeqTypes) *
+*       Condition: scenarios are mapped to scenario sets; and the weighting on each scenario = 1
+        mapScenarios(scenSet,scenarios) * (weightScenariosBySet(scenSet,scenarios) = 1) *
+*       Condition: the scenario has historical hydro years mapped to it
+        mapSC_hY(scenarios,hY)
+      ),
 
   figureOutAvgDispatch(experiments,steps,scenSet,scenarios,hydroSeqTypes,hY) = yes ;
 
@@ -767,13 +764,13 @@ allNotAvgDispatchSolves(experiments,steps,scenSet)$allSolves(experiments,steps,s
 
 allNotAvgDispatchSolves(experiments,steps,scenSet)$allAvgDispatchSolves(experiments,steps,scenSet) = no ;
 
-file tempSets / tempSets.inc / ; tempSets.lw = 0 ; put tempSets ;
-put "Set newSteps 'Steps in an experiment' / timing, reopt, dispatch, avgDispatch / ;" //
-    'Set avgDispatchSteptoNewstep(experiments,newSteps,steps,scenSet,scenarios) "Map new step to old step for dispatch solves to be averaged" /'
+* Use the figureOutAvgDispatch set to write a temporary file that GEMsolve includes and then dumps into the selected prepared input data GDX. 
+file tempSets / tempSets.inc / ; tempSets.lw = 0 ; put tempSets
+  "Set repSteps 'Steps in an experiment' / timing, reopt, dispatch, avgDispatch / ;" //
+  'Set avgDispatchSteptoRepStep(experiments,repSteps,steps,scenSet,scenarios) "Map reporting steps to steps to accomodate dispatch solves to be averaged" /'
 loop(figureOutAvgDispatch(experiments,steps,scenSet,scenarios,hydroSeqTypes,hY),
   put / '  ' experiments.tl '.avgDispatch.' steps.tl, '.' scenSet.tl, '.' scenarios.tl ;
-) ;
-put ' /;' ;
+) ; put ' /;' ;
 
 
 
@@ -870,6 +867,7 @@ MWtoBuild(k,aggR)  = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * ma
 GWhtoBuild(k,aggR) = sum((possibleToBuild(g),r)$( mapg_k(g,k) * mapg_r(g,r) * mapAggR_r(aggR,r) ), assumedGWh(g)) ;
 
 loop(defaultScenario(scen),
+* NB: defaultScenario comes from GEMstochastic.inc.
 
   avgSRMC(g) = sum(y, SRMC(g,y,scen)) / card(y) ;
 
@@ -897,22 +895,22 @@ capexStatistics(k,aggR,'stdDev%')$capexStatistics(k,aggR,'mean') = 100 * capexSt
 * c) Write miscellaneous configuration information required later by GEMreports.
 put GEMrepConfig ;
 put 'Set scenarios "The various individual stochastic scenarios, or futures, or states of uncertainty" /' ;
-loop(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1), put / '  "' scen.tl, '" "', scen.te(scen), '"' ) put ' /;' // ;  
+loop(scen$sum((allSolves(experiments,steps,scenSet),mapScenarios(scenSet,scen)), 1), put / '  "' scen.tl, '" "', scen.te(scen), '"' ) put / '  "averageDispatch" /;' // ;  
 
 put 'Set defaultScenario(scenarios) "Identify a default scenario to use when reporting input data summaries. Applies only to input data defined over scenarios (see GEMdata)" /' ;
 loop(defaultScenario(scen), put / '  "' scen.tl '"' ) put ' /;' // ;  
 
 put 'Set scenarioSets "Sets of scenarios to be used in the same solve" /' ;
-loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' scenSet.tl, '" "', scenSet.te(scenSet), '"' ) put ' /;' // ;  
+loop(scenSet$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' scenSet.tl, '" "', scenSet.te(scenSet), '"' ) put / '  "avg" /;' // ;  
 
 put 'Set experiments "A collection of experiments, each potentially containing timing, re-optimisation and dispatch steps" /' ;
 loop(experiments$sum(allSolves(experiments,steps,scenSet), 1), put / '  "' experiments.tl, '" "', experiments.te(experiments), '"' ) put ' /;' // ;  
 
 put 'Set mapScenarios(scenarioSets,scenarios) "Map each scenario to a scenarioSet (i.e. 1 or more scenarios make up an scenario set)" /' ;
-loop(mapScenarios(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"' ) put ' /;' // ;  
+loop(mapScenarios(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"' ) put / '  "avg"."averageDispatch" /;' // ;
 
 put 'Parameter weightScenariosBySet(scenarioSets,scenarios) "Assign weights to the scenarios comprising each set of scenarios" /' ;
-loop((scenSet,scen)$weightScenariosBySet(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"  ', weightScenariosBySet(scenSet,scen):<10:8 ) put ' /;' // ;  
+loop((scenSet,scen)$weightScenariosBySet(scenSet,scen), put / '  "' scenSet.tl, '"."', scen.tl, '"  ', weightScenariosBySet(scenSet,scen):<10:8 ) put / '  "avg"."averageDispatch" 1 /;' // ;
 
 put '$setglobal firstYear %firstYear%' / '$setglobal lastYear %lastYear%' //
     'Scalar taxRate / ',                taxRate:<5:2, ' /;' /
