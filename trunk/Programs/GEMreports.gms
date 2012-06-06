@@ -1,15 +1,16 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 06/06/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 07/06/2012 (imm@ea.govt.nz)
 
 
 $ontext
   This program generates GEM reports - human-readable files or files to be read by other applications for further processing.
   It is to be invoked subsequent to the solving of all runs and run versions that are to be reported on. Note that GEMreports
-  effectively starts afresh as a standalone program - it does "not" start from any previously created GAMS work files, and it
-  imports or loads all of the data it requires. All symbols required in this program are declared here. Set membership and data
-  values are imported from the designated base case input GDX file or the merged GDX files.
+  effectively starts afresh as a standalone program. It does "not" start from any previously created GAMS work files (.g00), and
+  it imports or loads all of the data it requires from GDX files containing output from previously solved GEM runs. All symbols
+  required in this program are declared here. Set membership and data values are imported from the designated base case input GDX
+  file and/or the various merged GDX files.
 
   Notes:
   1. ...
@@ -23,8 +24,9 @@ $ontext
      d) Load set membership, i.e. fundamental, subsets, and mapping sets, from the designated base case GDX file.
      e) Declare and load sets and parameters from the merged 'selectedInputData' GDX file.
      f) Declare and load the parameters (variable levels and marginals) to be found in the merged 'reportOutput' GDX file.
-  3. Sum model results and compute the average over dispatch simulations where certain conditions are true.
-  4. Undertake the declarations and calculations necesary to prepare all that is to be reported.
+  3. Collapse dispatch solves to a single average result in cases where variable hydrology was simulated.
+  4. Undertake the declarations and calculations necessary to prepare all that is to be reported.
+  5. Write selected results to CSV files.
 
 
   x. Write key results to a CSV file.
@@ -53,19 +55,26 @@ Alias(runVersions,rv), (experiments,expts), (scenarioSets,scenSet), (scenarios,s
 
 * Declare output files to be created by GEMreports.
 Files
-  keyResults     / "%OutPath%\rep%reportName%\A collection of key results - %reportName%.csv" /
-  plotResults    / "%OutPath%\rep%reportName%\Processed files\Results to be plotted - %reportName%.csv" /
+  plantTech      / "%OutPath%\rep%reportName%\Plant built by technology - %reportName%.csv" /
+  plantReg       / "%OutPath%\rep%reportName%\Plant built by region - %reportName%.csv" /
+  capacityPlant  / "%OutPath%\rep%reportName%\Capacity by plant and year (net of retirements) - %reportName%.csv" /
   expandSchedule / "%OutPath%\rep%reportName%\Capacity expansion by year - %reportName%.csv" /
-  capacityPlant  / "%OutPath%\rep%reportName%\Processed files\Capacity by plant and year (net of retirements) - %reportName%.csv" /
-  genPlant       / "%OutPath%\rep%reportName%\Processed files\Generation and utilisation by plant - %reportName%.csv" /
-  tempTX         / "%OutPath%\rep%reportName%\Processed files\Transmission build - %reportName%.csv" /
-  genPlantYear   / "%OutPath%\rep%reportName%\Processed files\Generation and utilisation by plant (annually) - %reportName%.csv" /
-  variousAnnual  / "%OutPath%\rep%reportName%\Processed files\Various annual results - %reportName%.csv" /  ;
+
+  keyResults     / "%OutPath%\rep%reportName%\A collection of key results - %reportName%.csv" /
+  plotResults    / "%OutPath%\rep%reportName%\Results to be plotted - %reportName%.csv" /
+  genPlant       / "%OutPath%\rep%reportName%\Generation and utilisation by plant - %reportName%.csv" /
+  tempTX         / "%OutPath%\rep%reportName%\Transmission build - %reportName%.csv" /
+  genPlantYear   / "%OutPath%\rep%reportName%\Generation and utilisation by plant (annually) - %reportName%.csv" /
+  variousAnnual  / "%OutPath%\rep%reportName%\Various annual results - %reportName%.csv" /  ;
+
+plantTech.pc = 5 ;       plantTech.pw = 999 ;
+plantReg.pc = 5 ;        plantReg.pw = 999 ;
+capacityPlant.pc = 5 ;   capacityPlant.pw = 999 ;
+expandSchedule.pc = 5 ;  expandSchedule.pw = 999 ;
+
 
 keyResults.pc = 5 ;      keyResults.pw = 999 ;
 plotResults.pc = 5 ;     plotResults.pw = 999 ;
-expandSchedule.pc = 5 ;  expandSchedule.pw = 999 ;
-capacityPlant.pc = 5 ;   capacityPlant.pw = 999 ;
 genPlant.pc = 5 ;        genPlant.pw = 999 ;
 tempTX.pc = 5 ;          tempTX.pw = 999 ;
 genPlantYear.pc = 5 ;    genPlantYear.pw = 999 ;
@@ -81,7 +90,7 @@ Sets
   steps             'Steps in an experiment'              / timing      'Solve the timing problem, i.e. timing of new generation/or transmission investment'
                                                             reopt       'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
                                                             dispatch    'Solve for the dispatch only with investment timing fixed'  /
-  repSteps          'Steps in an experiment'              / timing      'Solve the timing problem, i.e. timing of new generation/or transmission investment'
+  repSteps          '"Reporting" steps in an experiment'  / timing      'Solve the timing problem, i.e. timing of new generation/or transmission investment'
                                                             reopt       'Solve the re-optimised timing problem (generally with a drier hydro sequence) while allowing peakers to move'
                                                             dispatch    'Solve for the dispatch only with investment timing fixed'
                                                             avgDispatch 'Average over all dispatch solves for a given experiment' /
@@ -243,58 +252,58 @@ $loaddc s_minReq_RenNrg s_minReq_RenCap s_limit_hydro s_tx_capacity
 
 
 *===============================================================================================
-* 3. Sum model results and compute the average over dispatch simulations where certain conditions are true.
-*    Conditions:
+* 3. Collapse dispatch solves to a single average result in cases where variable hydrology was simulated.
+*    Conditions to be met in order to collapse results to an average:
 *    - scenario to scenarioSet mapping is one-to-one and exists solely for the purpose of introducing variability in hydrology;
 *    - each scenario has a weight of 1 in it's mapping to scenario sets, i.e. it's a one-to-one mapping!;
 *    - step = dispatch;
 *    - hydro sequence type = sequential; and
 *    - sequential sequences types are mapped to scenarios.
-Sets
-  mapStepsToRepSteps(rv,expts,rs,steps) 'Figure out the mapping of steps (timing,reopt,dispatch) to repSteps (timing,reopt,dispatch,avgDispatch)' ;
+
+Set mapStepsToRepSteps(rv,expts,rs,steps) 'Figure out the mapping of steps (timing,reopt,dispatch) to repSteps (timing,reopt,dispatch,avgDispatch)' ;
 
 Parameters
-* Transfer s_ parameters (levels and marginals) into r_ parameters -- modify domain by replacing steps with rs.
-  r_TOTALCOST(rv,expts,rs,scenSet)                           'Discounted total system costs over all modelled years, $m (objective function value)'
-  r_TX(rv,expts,rs,scenSet,r,rr,y,t,lb,scen)                 'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
-  r_BTX(rv,expts,rs,scenSet,r,rr,ps,y)                       'Binary variable indicating the current state of a transmission path'
-  r_REFURBCOST(rv,expts,rs,scenSet,g,y)                      'Annualised generation plant refurbishment expenditure charge, $'
-  r_BUILD(rv,expts,rs,scenSet,g,y)                           'New capacity installed by generating plant and year, MW'
-  r_RETIRE(rv,expts,rs,scenSet,g,y)                          'Capacity endogenously retired by generating plant and year, MW'
-  r_CAPACITY(rv,expts,rs,scenSet,g,y)                        'Cumulative nameplate capacity at each generating plant in each year, MW'
-  r_TXCAPCHARGES(rv,expts,rs,scenSet,r,rr,y)                 'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
-  r_GEN(rv,expts,rs,scenSet,g,y,t,lb,scen)                   'Generation by generating plant and block, GWh'
-  r_VOLLGEN(rv,expts,rs,scenSet,s,y,t,lb,scen)               'Generation by VOLL plant and block, GWh'
-  r_LOSS(rv,expts,rs,scenSet,r,rr,y,t,lb,scen)               'Transmission losses along each path, MW'
-  r_TXPROJVAR(rv,expts,rs,scenSet,tupg,y)                    'Continuous 0-1 variable indicating whether an upgrade project is applied'
-  r_RESV(rv,expts,rs,scenSet,g,rc,y,t,lb,scen)               'Reserve energy supplied, MWh'
-  r_RESVVIOL(rv,expts,rs,scenSet,rc,ild,y,t,lb,scen)         'Reserve energy supply violations, MWh'
-  r_RESVCOMPONENTS(rv,expts,rs,scenSet,r,rr,y,t,lb,scen,lvl) 'Non-free reserve components, MW'
-  r_RENNRGPENALTY(rv,expts,rs,scenSet,y)                     'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
-  r_PEAK_NZ_PENALTY(rv,expts,rs,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
-  r_PEAK_NI_PENALTY(rv,expts,rs,scenSet,y,scen)              'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
-  r_NOWINDPEAK_NI_PENALTY(rv,expts,rs,scenSet,y,scen)        'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
-  r_ANNMWSLACK(rv,expts,rs,scenSet,y)                        'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
-  r_RENCAPSLACK(rv,expts,rs,scenSet,y)                       'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
-  r_HYDROSLACK(rv,expts,rs,scenSet,y)                        'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
-  r_MINUTILSLACK(rv,expts,rs,scenSet,y)                      'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
-  r_FUELSLACK(rv,expts,rs,scenSet,y)                         'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
-  r_bal_supdem(rv,expts,rs,scenSet,r,y,t,lb,scen)            'Balance supply and demand in each region, year, time period and load block'
-  r_peak_nz(rv,expts,rs,scenSet,y,scen)                      'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
-  r_peak_ni(rv,expts,rs,scenSet,y,scen)                      'Ensure enough capacity to meet peak demand in NI subject to contingencies'
-  r_noWindPeak_ni(rv,expts,rs,scenSet,y,scen)                'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
-  r_limit_maxgen(rv,expts,rs,scenSet,g,y,t,lb,scen)          'Ensure generation in each block does not exceed capacity implied by max capacity factors'
-  r_limit_mingen(rv,expts,rs,scenSet,g,y,t,lb,scen)          'Ensure generation in each block exceeds capacity implied by min capacity factors'
-  r_minutil(rv,expts,rs,scenSet,g,y,scen)                    'Ensure certain generation plant meets a minimum utilisation'
-  r_limit_fueluse(rv,expts,rs,scenSet,f,y,scen)              'Quantum of each fuel used and possibly constrained, PJ'
-  r_limit_nrg(rv,expts,rs,scenSet,f,y,scen)                  'Impose a limit on total energy generated by any one fuel type'
-  r_minreq_rennrg(rv,expts,rs,scenSet,y,scen)                'Impose a minimum requirement on total energy generated from all renewable sources'
-  r_minreq_rencap(rv,expts,rs,scenSet,y)                     'Impose a minimum requirement on installed renewable capacity'
-  r_limit_hydro(rv,expts,rs,scenSet,g,y,t,scen)              'Limit hydro generation according to inflows'
-  r_tx_capacity(rv,expts,rs,scenSet,r,rr,y,t,lb,scen)        'Calculate the relevant transmission capacity'
+* Transfer s_ parameters (levels and marginals) into r_ parameters -- modify domain by replacing steps with repSteps, or rs.
+  r_TOTALCOST(rv,expts,rs,scenSet)                              'Discounted total system costs over all modelled years, $m (objective function value)'
+  r_TX(rv,expts,rs,scenSet,r,rr,y,t,lb,scen)                    'Transmission from region to region in each time period, MW (-ve reduced cost equals s_TXprice???)'
+  r_BTX(rv,expts,rs,scenSet,r,rr,ps,y)                          'Binary variable indicating the current state of a transmission path'
+  r_REFURBCOST(rv,expts,rs,scenSet,g,y)                         'Annualised generation plant refurbishment expenditure charge, $'
+  r_BUILD(rv,expts,rs,scenSet,g,y)                              'New capacity installed by generating plant and year, MW'
+  r_RETIRE(rv,expts,rs,scenSet,g,y)                             'Capacity endogenously retired by generating plant and year, MW'
+  r_CAPACITY(rv,expts,rs,scenSet,g,y)                           'Cumulative nameplate capacity at each generating plant in each year, MW'
+  r_TXCAPCHARGES(rv,expts,rs,scenSet,r,rr,y)                    'Cumulative annualised capital charges to upgrade transmission paths in each modelled year, $m'
+  r_GEN(rv,expts,rs,scenSet,g,y,t,lb,scen)                      'Generation by generating plant and block, GWh'
+  r_VOLLGEN(rv,expts,rs,scenSet,s,y,t,lb,scen)                  'Generation by VOLL plant and block, GWh'
+  r_LOSS(rv,expts,rs,scenSet,r,rr,y,t,lb,scen)                  'Transmission losses along each path, MW'
+  r_TXPROJVAR(rv,expts,rs,scenSet,tupg,y)                       'Continuous 0-1 variable indicating whether an upgrade project is applied'
+  r_RESV(rv,expts,rs,scenSet,g,rc,y,t,lb,scen)                  'Reserve energy supplied, MWh'
+  r_RESVVIOL(rv,expts,rs,scenSet,rc,ild,y,t,lb,scen)            'Reserve energy supply violations, MWh'
+  r_RESVCOMPONENTS(rv,expts,rs,scenSet,r,rr,y,t,lb,scen,lvl)    'Non-free reserve components, MW'
+  r_RENNRGPENALTY(rv,expts,rs,scenSet,y)                        'Penalty with cost of penaltyViolateRenNrg - used to make renewable energy constraint feasible, GWh'
+  r_PEAK_NZ_PENALTY(rv,expts,rs,scenSet,y,scen)                 'Penalty with cost of penaltyViolatePeakLoad - used to make NZ security constraint feasible, MW'
+  r_PEAK_NI_PENALTY(rv,expts,rs,scenSet,y,scen)                 'Penalty with cost of penaltyViolatePeakLoad - used to make NI security constraint feasible, MW'
+  r_NOWINDPEAK_NI_PENALTY(rv,expts,rs,scenSet,y,scen)           'Penalty with cost of penaltyViolatePeakLoad - used to make NI no wind constraint feasible, MW'
+  r_ANNMWSLACK(rv,expts,rs,scenSet,y)                           'Slack with arbitrarily high cost - used to make annual MW built constraint feasible, MW'
+  r_RENCAPSLACK(rv,expts,rs,scenSet,y)                          'Slack with arbitrarily high cost - used to make renewable capacity constraint feasible, MW'
+  r_HYDROSLACK(rv,expts,rs,scenSet,y)                           'Slack with arbitrarily high cost - used to make limit_hydro constraint feasible, GWh'
+  r_MINUTILSLACK(rv,expts,rs,scenSet,y)                         'Slack with arbitrarily high cost - used to make minutil constraint feasible, GWh'
+  r_FUELSLACK(rv,expts,rs,scenSet,y)                            'Slack with arbitrarily high cost - used to make limit_fueluse constraint feasible, PJ'
+  r_bal_supdem(rv,expts,rs,scenSet,r,y,t,lb,scen)               'Balance supply and demand in each region, year, time period and load block'
+  r_peak_nz(rv,expts,rs,scenSet,y,scen)                         'Ensure enough capacity to meet peak demand and the winter capacity margin in NZ'
+  r_peak_ni(rv,expts,rs,scenSet,y,scen)                         'Ensure enough capacity to meet peak demand in NI subject to contingencies'
+  r_noWindPeak_ni(rv,expts,rs,scenSet,y,scen)                   'Ensure enough capacity to meet peak demand in NI  subject to contingencies when wind is low'
+  r_limit_maxgen(rv,expts,rs,scenSet,g,y,t,lb,scen)             'Ensure generation in each block does not exceed capacity implied by max capacity factors'
+  r_limit_mingen(rv,expts,rs,scenSet,g,y,t,lb,scen)             'Ensure generation in each block exceeds capacity implied by min capacity factors'
+  r_minutil(rv,expts,rs,scenSet,g,y,scen)                       'Ensure certain generation plant meets a minimum utilisation'
+  r_limit_fueluse(rv,expts,rs,scenSet,f,y,scen)                 'Quantum of each fuel used and possibly constrained, PJ'
+  r_limit_nrg(rv,expts,rs,scenSet,f,y,scen)                     'Impose a limit on total energy generated by any one fuel type'
+  r_minreq_rennrg(rv,expts,rs,scenSet,y,scen)                   'Impose a minimum requirement on total energy generated from all renewable sources'
+  r_minreq_rencap(rv,expts,rs,scenSet,y)                        'Impose a minimum requirement on installed renewable capacity'
+  r_limit_hydro(rv,expts,rs,scenSet,g,y,t,scen)                 'Limit hydro generation according to inflows'
+  r_tx_capacity(rv,expts,rs,scenSet,r,rr,y,t,lb,scen)           'Calculate the relevant transmission capacity'
 * Other parameters
-  numScensToAvg(rv,expts)                                    'Count how many scenario sets are to be averaged over for the dispatch simulations' 
-  wtScensToAvg(rv,expts)                                     'One over the count of scenario sets to be averaged over for the dispatch simulations'  ;
+  numScensToAvg(rv,expts)                                       'Count how many scenario sets are to be averaged over for the dispatch simulations' 
+  wtScensToAvg(rv,expts)                                        'Reciprocal of the count of scenario sets to be averaged over for the dispatch simulations'  ;
 
 mapStepsToRepSteps(rv,expts,rs,steps)$( (ord(rs) = ord(steps))   and sum(scenSet$allNotAvgDispatchSolves(rv,expts,steps,scenSet), 1) ) = yes ;
 mapStepsToRepSteps(rv,expts,rs,steps)$( sameas(rs,'avgDispatch') and sum(scenSet$allAvgDispatchSolves(rv,expts,steps,scenSet), 1) ) = yes ;
@@ -345,30 +354,30 @@ loop((rv,expts,rs,steps)$mapStepsToRepSteps(rv,expts,rs,steps),
     r_tx_capacity(rv,expts,rs,scenSet,r,rr,y,t,lb,scen)        = s_tx_capacity(rv,expts,steps,scenSet,r,rr,y,t,lb,scen) ;
   else
 *   Variable levels
-    r_TOTALCOST(rv,expts,rs,'avg')                                        = wtScensToAvg(rv,expts) * sum(scenSet, s_TOTALCOST(rv,expts,steps,scenSet)) ;
-    r_TX(rv,expts,rs,'avg',r,rr,y,t,lb,'averageDispatch')                 = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_TX(rv,expts,steps,scenSet,r,rr,y,t,lb,scen)) ;
-    r_BTX(rv,expts,rs,'avg',r,rr,ps,y)                                    = wtScensToAvg(rv,expts) * sum(scenSet, s_BTX(rv,expts,steps,scenSet,r,rr,ps,y)) ;
-    r_REFURBCOST(rv,expts,rs,'avg',g,y)                                   = wtScensToAvg(rv,expts) * sum(scenSet, s_REFURBCOST(rv,expts,steps,scenSet,g,y)) ;
-    r_BUILD(rv,expts,rs,'avg',g,y)                                        = wtScensToAvg(rv,expts) * sum(scenSet, s_BUILD(rv,expts,steps,scenSet,g,y)) ;
-    r_RETIRE(rv,expts,rs,'avg',g,y)                                       = wtScensToAvg(rv,expts) * sum(scenSet, s_RETIRE(rv,expts,steps,scenSet,g,y)) ;
-    r_CAPACITY(rv,expts,rs,'avg',g,y)                                     = wtScensToAvg(rv,expts) * sum(scenSet, s_CAPACITY(rv,expts,steps,scenSet,g,y)) ; 
-    r_TXCAPCHARGES(rv,expts,rs,'avg',r,rr,y)                              = wtScensToAvg(rv,expts) * sum(scenSet, s_TXCAPCHARGES(rv,expts,steps,scenSet,r,rr,y)) ;
-    r_GEN(rv,expts,rs,'avg',g,y,t,lb,'averageDispatch')                   = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_GEN(rv,expts,steps,scenSet,g,y,t,lb,scen)) ;
-    r_VOLLGEN(rv,expts,rs,'avg',s,y,t,lb,'averageDispatch')               = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_VOLLGEN(rv,expts,steps,scenSet,s,y,t,lb,scen)) ;
-    r_LOSS(rv,expts,rs,'avg',r,rr,y,t,lb,'averageDispatch')               = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_LOSS(rv,expts,steps,scenSet,r,rr,y,t,lb,scen)) ;
-    r_TXPROJVAR(rv,expts,rs,'avg',tupg,y)                                 = wtScensToAvg(rv,expts) * sum(scenSet, s_TXPROJVAR(rv,expts,steps,scenSet,tupg,y)) ;
-    r_RESV(rv,expts,rs,'avg',g,rc,y,t,lb,'averageDispatch')               = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_RESV(rv,expts,steps,scenSet,g,rc,y,t,lb,scen)) ;
-    r_RESVVIOL(rv,expts,rs,'avg',rc,ild,y,t,lb,'averageDispatch')         = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_RESVVIOL(rv,expts,steps,scenSet,rc,ild,y,t,lb,scen)) ;
+    r_TOTALCOST(rv,expts,rs,'avg')                             = wtScensToAvg(rv,expts) * sum(scenSet, s_TOTALCOST(rv,expts,steps,scenSet)) ;
+    r_TX(rv,expts,rs,'avg',r,rr,y,t,lb,'averageDispatch')      = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_TX(rv,expts,steps,scenSet,r,rr,y,t,lb,scen)) ;
+    r_BTX(rv,expts,rs,'avg',r,rr,ps,y)                         = wtScensToAvg(rv,expts) * sum(scenSet, s_BTX(rv,expts,steps,scenSet,r,rr,ps,y)) ;
+    r_REFURBCOST(rv,expts,rs,'avg',g,y)                        = wtScensToAvg(rv,expts) * sum(scenSet, s_REFURBCOST(rv,expts,steps,scenSet,g,y)) ;
+    r_BUILD(rv,expts,rs,'avg',g,y)                             = wtScensToAvg(rv,expts) * sum(scenSet, s_BUILD(rv,expts,steps,scenSet,g,y)) ;
+    r_RETIRE(rv,expts,rs,'avg',g,y)                            = wtScensToAvg(rv,expts) * sum(scenSet, s_RETIRE(rv,expts,steps,scenSet,g,y)) ;
+    r_CAPACITY(rv,expts,rs,'avg',g,y)                          = wtScensToAvg(rv,expts) * sum(scenSet, s_CAPACITY(rv,expts,steps,scenSet,g,y)) ; 
+    r_TXCAPCHARGES(rv,expts,rs,'avg',r,rr,y)                   = wtScensToAvg(rv,expts) * sum(scenSet, s_TXCAPCHARGES(rv,expts,steps,scenSet,r,rr,y)) ;
+    r_GEN(rv,expts,rs,'avg',g,y,t,lb,'averageDispatch')        = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_GEN(rv,expts,steps,scenSet,g,y,t,lb,scen)) ;
+    r_VOLLGEN(rv,expts,rs,'avg',s,y,t,lb,'averageDispatch')    = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_VOLLGEN(rv,expts,steps,scenSet,s,y,t,lb,scen)) ;
+    r_LOSS(rv,expts,rs,'avg',r,rr,y,t,lb,'averageDispatch')    = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_LOSS(rv,expts,steps,scenSet,r,rr,y,t,lb,scen)) ;
+    r_TXPROJVAR(rv,expts,rs,'avg',tupg,y)                      = wtScensToAvg(rv,expts) * sum(scenSet, s_TXPROJVAR(rv,expts,steps,scenSet,tupg,y)) ;
+    r_RESV(rv,expts,rs,'avg',g,rc,y,t,lb,'averageDispatch')    = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_RESV(rv,expts,steps,scenSet,g,rc,y,t,lb,scen)) ;
+    r_RESVVIOL(rv,expts,rs,'avg',rc,ild,y,t,lb,'averageDispatch') = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_RESVVIOL(rv,expts,steps,scenSet,rc,ild,y,t,lb,scen)) ;
     r_RESVCOMPONENTS(rv,expts,rs,'avg',r,rr,y,t,lb,'averageDispatch',lvl) = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_RESVCOMPONENTS(rv,expts,steps,scenSet,r,rr,y,t,lb,scen,lvl)) ;
-    r_RENNRGPENALTY(rv,expts,rs,'avg',y)                                  = wtScensToAvg(rv,expts) * sum(scenSet, s_RENNRGPENALTY(rv,expts,steps,scenSet,y)) ;
-    r_PEAK_NZ_PENALTY(rv,expts,rs,'avg',y,'averageDispatch')              = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_PEAK_NZ_PENALTY(rv,expts,steps,scenSet,y,scen)) ;
-    r_PEAK_NI_PENALTY(rv,expts,rs,'avg',y,'averageDispatch')              = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_PEAK_NI_PENALTY(rv,expts,steps,scenSet,y,scen)) ;
-    r_NOWINDPEAK_NI_PENALTY(rv,expts,rs,'avg',y,'averageDispatch')        = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_NOWINDPEAK_NI_PENALTY(rv,expts,steps,scenSet,y,scen)) ;
-    r_ANNMWSLACK(rv,expts,rs,'avg',y)                                     = wtScensToAvg(rv,expts) * sum(scenSet, s_ANNMWSLACK(rv,expts,steps,scenSet,y)) ;
-    r_RENCAPSLACK(rv,expts,rs,'avg',y)                                    = wtScensToAvg(rv,expts) * sum(scenSet, s_RENCAPSLACK(rv,expts,steps,scenSet,y)) ;
-    r_HYDROSLACK(rv,expts,rs,'avg',y)                                     = wtScensToAvg(rv,expts) * sum(scenSet, s_HYDROSLACK(rv,expts,steps,scenSet,y)) ;
-    r_MINUTILSLACK(rv,expts,rs,'avg',y)                                   = wtScensToAvg(rv,expts) * sum(scenSet, s_MINUTILSLACK(rv,expts,steps,scenSet,y)) ;
-    r_FUELSLACK(rv,expts,rs,'avg',y)                                      = wtScensToAvg(rv,expts) * sum(scenSet, s_FUELSLACK(rv,expts,steps,scenSet,y)) ;
+    r_RENNRGPENALTY(rv,expts,rs,'avg',y)                       = wtScensToAvg(rv,expts) * sum(scenSet, s_RENNRGPENALTY(rv,expts,steps,scenSet,y)) ;
+    r_PEAK_NZ_PENALTY(rv,expts,rs,'avg',y,'averageDispatch')   = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_PEAK_NZ_PENALTY(rv,expts,steps,scenSet,y,scen)) ;
+    r_PEAK_NI_PENALTY(rv,expts,rs,'avg',y,'averageDispatch')   = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_PEAK_NI_PENALTY(rv,expts,steps,scenSet,y,scen)) ;
+    r_NOWINDPEAK_NI_PENALTY(rv,expts,rs,'avg',y,'averageDispatch') = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_NOWINDPEAK_NI_PENALTY(rv,expts,steps,scenSet,y,scen)) ;
+    r_ANNMWSLACK(rv,expts,rs,'avg',y)                          = wtScensToAvg(rv,expts) * sum(scenSet, s_ANNMWSLACK(rv,expts,steps,scenSet,y)) ;
+    r_RENCAPSLACK(rv,expts,rs,'avg',y)                         = wtScensToAvg(rv,expts) * sum(scenSet, s_RENCAPSLACK(rv,expts,steps,scenSet,y)) ;
+    r_HYDROSLACK(rv,expts,rs,'avg',y)                          = wtScensToAvg(rv,expts) * sum(scenSet, s_HYDROSLACK(rv,expts,steps,scenSet,y)) ;
+    r_MINUTILSLACK(rv,expts,rs,'avg',y)                        = wtScensToAvg(rv,expts) * sum(scenSet, s_MINUTILSLACK(rv,expts,steps,scenSet,y)) ;
+    r_FUELSLACK(rv,expts,rs,'avg',y)                           = wtScensToAvg(rv,expts) * sum(scenSet, s_FUELSLACK(rv,expts,steps,scenSet,y)) ;
 *   Equation marginals
     r_bal_supdem(rv,expts,rs,'avg',r,y,t,lb,scen)              = wtScensToAvg(rv,expts) * sum(scenSet, s_bal_supdem(rv,expts,steps,scenSet,r,y,t,lb,scen)) ;
     r_peak_nz(rv,expts,rs,'avg',y,scen)                        = wtScensToAvg(rv,expts) * sum(scenSet, s_peak_nz(rv,expts,steps,scenSet,y,scen)) ;
@@ -383,7 +392,7 @@ loop((rv,expts,rs,steps)$mapStepsToRepSteps(rv,expts,rs,steps),
     r_minreq_rencap(rv,expts,rs,'avg',y)                       = wtScensToAvg(rv,expts) * sum(scenSet, s_minreq_rencap(rv,expts,steps,scenSet,y)) ;
     r_limit_hydro(rv,expts,rs,'avg',g,y,t,scen)                = wtScensToAvg(rv,expts) * sum(scenSet, s_limit_hydro(rv,expts,steps,scenSet,g,y,t,scen)) ;
     r_tx_capacity(rv,expts,rs,'avg',r,rr,y,t,lb,scen)          = wtScensToAvg(rv,expts) * sum(scenSet, s_tx_capacity(rv,expts,steps,scenSet,r,rr,y,t,lb,scen)) ;
-*   Compute an average value for input parameters defined on scenarios.
+*   Input parameters defined on scenarios.
     totalFuelCost(rv,g,y,'averageDispatch')                    = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * totalFuelCost(rv,g,y,scen)) ;
     CO2taxByPlant(rv,g,y,'averageDispatch')                    = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * CO2taxByPlant(rv,g,y,scen)) ;
     SRMC(rv,g,y,'averageDispatch')                             = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * SRMC(rv,g,y,scen)) ;
@@ -391,50 +400,58 @@ loop((rv,expts,rs,steps)$mapStepsToRepSteps(rv,expts,rs,steps),
   ) ;
 ) ;
 
-
-option allNotAvgDispatchSolves:0:0:1, allAvgDispatchSolves:0:0:1, mapStepsToRepSteps:0:0:1 ;
-Display allNotAvgDispatchSolves, allAvgDispatchSolves, mapStepsToRepSteps, wtScensToAvg, s_TOTALCOST, r_TOTALCOST
+option s_TOTALCOST:3:0:2, r_TOTALCOST:3:0:2, allNotAvgDispatchSolves:0:0:1, allAvgDispatchSolves:0:0:1, mapStepsToRepSteps:0:0:1 ;
+Display allNotAvgDispatchSolves, allAvgDispatchSolves, mapStepsToRepSteps, numScensToAvg, wtScensToAvg, s_TOTALCOST, r_TOTALCOST ;
 * r_TX, r_BTX, r_REFURBCOST, r_BUILD, r_RETIRE, r_CAPACITY, r_TXCAPCHARGES, r_GEN, r_VOLLGEN
 * r_LOSS, r_TXPROJVAR,  r_RESV, r_RESVVIOL, r_RESVCOMPONENTS, r_RENNRGPENALTY, r_PEAK_NZ_PENALTY, r_PEAK_NI_PENALTY, r_NOWINDPEAK_NI_PENALTY
 * r_ANNMWSLACK, r_RENCAPSLACK, r_HYDROSLACK, r_MINUTILSLACK, r_FUELSLACK
 * r_bal_supdem, r_peak_nz, r_peak_ni, r_noWindPeak_ni, r_limit_maxgen, r_limit_mingen, r_minutil
 * r_limit_fueluse, r_limit_nrg, r_minreq_rennrg, r_minreq_rencap, r_limit_hydro, r_tx_capacity
 * totalFuelCost, CO2taxByPlant, SRMC, NrgDemand
-  ;
 
 
 
 *===============================================================================================
-* 4. Undertake the declarations and calculations necesary to prepare all that is to be reported.
+* 4. Undertake the declarations and calculations necessary to prepare all that is to be reported.
 
 Sets
-  repDom(rv,expts,rs,scenSet)                 'The runVersions-experiments-repSteps-scenarioSets domain to be reported on - key it off of r_TOTALCOST(rv,expts,rs,scenSet)'
-  sc(scen)                                    '(Dynamically) selected subsets of elements of scenarios'
-  existBuildOrRetire(rv,expts,rs,scenSet,g,y) 'Plant and years in which any plant either exists, is built, is refurbished or is retired'
-  objc                                        'Objective function components'
-                                             / obj_Check      'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'
-                                               obj_total      'Objective function value'
-                                               obj_gencapex   'Discounted levelised generation plant capital costs'
-                                               obj_refurb     'Discounted levelised refurbishment capital costs'
-                                               obj_txcapex    'Discounted levelised transmission capital costs'
-                                               obj_fixOM      'After tax discounted fixed costs at generation plant'
-                                               obj_varOM      'After tax discounted variable costs at generation plant'
-                                               obj_hvdc       'After tax discounted HVDC charges'
-                                               VOLLcost       'After tax discounted value of lost load'
-                                               obj_rescosts   'After tax discounted reserve costs at generation plant'
-                                               obj_resvviol   'Penalty cost of failing to meet reserves'
-                                               obj_nfrcosts   'After tax discounted cost of non-free reserve cover for HVDC'
-                                               obj_Penalties  'Value of all penalties'
-                                               obj_Slacks     'Value of all slacks' / ;
+  objc                                            'Objective function components'
+                                                 / obj_Check      'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'
+                                                   obj_total      'Objective function value'
+                                                   obj_gencapex   'Discounted levelised generation plant capital costs'
+                                                   obj_refurb     'Discounted levelised refurbishment capital costs'
+                                                   obj_txcapex    'Discounted levelised transmission capital costs'
+                                                   obj_fixOM      'After tax discounted fixed costs at generation plant'
+                                                   obj_varOM      'After tax discounted variable costs at generation plant'
+                                                   obj_hvdc       'After tax discounted HVDC charges'
+                                                   VOLLcost       'After tax discounted value of lost load'
+                                                   obj_rescosts   'After tax discounted reserve costs at generation plant'
+                                                   obj_resvviol   'Penalty cost of failing to meet reserves'
+                                                   obj_nfrcosts   'After tax discounted cost of non-free reserve cover for HVDC'
+                                                   obj_Penalties  'Value of all penalties'
+                                                   obj_Slacks     'Value of all slacks' /
+  repDom(rv,expts,rs,scenSet)                     'The runVersions-experiments-repSteps-scenarioSets domain to be reported on - key it off of r_TOTALCOST(rv,expts,rs,scenSet)'
+  sc(scen)                                        '(Dynamically) selected subsets of elements of scenarios'
+  existBuildOrRetire(rv,expts,rs,scenSet,g,y)     'Plant and years in which any plant either exists, is built, is refurbished, or is retired'
+  ;
+
 Parameters
-  cntr                                        'A counter'
-  unDiscFactor(rv,y,t)                        "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by period and year"
-  unDiscFactorYr(rv,y)                        "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by year (use last period of year)"
-  objComponents(*,*,*,*,objc)                 'Components of objective function value'
-  scenarioWeight(scen)                        'Individual scenario weights'
-  builtByTechRegion(*,*,*,*,k,r)              'MW built by technology and region/island'
-  capacityByTechRegionYear(*,*,*,*,k,r,y)     'Capacity by technology and region/island and year, MW'
-  genByTechRegionYear(*,*,*,*,k,r,y)          'Generation by technology and region/island and year, GWh'
+  cntr                                             'A counter'
+  unDiscFactor(rv,y,t)                             "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by period and year"
+  unDiscFactorYr(rv,y)                             "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by year (use last period of year)"
+  scenarioWeight(scen)                             'Individual scenario weights'
+  objComponents(*,*,*,*,objc)                      'Components of objective function value'
+  builtByTechRegion(*,*,*,*,k,r)                   'Generating plant built by technology and region, MW'
+  builtByTech(*,*,*,*,k)                           'Generating plant built by technology, MW'
+  builtByRegion(*,*,*,*,r)                         'Generating plant built by region, MW'
+  capacityByTechRegionYear(*,*,*,*,k,r,y)          'Generating capacity by technology and region and year, MW'
+  capacityByTechYear(*,*,*,*,k,y)                  'Generating capacity by technology and year, MW'
+  capacityByRegionYear(*,*,*,*,r,y)                'Generating capacity by region and year, MW'
+  txUpgradeYearByProjectAndPath(*,*,*,*,tupg,r,rr) 'Transmission upgrade year by project and transmission path'
+  txCapacityByYear(*,*,*,*,r,rr,y)                 'Transmission capacity in each year by transmission path, MW'
+  txCapexByProjectYear(*,*,*,*,tupg,y)             'Transmission capital expenditure by project and year, $m'
+  loadByRegionAndYear(*,*,*,*,r,y)                 'Load by region and year, GWh'
+  genByTechRegionYear(*,*,*,*,k,r,y)               'Generation by technology and region and year, GWh'
   ;
 
 repDom(rv,expts,rs,scenSet)$r_TOTALCOST(rv,expts,rs,scenSet) = yes ;
@@ -442,24 +459,21 @@ repDom(rv,expts,rs,scenSet)$r_TOTALCOST(rv,expts,rs,scenSet) = yes ;
 existBuildOrRetire(rv,expts,rs,scenSet,g,y)$( exist(rv,g) * firstYr(y) ) = yes ;
 existBuildOrRetire(rv,expts,rs,scenSet,g,y)$( r_BUILD(rv,expts,rs,scenSet,g,y) or r_RETIRE(rv,expts,rs,scenSet,g,y) or exogMWretired(rv,g,y) ) = yes ;
  
-unDiscFactor(rv,y,t) = 1 / ( (1 - taxRate) * PVfacG(rv,y,t) ) ;
+unDiscFactor(rv,y,t)$PVfacG(rv,y,t) = 1 / ( (1 - taxRate) * PVfacG(rv,y,t) ) ;
 unDiscFactorYr(rv,y) = sum(t$( ord(t) = card(t) ), unDiscFactor(rv,y,t)) ;
 
-option repDom:0:0:1 ;
-Display repDom, r_TOTALCOST, weightScenariosBySet ;
-
-* This loop is on the domain of all that is loaded into GEMreports. It may be the case that only a subset of this is actually reported in output files.
+* This loop is on the domain of all that is loaded into GEMreports and is to be reported on.
 loop(repDom(rv,expts,rs,scenSet),
 
-* Initialise the scenarios for this particular solve (or loaded domain).
+* Initialise sc to contain all scenarios in this particular scenario set.
   sc(scen) = no ;
   sc(scen)$mapScenarios(scenSet,scen) = yes ;
 
-* Select the scenario weights for this particular solve.
+* Select the weights for all scenarios in this particular scenario set.
   scenarioWeight(sc) = 0 ;
   scenarioWeight(sc) = weightScenariosBySet(scenSet,sc) ;
 
-
+* Objective function components
   objComponents(repDom,'obj_total')     = r_TOTALCOST(repDom) ;
   objComponents(repDom,'obj_gencapex')  = 1e-6 * sum((y,firstPeriod(t),possibleToBuild(rv,g)), PVfacG(rv,y,t) * ensembleFactor(rv,g) * capCharge(rv,g,y) * r_CAPACITY(repDom,g,y) ) ;
   objComponents(repDom,'obj_refurb')    = 1e-6 * sum((y,firstPeriod(t),possibleToRefurbish(rv,g))$refurbCapCharge(rv,g,y), PVfacG(rv,y,t) * r_REFURBCOST(repDom,g,y) ) ;
@@ -479,9 +493,17 @@ loop(repDom(rv,expts,rs,scenSet),
                                           ) ;
   objComponents(repDom,'obj_Slacks')    = slackCost * sum(y, r_ANNMWSLACK(repDom,y) + r_RENCAPSLACK(repDom,y) + r_HYDROSLACK(repDom,y) + r_MINUTILSLACK(repDom,y) + r_FUELSLACK(repDom,y) ) ;
 
+* Capital expenditure
   builtByTechRegion(repDom,k,r) = sum((g,y)$( mapg_k(g,k) * mapg_r(g,r) ), r_BUILD(repDom,g,y)) ;
 
   capacityByTechRegionYear(repDom,k,r,y) = sum(g$( mapg_k(g,k) * mapg_r(g,r) ), r_CAPACITY(repDom,g,y)) ;
+
+  txUpgradeYearByProjectAndPath(repDom,tupg,paths) = sum((ps,y)$(r_BTX(repDom,paths,ps,y) * r_TXPROJVAR(repDom,tupg,y)), yearNum(rv,y)) ;
+
+  txCapacityByYear(repDom,paths,y) = sum(ps, i_txCapacity(rv,paths,ps) * r_BTX(repDom,paths,ps,y)) ;
+
+* Operation
+  loadByRegionAndYear(repDom,r,y) = sum((t,lb,sc), scenarioWeight(sc) * NrgDemand(rv,r,y,t,lb,sc)) ;
 
   genByTechRegionYear(repDom,k,r,y) = sum((g,t,lb,sc)$( mapg_k(g,k) * mapg_r(g,r) ), scenarioWeight(sc) * r_GEN(repDom,g,y,t,lb,sc)) ;
 
@@ -489,32 +511,32 @@ loop(repDom(rv,expts,rs,scenSet),
 
 objComponents(repDom,'obj_Check') = sum(objc, objComponents(repDom,objc)) - objComponents(repDom,'obj_total') ;
 
+builtByTech(repDom,k) = sum(r, builtByTechRegion(repDom,k,r)) ;
+
+builtByRegion(repDom,r) = sum(k, builtByTechRegion(repDom,k,r)) ;
+
+capacityByTechYear(repDom,k,y) = sum(r, capacityByTechRegionYear(repDom,k,r,y)) ;
+
+capacityByRegionYear(repDom,r,y) = sum(k, capacityByTechRegionYear(repDom,k,r,y)) ;
+
+txCapexByProjectYear(repDom,tupg,y)$r_TXPROJVAR(repDom,tupg,y) = sum(transitions(rv,tupg,paths,ps,pss), txCapitalCost(rv,paths,pss)) ;
+
 option repDom:0:0:1 ;
-Display repDom, weightScenariosBySet, r_TOTALCOST, objComponents
-* builtByTechRegion, capacityByTechRegionYear, genByTechRegionYear
+Display repDom, weightScenariosBySet, objComponents, builtByTech, builtByRegion
+* builtByTechRegion, capacityByTechRegionYear, capacityByTechYear, capacityByRegionYear
+* txUpgradeYearByProjectAndPath, txCapacityByYear, txCapexByProjectYear
+* loadByRegionAndYear, genByTechRegionYear
  ;
 
+* Put output in a GDX file.
+Execute_Unload "%OutPath%\rep%reportName%\All results - %reportName%.gdx", repDom weightScenariosBySet objComponents
+ builtByTechRegion builtByTech builtByRegion capacityByTechRegionYear capacityByTechYear capacityByRegionYear txUpgradeYearByProjectAndPath txCapacityByYear txCapexByProjectYear
+ loadByRegionAndYear genByTechRegionYear
+ ;
 
-* Put output in a GDX file until you get back to this and get it written to CSV files.
-Execute_Unload "%OutPath%\rep%reportName%\Selected results.gdx", repDom weightScenariosBySet objComponents builtByTechRegion capacityByTechRegionYear genByTechRegionYear ;
-
-
-* Up to here with rebuild of GEMreports to accomodate reporting on many solutions. 
-
-$stop
-
-
-
-*===============================================================================================
-* x. 
-
+$ontext
+computations yet to be put in loop above.
 Parameters
-  loadByRegionAndYear(*,*,*,*,r,y)                  'Load by region and year, GWh'
-  builtByTech(*,*,*,*,k)                            'MW built by technology'
-  builtByRegion(*,*,*,*,r)                          'MW built by region/island'
-  txUpgradeYearByProjectAndPath(*,*,*,*,tupg,r,rr)  'Transmission upgrade year by project and transmission path'
-  txCapacityByYear(*,*,*,*,r,rr,y)                  'Transmission capacity in each year by transmission path, MW'
-  txCapexByProjectYear(*,*,*,*,tupg,y)              'Transmission capital expenditure by project and year, $m'
   txByRegionYear(*,*,*,*,r,rr,y)                    'Interregional transmission by year, GWh'
   txLossesByRegionYear(*,*,*,*,r,rr,y)              'Interregional transmission losses by year, GWh'
   energyPrice(*,*,*,*,r,y)                          'Time-weighted energy price by region and year, $/MWh (from marginal price off of energy balance constraint)'
@@ -532,15 +554,7 @@ Parameters
 *  s_tx_capacity(runVersions,experiments,steps,scenSet,r,rr,y,t,lb,scen)        'Calculate the relevant transmission capacity' ;
   ;
 
-* This loop is on the domain of all that is loaded into GEMreports. It may be the case that only a subset of this is actually reported in output files.
 loop(repDomLd(rv,expts,steps,scenSet),
-
-
-  txUpgradeYearByProjectAndPath(repDomLd,tupg,paths) = sum((ps,y)$(s_BTX(repDomLd,paths,ps,y) * s_TXPROJVAR(repDomLd,tupg,y)), yearNum(rv,y)) ;
-
-  txCapacityByYear(repDomLd,paths,y) = sum(ps, i_txCapacity(rv,paths,ps) * s_BTX(repDomLd,paths,ps,y)) ;
-
-  txCapexByProjectYear(repDomLd,tupg,y)$s_TXPROJVAR(repDomLd,tupg,y) = sum(transitions(rv,tupg,paths,ps,pss), txCapitalCost(rv,paths,pss)) ;
 
   txByRegionYear(repDomLd,paths,y) = sum((t,lb,sc), 1e-3 * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_TX(repDomLd,paths,y,t,lb,sc)) ;
 
@@ -566,24 +580,62 @@ loop(repDomLd(rv,expts,steps,scenSet),
 
   energyLimitPrice(repDomLd,f,y) = 1e3 * unDiscFactorYr(rv,y) * sum(sc, s_limit_nrg(repDomLd,f,y,sc) ) ;
 
-  loadByRegionAndYear(repDomLd,r,y) = sum((t,lb,sc), scenarioWeight(sc) * NrgDemand(rv,r,y,t,lb,sc)) ;
-
 ) ;
-
-objComponents(repDomLd,'obj_Check') = sum(objc, objComponents(repDomLd,objc)) - objComponents(repDomLd,'obj_total') ;
-
-option transitions:0:0:1, txCapacityByYear:0:0:1 ;
-
-Display
-  repDomLd, rv, existBuildOrRetire, unDiscFactor, unDiscFactorYr, objComponents
-* builtByTechRegion, capacityByTechRegionYear, genByTechRegionYear, txUpgradeYearByProjectAndPath, txCapacityByYear, txCapexByProjectYear, txByRegionYear, txLossesByRegionYear
-* energyPrice, minEnergyPrice, minUtilEnergyPrice, peakNZPrice, peakNIPrice, peaknoWindNIPrice, renewEnergyShrPrice, renewCapacityShrPrice, fuelPrice, energyLimitPrice
-  loadByRegionAndYear ;
+$offtext
 
 
 
 *===============================================================================================
-* 4. Write key results to a CSV file.
+* 5. Write selected results to CSV files.
+
+* a) Plant built by technology
+put plantTech 'Plant built by technology, MW' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Technology' 'MW' ;
+loop((repDom(rv,expts,rs,scenSet),k)$builtByTech(repDom,k),
+  put / rv.tl, expts.tl, rs.tl, scenSet.tl, k.tl, builtByTech(repDom,k) ;
+) ;
+
+* b) Plant built by region
+put plantReg 'Plant built by region, MW' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Region' 'MW' ;
+loop((repDom(rv,expts,rs,scenSet),r)$builtByRegion(repDom,r),
+  put / rv.tl, expts.tl, rs.tl, scenSet.tl, r.tl, builtByRegion(repDom,r) ;
+) ;
+
+* c) Generation capacity by plant and year
+put capacityPlant 'Capacity by plant and year (net of retirements), MW' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Technology' 'Region' 'Plant' 'Year' 'MW' ;
+loop((repDom(rv,expts,rs,scenSet),k,r,g,y)$( mapg_k(g,k) * mapg_r(g,r) * r_CAPACITY(repDom,g,y) ),
+  put / rv.tl, expts.tl, rs.tl, scenSet.tl, k.tl, r.tl, g.tl, y.tl, r_CAPACITY(repDom,g,y) ;
+) ;
+
+* d) Generation capacity expansion - ordered by year and including retirements.
+put expandSchedule 'Generation capacity expansion ordered by year' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Technology' 'Plant' 'NameplateMW' 'ExistMW' 'BuildYr', 'BuildMW' 'RetireType' 'RetireYr' 'RetireMW' 'Capacity' ;
+loop((repDom(rv,expts,rs,scenSet),y,k,g)$( mapg_k(g,k) * existBuildOrRetire(repDom,g,y) ),
+  put / rv.tl, expts.tl, rs.tl, scenSet.tl, k.tl, g.tl, i_namePlate(rv,g) ;
+  if(exist(rv,g), put i_namePlate(rv,g) else put '' ) ;
+  if(r_BUILD(repDom,g,y), put yearNum(rv,y), r_BUILD(repDom,g,y) else put '' '' ) ;
+  if(possibleToRetire(rv,g) * ( r_RETIRE(repDom,g,y) or exogMWretired(rv,g,y) ),
+    if( ( possibleToEndogRetire(rv,g) * r_RETIRE(repDom,g,y) ),
+      put 'Endogenous', yearNum(rv,y), r_RETIRE(repDom,g,y) else put 'Exogenous', yearNum(rv,y), exogMWretired(rv,g,y) ;
+    ) else  put '' '' '' ;
+  ) ;
+) ;
+
+
+
+
+* Up to here with rebuild of GEMreports to accomodate reporting on many solutions. 
+$stop
+
+
+
+
+
+
+*===============================================================================================
+* 5. Write key results to a CSV file.
 
 * Write a report config file - a bit like run config, i.e. what runs, experiments, obj fn value etc. Put the solveReport in it?
 
@@ -609,14 +661,6 @@ loop(activeRep(rep),
       ) ;
     ) ;
     put '' k.te(k) ;
-  ) put / ;
-) ;
-
-put /// 'Capacity by technology and region and year, MW (existing plus built less retired)' ;
-loop(activeRep(rep),
-  put / rep.tl, rep.te(rep) / '' '' loop(y, put y.tl ) ;
-  loop((k,r)$sum((foldRep(repDom,rep),y), capacityByTechRegionYear(repDom,k,r,y)),
-    put / k.tl, r.tl loop(y, put sum(foldRep(repDom,rep), capacityByTechRegionYear(repDom,k,r,y)) ) ;
   ) put / ;
 ) ;
 
@@ -791,27 +835,6 @@ put / 'EOF' ;
 * x. Generate the remaining external files.
 
 ** Note that this section writes all that is loaded - it has not been edited to write only that which is in repDom.
-
-* a) Write an ordered (by year) summary of generation capacity expansion.
-put expandSchedule 'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Technology' 'Plant' 'NameplateMW' 'ExistMW' 'BuildYr', 'BuildMW'
-  'RetireType' 'RetireYr' 'RetireMW' 'Capacity' ;
-loop((repDomLd(rv,expts,steps,scenSet),y,k,g)$( mapg_k(g,k) * existBuildOrRetire(repDomLd,g,y) ),
-  put / rv.tl, expts.tl, steps.tl, scenSet.tl, k.tl, g.tl, i_namePlate(rv,g) ;
-  if(exist(rv,g), put i_namePlate(rv,g) else put '' ) ;
-  if(s_BUILD(repDomLd,g,y), put yearNum(rv,y), s_BUILD(repDomLd,g,y) else put '' '' ) ;
-  if(possibleToRetire(rv,g) * ( s_RETIRE(repDomLd,g,y) or exogMWretired(rv,g,y) ),
-    if( ( possibleToEndogRetire(rv,g) * s_RETIRE(repDomLd,g,y) ),
-      put 'Endogenous', yearNum(rv,y), s_RETIRE(repDomLd,g,y) else put 'Exogenous', yearNum(rv,y), exogMWretired(rv,g,y) ;
-    ) else  put '' '' '' ;
-  ) ;
-) ;
-
-
-* b) Write out capacity report (capacityPlant) (is this redundant given expandSchedule?).
-put capacityPlant 'Capacity by plant and year (net of retirements), MW' / 'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Plant' 'Year' 'MW' ;
-loop((repDomLd(rv,expts,steps,scenSet),g,y)$s_CAPACITY(repDomLd,g,y),
-  put / rv.tl, expts.tl, steps.tl, scenSet.tl, g.tl, y.tl, s_CAPACITY(repDomLd,g,y) ;
-) ;
 
 
 * c) Write out generation report (genPlant and genPlantYear).
