@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 07/06/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 08/06/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -27,6 +27,11 @@ $ontext
   3. Collapse dispatch solves to a single average result in cases where variable hydrology was simulated.
   4. Undertake the declarations and calculations necessary to prepare all that is to be reported.
   5. Write selected results to CSV files.
+     a) Objective function value breakdown
+     b) Plant built by technology
+     c) Plant built by region
+     d) Generation capacity by plant and year
+     e) Generation capacity expansion - ordered by year and including retirements.
 
 
   x. Write key results to a CSV file.
@@ -55,6 +60,7 @@ Alias(runVersions,rv), (experiments,expts), (scenarioSets,scenSet), (scenarios,s
 
 * Declare output files to be created by GEMreports.
 Files
+  objBrkDown     / "%OutPath%\rep%reportName%\Objective function value breakdown - %reportName%.csv" /
   plantTech      / "%OutPath%\rep%reportName%\Plant built by technology - %reportName%.csv" /
   plantReg       / "%OutPath%\rep%reportName%\Plant built by region - %reportName%.csv" /
   capacityPlant  / "%OutPath%\rep%reportName%\Capacity by plant and year (net of retirements) - %reportName%.csv" /
@@ -67,6 +73,7 @@ Files
   genPlantYear   / "%OutPath%\rep%reportName%\Generation and utilisation by plant (annually) - %reportName%.csv" /
   variousAnnual  / "%OutPath%\rep%reportName%\Various annual results - %reportName%.csv" /  ;
 
+objBrkDown.pc = 5 ;      objBrkDown.pw = 999 ;
 plantTech.pc = 5 ;       plantTech.pw = 999 ;
 plantReg.pc = 5 ;        plantReg.pw = 999 ;
 capacityPlant.pc = 5 ;   capacityPlant.pw = 999 ;
@@ -588,28 +595,41 @@ $offtext
 *===============================================================================================
 * 5. Write selected results to CSV files.
 
-* a) Plant built by technology
+* a) Objective function value breakdown
+put objBrkDown 'Objective function value breakdown, all values are $million' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' loop(objc, put objc.tl ) ;
+loop(repDom(rv,expts,rs,scenSet)$sum(objc, objComponents(repDom,objc)),
+  put / rv.tl, expts.tl, rs.tl, scenSet.tl loop(objc, put objComponents(repDom,objc)) ;
+) ;
+put // 'Descriptions' ;
+put  / 'Objective function components' loop(objc, put / objc.tl, objc.te(objc)) ;
+put // 'Run versions'  loop(rv, put / rv.tl, rv.te(rv)) ;
+put // 'Experiments'   loop(expts, put / expts.tl, expts.te(expts)) ;
+put // 'Steps'         loop(rs, put / rs.tl, rs.te(rs)) ;
+put // 'Scenario sets' loop(scenSet, put / scenSet.tl, scenSet.te(scenSet)) ;
+
+* b) Plant built by technology
 put plantTech 'Plant built by technology, MW' /
   'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Technology' 'MW' ;
 loop((repDom(rv,expts,rs,scenSet),k)$builtByTech(repDom,k),
   put / rv.tl, expts.tl, rs.tl, scenSet.tl, k.tl, builtByTech(repDom,k) ;
 ) ;
 
-* b) Plant built by region
+* c) Plant built by region
 put plantReg 'Plant built by region, MW' /
   'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Region' 'MW' ;
 loop((repDom(rv,expts,rs,scenSet),r)$builtByRegion(repDom,r),
   put / rv.tl, expts.tl, rs.tl, scenSet.tl, r.tl, builtByRegion(repDom,r) ;
 ) ;
 
-* c) Generation capacity by plant and year
+* d) Generation capacity by plant and year
 put capacityPlant 'Capacity by plant and year (net of retirements), MW' /
   'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Technology' 'Region' 'Plant' 'Year' 'MW' ;
 loop((repDom(rv,expts,rs,scenSet),k,r,g,y)$( mapg_k(g,k) * mapg_r(g,r) * r_CAPACITY(repDom,g,y) ),
   put / rv.tl, expts.tl, rs.tl, scenSet.tl, k.tl, r.tl, g.tl, y.tl, r_CAPACITY(repDom,g,y) ;
 ) ;
 
-* d) Generation capacity expansion - ordered by year and including retirements.
+* e) Generation capacity expansion - ordered by year and including retirements.
 put expandSchedule 'Generation capacity expansion ordered by year' /
   'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Technology' 'Plant' 'NameplateMW' 'ExistMW' 'BuildYr', 'BuildMW' 'RetireType' 'RetireYr' 'RetireMW' 'Capacity' ;
 loop((repDom(rv,expts,rs,scenSet),y,k,g)$( mapg_k(g,k) * existBuildOrRetire(repDom,g,y) ),
@@ -622,8 +642,6 @@ loop((repDom(rv,expts,rs,scenSet),y,k,g)$( mapg_k(g,k) * existBuildOrRetire(repD
     ) else  put '' '' '' ;
   ) ;
 ) ;
-
-
 
 
 * Up to here with rebuild of GEMreports to accomodate reporting on many solutions. 
