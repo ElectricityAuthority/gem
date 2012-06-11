@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 08/06/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 12/06/2012 (imm@ea.govt.nz)
 
 
 $ontext
@@ -32,6 +32,7 @@ $ontext
      c) Plant built by region
      d) Generation capacity by plant and year
      e) Generation capacity expansion - ordered by year and including retirements.
+     f) Time-weighted energy price by region and year, $/MWh.
 
 
   x. Write key results to a CSV file.
@@ -65,6 +66,7 @@ Files
   plantReg       / "%OutPath%\rep%reportName%\Plant built by region - %reportName%.csv" /
   capacityPlant  / "%OutPath%\rep%reportName%\Capacity by plant and year (net of retirements) - %reportName%.csv" /
   expandSchedule / "%OutPath%\rep%reportName%\Capacity expansion by year - %reportName%.csv" /
+  energyPrices   / "%OutPath%\rep%reportName%\Time-weighted energy price by region and year - %reportName%.csv" /
 
   keyResults     / "%OutPath%\rep%reportName%\A collection of key results - %reportName%.csv" /
   plotResults    / "%OutPath%\rep%reportName%\Results to be plotted - %reportName%.csv" /
@@ -78,6 +80,7 @@ plantTech.pc = 5 ;       plantTech.pw = 999 ;
 plantReg.pc = 5 ;        plantReg.pw = 999 ;
 capacityPlant.pc = 5 ;   capacityPlant.pw = 999 ;
 expandSchedule.pc = 5 ;  expandSchedule.pw = 999 ;
+energyPrices.pc = 5 ;    energyPrices.pw = 999 ;
 
 
 keyResults.pc = 5 ;      keyResults.pw = 999 ;
@@ -386,7 +389,8 @@ loop((rv,expts,rs,steps)$mapStepsToRepSteps(rv,expts,rs,steps),
     r_MINUTILSLACK(rv,expts,rs,'avg',y)                        = wtScensToAvg(rv,expts) * sum(scenSet, s_MINUTILSLACK(rv,expts,steps,scenSet,y)) ;
     r_FUELSLACK(rv,expts,rs,'avg',y)                           = wtScensToAvg(rv,expts) * sum(scenSet, s_FUELSLACK(rv,expts,steps,scenSet,y)) ;
 *   Equation marginals
-    r_bal_supdem(rv,expts,rs,'avg',r,y,t,lb,scen)              = wtScensToAvg(rv,expts) * sum(scenSet, s_bal_supdem(rv,expts,steps,scenSet,r,y,t,lb,scen)) ;
+    r_bal_supdem(rv,expts,rs,'avg',r,y,t,lb,'averageDispatch') = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * s_bal_supdem(rv,expts,steps,scenSet,r,y,t,lb,scen)) ;
+** From here on, all the 'scen' domains need to be changed to 'averageDispatch' and the RHS changed accordingly. And then the results all need to be checked. 
     r_peak_nz(rv,expts,rs,'avg',y,scen)                        = wtScensToAvg(rv,expts) * sum(scenSet, s_peak_nz(rv,expts,steps,scenSet,y,scen)) ;
     r_peak_ni(rv,expts,rs,'avg',y,scen)                        = wtScensToAvg(rv,expts) * sum(scenSet, s_peak_ni(rv,expts,steps,scenSet,y,scen)) ;
     r_noWindPeak_ni(rv,expts,rs,'avg',y,scen)                  = wtScensToAvg(rv,expts) * sum(scenSet, s_noWindPeak_ni(rv,expts,steps,scenSet,y,scen)) ;
@@ -459,6 +463,9 @@ Parameters
   txCapexByProjectYear(*,*,*,*,tupg,y)             'Transmission capital expenditure by project and year, $m'
   loadByRegionAndYear(*,*,*,*,r,y)                 'Load by region and year, GWh'
   genByTechRegionYear(*,*,*,*,k,r,y)               'Generation by technology and region and year, GWh'
+  txByRegionYear(*,*,*,*,r,rr,y)                   'Interregional transmission by year, GWh'
+  txLossesByRegionYear(*,*,*,*,r,rr,y)             'Interregional transmission losses by year, GWh'
+  energyPrice(*,*,*,*,r,y)                         'Time-weighted energy price by region and year, $/MWh (from marginal price off of energy balance constraint)'
   ;
 
 repDom(rv,expts,rs,scenSet)$r_TOTALCOST(rv,expts,rs,scenSet) = yes ;
@@ -514,6 +521,12 @@ loop(repDom(rv,expts,rs,scenSet),
 
   genByTechRegionYear(repDom,k,r,y) = sum((g,t,lb,sc)$( mapg_k(g,k) * mapg_r(g,r) ), scenarioWeight(sc) * r_GEN(repDom,g,y,t,lb,sc)) ;
 
+  txByRegionYear(repDom,paths,y) = 1e-3 * sum((t,lb,sc), scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * r_TX(repDom,paths,y,t,lb,sc)) ;
+
+  txLossesByRegionYear(repDom,paths,y) = 1e-3 * sum((t,lb,sc), scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * r_LOSS(repDom,paths,y,t,lb,sc)) ;
+
+  energyPrice(repDom,r,y) = 1e3 * sum((t,lb,sc), unDiscFactor(rv,y,t) * hoursPerBlock(rv,t,lb) * r_bal_supdem(repDom,r,y,t,lb,sc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
+
 ) ;
 
 objComponents(repDom,'obj_Check') = sum(objc, objComponents(repDom,objc)) - objComponents(repDom,'obj_total') ;
@@ -532,21 +545,18 @@ option repDom:0:0:1 ;
 Display repDom, weightScenariosBySet, objComponents, builtByTech, builtByRegion
 * builtByTechRegion, capacityByTechRegionYear, capacityByTechYear, capacityByRegionYear
 * txUpgradeYearByProjectAndPath, txCapacityByYear, txCapexByProjectYear
-* loadByRegionAndYear, genByTechRegionYear
+* loadByRegionAndYear, genByTechRegionYear, txByRegionYear, txLossesByRegionYear, energyPrice
  ;
 
 * Put output in a GDX file.
 Execute_Unload "%OutPath%\rep%reportName%\All results - %reportName%.gdx", repDom weightScenariosBySet objComponents
  builtByTechRegion builtByTech builtByRegion capacityByTechRegionYear capacityByTechYear capacityByRegionYear txUpgradeYearByProjectAndPath txCapacityByYear txCapexByProjectYear
- loadByRegionAndYear genByTechRegionYear
+ loadByRegionAndYear genByTechRegionYear txByRegionYear txLossesByRegionYear energyPrice
  ;
 
 $ontext
 computations yet to be put in loop above.
 Parameters
-  txByRegionYear(*,*,*,*,r,rr,y)                    'Interregional transmission by year, GWh'
-  txLossesByRegionYear(*,*,*,*,r,rr,y)              'Interregional transmission losses by year, GWh'
-  energyPrice(*,*,*,*,r,y)                          'Time-weighted energy price by region and year, $/MWh (from marginal price off of energy balance constraint)'
   minEnergyPrice(*,*,*,*,g,y)                       'Shadow price off minimum scedulable hydro generation constraint, $/MWh [need to check units and test that this works]'
   minUtilEnergyPrice(*,*,*,*,g,y)                   'Shadow price off minimum utilisation constraint, $/MWh [need to check units and test that this works]'
   peakNZPrice(*,*,*,*,y)                            'Shadow price off peak NZ constraint, $/kW'
@@ -562,12 +572,6 @@ Parameters
   ;
 
 loop(repDomLd(rv,expts,steps,scenSet),
-
-  txByRegionYear(repDomLd,paths,y) = sum((t,lb,sc), 1e-3 * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_TX(repDomLd,paths,y,t,lb,sc)) ;
-
-  txLossesByRegionYear(repDomLd,paths,y) = sum((t,lb,sc), 1e-3 * scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * s_LOSS(repDomLd,paths,y,t,lb,sc)) ;
-
-  energyPrice(repDomLd,r,y) = 1e3 * sum((t,lb,sc), unDiscFactor(rv,y,t) * hoursPerBlock(rv,t,lb) * s_bal_supdem(repDomLd,r,y,t,lb,sc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
 
   minEnergyPrice(repDomLd,g,y) = 1e3 * sum((t,lb,sc), unDiscFactor(rv,y,t) * hoursPerBlock(rv,t,lb) * s_limit_mingen(repDomLd,g,y,t,lb,sc)) / sum((t,lb), hoursPerBlock(rv,t,lb)) ;
 
@@ -642,6 +646,15 @@ loop((repDom(rv,expts,rs,scenSet),y,k,g)$( mapg_k(g,k) * existBuildOrRetire(repD
     ) else  put '' '' '' ;
   ) ;
 ) ;
+
+* f) Time-weighted energy price by region and year, $/MWh.
+put energyPrices 'Time-weighted energy price by region and year, $/MWh' /
+  'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Region' loop(y, put y.tl ) ;
+loop((repDom(rv,expts,rs,scenSet),r),
+  put / rv.tl, expts.tl, rs.tl, scenSet.tl, r.tl loop(y, put energyPrice(repDom,r,y)) ;
+) ;
+
+
 
 
 * Up to here with rebuild of GEMreports to accomodate reporting on many solutions. 
