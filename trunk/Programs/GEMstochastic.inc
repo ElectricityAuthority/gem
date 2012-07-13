@@ -206,7 +206,7 @@ Parameter weightScenariosBySet(scenarioSets,scenarios) "Assign weights to the sc
     beginSeq1933.h1933 1
     beginSeq1934.h1934 1
     beginSeq2004.h2004 1
-    beginSeq2005.h2005 1
+    beginSeq2005.h2005 0.3
     beginSeq2006.h2006 1
     beginSeq2007.h2007 1  / ;
 
