@@ -1,6 +1,6 @@
 * GEMldc.gms
 
-* Last modified by Dr Phil Bishop, 09/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 15/08/2012 (imm@ea.govt.nz)
 
 * NB: Aspects of this program require editing each time it is used - read the notes below.
 
@@ -16,20 +16,21 @@ $ontext
  Notes:
  1. The trading period nomenclature to deal with daylight saving is as per Gnash. That is, TPs 5 and 6 (i.e.
     2.00am-3.00am) are omitted on a short day, and TPs 4.5 and 5.5 are added on a long day.
- 2. Preparing load by GXP data (e.g. ..\Data\Files required to create GEM GDXs\historical_GXP_load_data_Mar10.txt):
-    a. Have a matlab whizz extract data from Gnash to produce a file of load by GXP by trading period by day
+ 2. Preparing load by GXP data (e.g. ..\Data\GEM energy demand GDX\historical_GXP_load_data_Mar10.txt):
+    a. Extract half-hourly data from Gnash to produce a file of load by GXP by trading period by day
        for a reference year:
-       - have the whizz seperate date field into 3 fields - year, month number, and day number (1st 3 cols of file).
+       - seperate date field into 3 fields - year, month number, and day number (1st 3 cols of file).
        - 4th column (col D) is trading period number.
        - 5th column (col E) is GXP name.
        - 6th column (col F) is offtake in GWh.
        - note that this file will be quite big (~80+ MB and more than 3 million rows).
-    b. While they're at it, have your matlab whizz create a list of unique GXP names to be found in the file (~200).
-    c. Count rows in GXP load file so you can check that you read it into GAMS completely, e.g. open the file using
-       a text editor and note the row count.
+    b. Create a list of unique GXP names to be found in the file (~200).
+    c. Count rows in GXP load file so you can check that you read it into GAMS completely, e.g. open the
+       file using a text editor and note the row count.
     d. Put the following header row at the top of the load by GXP file:
        y	mn	d	tp	gxp	GWh
-       Note that the header row and the file itself is delimited, with tabs in this case (altho' any delimiter will do).
+       Note that the header row and the file itself is delimited, with tabs in this case (altho' any delimiter
+       will do).
     e. Using a text editor, put quotes around the trading period elements 4.5 and 5.5, the daylight saving period.
        In other words, replace the string <tab>4.5<tab> and <tab>5.5<tab> with <tab>"4.5"<tab> and <tab>"5.5"<tab>,
        respectively. In epsilon, a tab character is ^I, i.e. Ctrl-Q, Ctrl-I.
@@ -68,11 +69,11 @@ $setglobal Scheme               1        ! Choose a scheme for putting half hour
                                          ! 3 = nothing as yet...
 
 * Specify input file paths and names
-$setglobal DataPath            "%system.fp%..\Data\Files required to create GEM GDXs\"
+$setglobal DataPath            "%system.fp%..\Data\GEM energy demand GDX\"
 $setglobal OfftakeByGXPdata    "historical_GXP_load_data_Mar10.txt"
 $setglobal FileOfGXPNames      "historical_GXP_list_Mar10.txt"
 * Specify output file names
-$setglobal LDCoutput           "LDC output (%NumBlks% blocks).gdx"
+$setglobal LDCoutput           "LDC data (%NumBlks% blocks).gdx"
 
 
 
