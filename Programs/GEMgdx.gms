@@ -1,26 +1,31 @@
 * GEMgdx.gms
 
-* Last modified by Dr Phil Bishop, 12/09/2011 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 15/08/2011 (imm@ea.govt.nz)
 
 * NB: This program requires editing each time it is used - read the notes below.
 
 $ontext
- GEMgdx is an ad hoc piece of code. Its purpose is to create data in a GDX file format to be used by GEM. More
- specifically, any data that changes or requires updating infrequently, e.g. hydrology and load, ought to be
- created herein. Besides creating the GEM GDX file, this program can also be used to perform manipulations on
- certain data, e.g. as in the case of adjustments to raw load data.
+ GEMgdx is an ad hoc piece of code. Its purpose is to create an energy demand file in a GDX file format to be
+ used by GEM. Besides creating the energy demand file, this program can be used to perform manipulations or 
+ adjustments to the energy demand data.
+
+ The 'take-away' output of this program will be a GDX file containing a single symbol called i_NrgDemand(r,y,t,lb),
+ which gets saved in the GEM data directory and becomes one of the the three GEM input GDX files. The name of the
+ GDX file is supplied by the user - see the $setglobal below called: GEM_GDXfilename.
+
+ Note that the domain of i_NrgDemand(r,y,t,lb) is specific to a particular GEM input dataset. Hence, the elements of
+ sets r, y, t, and lb must be consistent with what is defined elsewhere in the GEM input dataset. Consistency with
+ GEMdeclarations.gms may also be required - so proceed carefully! For the sake of completeness:
+   - r denotes regions;
+   - y denotes modelled calendar years;
+   - t denotes time periods within a year, e.g. quarters; and
+   - lb denotes load blocks.
 
  The typical usage of this program will require GEMldc to be run first, i.e. GEMldc creates the LDC profile
- required by GEMgdx. The GDX file created by GEMldc also contains other bits of data required by GEMgdx.
+ required by GEMgdx. The GDX file created by GEMldc also contains other bits and pieces required by GEMgdx.
 
- GEMgdx will read data from various file formats, e.g. Excel, GDX, databases, or text formats, and store it
- all in a single GDX file. The statements that read the files must obviously be consistent with the format
- being read. The resulting GDX file should then be plundered for the bits and pieces required by the GEM input
- files:
-   - m, lb, mapm_t(m,t)
-   - i_HalfHrsPerBlk(m,lb)
-   - i_NrgDemand(r,y,t,lb)
-   - i_historicalHydroOutput(v,hY,m)
+ GEMgdx can be configured to read data from various file formats, e.g. Excel, GDX, databases, or text formats.
+ The statements that read the files must obviously be consistent with the format being read.
 
  This program is not run as part of the normal GEM invocation.
 
@@ -33,8 +38,7 @@ $ontext
      Make sure you compare GXP lists - see notes at end of code section 2.
   3. Declare parameters.
   4. Load data from external files.
-  5. Perform hydrology checks and adjustments.
-  6. Undertake the necessary manipulations to prepare load data for GEM.
+  5. Undertake the necessary manipulations to prepare load data for GEM.
      a) Manually assign LDC weights and monthly load shares to GXPs for which you know there are none.
         Examine 'GXP checks.txt' when done to make sure all GXPs with load also have LDC weights that sum to 1.
      b) Make adjustments so as to avoid double counting embedded generation.
@@ -46,10 +50,7 @@ $ontext
         iii) Pro-rate load according to an externally provided set of adjusters by year.
      f) Aggregate load by GXPs and months to regions and time periods.
      g) Perform a few final integrity checks on load calculations.
-  7. Unload data to GDX file.
-** Need to finish these last two sections
-  8. Read in the GXP geography and create a bna file.
-  9. Dump load by GXP into a file with geography.
+  6. Unload data to GDX file.
 $offtext
 
 $inlinecom { } eolcom !
@@ -60,21 +61,18 @@ $inlinecom { } eolcom !
 * 1. Take care of preliminaries.
 *    - Define pointers to required directories and files.
 
-$setglobal NumBlks          9       ! Specify the number of blocks in LDC.
-$setglobal ThisScenario     std     ! Of all the scenarios in set sc, identify the one for which the GEM gdx file will be created.
+$setglobal NumBlks          9        ! Specify the number of blocks in LDC.
+$setglobal ThisScenario     mds3     ! Of all the scenarios declared below in set sc, identify the one that refers to the GDX file about to be created.
 
 * Specify input file paths and names
-$setglobal DataPath         "%system.fp%..\Data\Files required to create GEM GDXs\"
-$setglobal GXPgeography	    "216 GXPs geography.csv"
-$setglobal RawHydroData	    "Hydro sequences by 36 reservoirs and months, 1932-2007, GWh.csv"
+$setglobal DataPath         "%system.fp%..\Data\GEM energy demand GDX\"
 $setglobal RawEnergy        "Annual energy forecasts for 180 GXPs, 2012-50, GWh (Dec 2009).csv"
-$setglobal ReferenceLDC     "LDC output (%NumBlks% blocks).gdx"
+$setglobal ReferenceLDC     "LDC data (%NumBlks% blocks).gdx"
 $setglobal Load_ProRata     "Load pro rata.csv"
 
-* Output file name - the resulting GDX file will be placed in the programs directory; move it to data directory if it's a keeper.
+* Output filenames - the resulting GDX file will be placed in the programs directory; move it to data directory if it's a keeper.
+$setglobal GEM_GDXfilename  "NRG_2Region%NumBlks%LB_%ThisScenario%.gdx"
 $setglobal miscGDXfilename  "CheckGEM_GDXstuff%NumBlks%LB.gdx"
-$setglobal GEM_GDXfilename  "GEM_2Region36ReservoirHydro%NumBlks%LB.gdx"
-$setglobal GEM_LoadByPeriod "GEM_LoadByPeriod.gdx"
 $setglobal GEM_LoadByMonth  "GEM_LoadByMonth.gdx"
 
 
@@ -84,23 +82,18 @@ $setglobal GEM_LoadByMonth  "GEM_LoadByMonth.gdx"
 
 * Notes:
 * - The elements of the sets declared and initialised here must be consistent with the version of the model for
-*   which the GDX file is being constructed. Only those sets required to read in the raw data and to create the
-*   parameters to be stored in the GDX file need to be declared, i.e. we don't need all GEM sets at this point.
-* - Sets m and lb come from the LDC GDX file.
+*   which the energy demand GDX file is being constructed. Only those sets required to read in the raw data and
+*   to create the various parameters to be stored in the GDX files created by this program need to be declared here,
+*   i.e. we don't need all GEM sets at this point. Note that sets m and lb will come from the LDC GDX file.
 * - From time to time all set declarations may require editing. The likely candidates for editing each time this
-*   program is used are: GXP, y, hY, sc, indusGXP, r, GXP_r, t, mapm_t.
+*   program is used are: GXP, y, sc, indusGXP, r, GXP_r, t, mapm_t.
 
 Sets
   gxp            'Grid exit points' /
 $include         "%DataPath%216 GXPs.dat"
                  /
   y              'Modelled calendar years'           / 2012 * 2050 /
-  hY             'Hydro inflow years'                / 1932 * 2007 /
-  sc             'Scenarios or assumption sets'      / std, mds1, mds3, mds4 /   ! 'std' is mandatory, others are discretionary.
-  v              'Hydro reservoirs' {36}             / Aniwhenua, Arapuni, Aratiatia, Atiamuri, Aviemore, Benmore, BranchSchm, Clyde
-                                                       Cobb, Coleridge, Highbank, Kaimai, Kaitawa, Karapiro, Manapouri, Mangahao, Maraetai
-                                                       Matahina, Ohakuri, OhauA, OhauB, OhauC, Patea, Piripaua, Rangipo, Roxburgh, TekapoA
-                                                       TekapoB, Tokaanu, Tuai, Waipapa, Waipori, DeepStream, Waitaki, Whakamaru, WheaoFlaxy /
+  sc             'Scenarios or assumption sets'      / Standard, mds1, mds3, mds4 /   ! 'Standard' is mandatory, others are discretionary.
   ild            'Islands'                           / ni, si /
   EVadjust(sc)   'Scenarios that have EV demand'     / mds1, mds4 /
   indusGXP(gxp)  'Industrial GXPs with zero EV load' / asy0111, bpt1101, bde0111, bpe0551, cyd0331, gln0331, ham0551, kaw0112
@@ -167,10 +160,6 @@ Parameters
   i_NrgDemandMonthly(r,y,m,lb)   'Load by region, year, month and load block, GWh'
   chkloadyr(y,*)                 'Sum up load by year for the purpose of checking arithmetic'
   chkload(*)                     'Sum up load globally for the purpose of checking arithmetic'
-* Hydrology
-  chkHydroRes(v,*)               'Check hydrology data over hydro years and time, by reservoir - GWh'
-  chkHydrohYr(hY,*)              'Check hydrology data over reservoir and time, by hydro years - GWh'
-  chkHydro(*)                    'Check hydrology data over hydro years, time, and reservoirs - GWh'
 * Electric vehicles
   EVweightsGXP(gxp,y)            'EV weights to spritz EV demand out to GXPs'
   EVweightsBlock(m,lb)           'EV weights to spritz EV demand out to load blocks by month'
@@ -199,14 +188,8 @@ Parameters
 $gdxin "%DataPath%%ReferenceLDC%"
 $loaddc BlockWeights LoadShareByMonth i_HalfHrsPerBlk
 
-Table GXPgeo(gxp,*) "Geographic co-ordinates for GXPs"
-$ondelim offlisting include '%DataPath%%GXPgeography%'
-
-Table i_historicalHydroOutput(v,hY,m) 'Historical hydro output sequences by reservoir and month, GWh'
-$include "%DataPath%%RawHydroData%"
-
 Table AnnualLoad(y,gxp)  'Energy forecasts by GXP, GWh'
-$include "%DataPath%%RawEnergy%"
+$ondelim offlisting include  "%DataPath%%RawEnergy%"
 $offdelim onlisting
 
 Parameter EVdemand(y) 'Incremental demand for energy from electric vehicles by year, GWh' /
@@ -223,37 +206,7 @@ chkload('ImpAnnLoad') = sum((y,gxp), AnnualLoad(y,gxp)) ;
 
 
 *===============================================================================================
-* 5. Perform hydrology checks and adjustments.
-
-* Notes:
-* - The following assumes hydrology data is in a single .csv file by reservoir.
-* - Hydrology data will be stored in a parameter called i_historicalHydroOutput(v,hY,m) that
-*   will be placed in the GDX file from where it will be loaded into GEM each time GEM is run.
-
-* Compute check sums before doing any hydrology aggregation or adjustments.
-chkHydroRes(v,'b4')  = sum((hY,m), i_historicalHydroOutput(v,hY,m)) ;
-chkHydrohYr(hY,'b4') = sum((v,m), i_historicalHydroOutput(v,hY,m)) ;
-chkHydro('b4')       = sum((v,hY,m), i_historicalHydroOutput(v,hY,m)) ;
-
-* Hydrology adjustments - there are none as yet...
-
-
-* Compute check sums after doing hydrology adjustments.
-chkHydroRes(v,'After')  = sum((hY,m), i_historicalHydroOutput(v,hY,m)) ;
-chkHydrohYr(hY,'After') = sum((v,m), i_historicalHydroOutput(v,hY,m)) ;
-chkHydro('After')       = sum((v,hY,m), i_historicalHydroOutput(v,hY,m)) ;
-
-chkHydroRes(v,'Diff')   = chkHydroRes(v,'After') - chkHydroRes(v,'b4') ;
-chkHydrohYr(hY,'diff')  = chkHydrohYr(hY,'After') - chkHydrohYr(hY,'b4') ;
-chkHydro('Diff')        = chkHydro('After') - chkHydro('b4') ;
-
-Display 'Hydro check sums', chkHydrohYr, chkHydroRes, chkHydro ;
-abort$( abs(chkHydro('Diff')) > 1e-5 ) 'Hydrology data adjustments appear screwy' ;
-
-
-
-*===============================================================================================
-* 6. Undertake the necessary manipulations to prepare load data for GEM.
+* 5. Undertake the necessary manipulations to prepare load data for GEM.
 
 * a) Manually assign LDC weights and monthly load shares to GXPs for which you know there are none.
 *    Examine 'GXP checks.txt' when done to make sure all GXPs with load also have LDC weights that sum to 1.
@@ -295,11 +248,11 @@ chkload('TotEmbedAdj') = sum((y), 1) * 1280 ;
 
 
 * c) Spritz energy over the load blocks within each month.
-load_GXP('std',gxp,y,m,lb) = BlockWeights(gxp,m,lb) * LoadShareByMonth(gxp,m) * AnnualLoad(y,gxp) ;
+load_GXP('Standard',gxp,y,m,lb) = BlockWeights(gxp,m,lb) * LoadShareByMonth(gxp,m) * AnnualLoad(y,gxp) ;
 
 * Compute integrity checks on energy data after spritzing it out to load blocks.
-chkloadyr(y,'SpritzAllGXP') = sum((gxp,m,lb), load_GXP('std',gxp,y,m,lb)) ;
-chkload('SpritzAllGXP') = sum((gxp,y,m,lb), load_GXP('std',gxp,y,m,lb)) ;
+chkloadyr(y,'SpritzAllGXP') = sum((gxp,m,lb), load_GXP('Standard',gxp,y,m,lb)) ;
+chkload('SpritzAllGXP') = sum((gxp,y,m,lb), load_GXP('Standard',gxp,y,m,lb)) ;
 
 
 
@@ -310,7 +263,7 @@ put GXPcheck 'Num' @6 'GXP' @17 'AnnLoad?' @28 'GXPload?' @37 'MthShare?' @47 'B
 loop(gxp$sum((y), AnnualLoad(y,gxp)),
   cntr1 = cntr1 + 1
   put / cntr1:<3:0 @6 gxp.tl @20, 'y' @31 ;
-  if(sum((y,m,lb), load_GXP('std',gxp,y,m,lb)), put 'y' else put '-' ) ; put @40 ;
+  if(sum((y,m,lb), load_GXP('Standard',gxp,y,m,lb)), put 'y' else put '-' ) ; put @40 ;
   if(sum(m,            LoadShareByMonth(gxp,m)),       put 'y' else put '-' ) ; put @49
   if(sum((m,lb),       BlockWeights(gxp,m,lb)),        put 'y' else put '-' ) ;
   put @58 (sum((m,lb), BlockWeights(gxp,m,lb))):<6:0 ;
@@ -319,16 +272,16 @@ put / ;
 loop(gxp$( sum((y), AnnualLoad(y,gxp)) = 0 ),
   cntr1 = cntr1 + 1
   put / cntr1:<3:0 @6 gxp.tl @20, '-' @31 ;
-  if(sum((y,m,lb), load_GXP('std',gxp,y,m,lb)), put 'y' else put '-' ) ; put @40 ;
+  if(sum((y,m,lb), load_GXP('Standard',gxp,y,m,lb)), put 'y' else put '-' ) ; put @40 ;
   if(sum(m,            LoadShareByMonth(gxp,m)),       put 'y' else put '-' ) ; put @49
   if(sum((m,lb),       BlockWeights(gxp,m,lb)),        put 'y' else put '-' ) ;
   put @58 (sum((m,lb), BlockWeights(gxp,m,lb))):<6:0 ;
 ) ;
 
 
-* e) Make sceanrio specific adjustments to load.
-*    First, assign the GXP load data to all scenarios ('std').
-load_GXP(sc,gxp,y,m,lb) = load_GXP('std',gxp,y,m,lb) ;
+* e) Make scenario specific adjustments to load.
+*    First, assign the GXP load data to all scenarios ('Standard').
+load_GXP(sc,gxp,y,m,lb) = load_GXP('Standard',gxp,y,m,lb) ;
 chkload('b4ScenAdj') = sum((sc,gxp,y,m,lb), load_GXP(sc,gxp,y,m,lb)) ;
 
 * i) Phase out Tiwai by 1/6 per year for 6 years in mds3 beginning in 2022.
@@ -370,7 +323,6 @@ chkload('QtyEVadj') = sum((sc,gxp,y,m,lb), load_GXP(sc,gxp,y,m,lb)) - chkload('S
 
 Display chkEVweights, chkEVload ;
 
-
 * Compute check sums on energy data after doing all the scenario specific adjustments.
 chkloadyr(y,'AftScenAdj') = sum((sc,gxp,m,lb), load_GXP(sc,gxp,y,m,lb)) ;
 chkload('AftScenAdj') = sum((sc,gxp,y,m,lb), load_GXP(sc,gxp,y,m,lb)) ;
@@ -379,7 +331,7 @@ chkload('QtyScenAdj') = chkload('QtyTYadj') + chkload('QtyEVadj') ;
 
 $ontext
 * iii) Pro-rate load according to an externally provided set of adjusters defined on year. This adjustment was motivated
-*      by MED who use GEM in conjunction with their energy sector model (SADEM), and need to iterate GEM and SADEM until
+*      by MOBI who use GEM in conjunction with their energy sector model (SADEM), and need to iterate GEM and SADEM until
 *      convergence is obtained. An external file of adjustment factors is required. Load, i.e. load_GXP(sc,gxp,y,m,lb), is
 *      then adjusted by the year-specific scalars read into proRata (see below).
 
@@ -442,53 +394,11 @@ display 'Load check sums', numGXPrawload, numGXPload, qtyGXPrawload, qtyGXPload,
 
 
 *===============================================================================================
-* 7. Unload data to GDX file.
+* 6. Unload data to GDX file.
 
-* Notes:
-* - The parameters included in this 'execute_unload' statement must be consistent with the load statement in
-*   GEMbase. In other words, GEMbase expects to find certain parameters in this GDX file - and those parameters
-*   get put into that GDX file right here.
-* - Before unloading, round the decimals to avoid carrying along bogus precision.
-
-Execute_Unload '%miscGDXfilename%'  m, t, mapm_t, lb, i_HalfHrsPerBlk, chkHydroRes, chkHydrohYr, chkHydro, i_historicalHydroOutput, LoadChkSum, i_load  ;
-
-Execute_Unload '%GEM_GDXfilename%'  m, t, mapm_t, lb, i_HalfHrsPerBlk, i_historicalHydroOutput, LoadChkThisScen, i_NrgDemand  ;
-Execute_Unload '%GEM_LoadByPeriod%' i_NrgDemand ;
+Execute_Unload '%GEM_GDXfilename%'  i_NrgDemand  ;
+Execute_Unload '%miscGDXfilename%'  m, t, mapm_t, lb, i_HalfHrsPerBlk, LoadChkSum, i_load  ;
 Execute_Unload '%GEM_LoadByMonth%'  i_NrgDemandMonthly ;
-
-
-
-$stop
-** Need to finish these last two sections
-*===============================================================================================
-* 8. Read in the GXP geography and create a bna file.
-
-* Notes:
-* - The bna format is able to be read by many popular GIS applications, e.g. Mapviewer.
-* - Comment in/out the loop statement according to the co-ordinates desired, i.e. Easting/Northing or Lat/Long.
-
-
-file GXPbna / "GXP geography.bna" / ; GXPbna.lw = 0 ; put GXPbna ;
-*loop(gxp, put'"', gxp.tl, '","', gxp.te(gxp), '",1,', GXPgeo(gxp,'Long'):12:3, ',', GXPgeo(gxp,'Lat'):12:3 / ) ;
-loop(gxp, put'"', gxp.tl, '","', gxp.te(gxp), '",1,', GXPgeo(gxp,'Easting'):12:3, ',', GXPgeo(gxp,'Northing'):12:3 / ) ;
-
-
-
-*===============================================================================================
-* 9. Dump load by GXP into a file with geography.
-
-File loadGXP / "Annual load by GXP with geography (GWh).txt" / ;
-loadGXP.pc = 6 ; loadGXP.lw = 0 ; loadGXP.pw = 9999 ;
-
-put loadGXP 'Scenario' 'GXP' 'GXP description' 'Easting' 'Northing' 'Long' 'Lat' ; loop(y, put y.tl ) ;
-loop((sc,gxp)$( sum((y,lb,m), load_GXP(sc,y,lb,gxp,m)) ),
-  put / sc.tl, gxp.tl, gxp.te(gxp), GXPgeo(gxp,'Easting'), GXPgeo(gxp,'Northing'), GXPgeo(gxp,'Long'), GXPgeo(gxp,'Lat') ;
-  loop(y,
-    put ( sum((lb,m), load_GXP(sc,y,lb,gxp,m) ) ) ;
-  ) ;
-) ;
-
-
 
 
 
