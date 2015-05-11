@@ -1,0 +1,34 @@
+_A no-frills guide to get GEM up and running._
+
+# Introduction #
+GEM is a capacity expansion model of the New Zealand electricity sector. It is formulated and solved using GAMS (www.gams.com). GEM is designed to be operated through emi, a Windows-based user interface (http://code.google.com/p/getemi). While emi enables users unfamiliar with GAMS to operate GEM, some users may prefer to work directly with the GEM codes and input data files. The purpose of this note is to briefly describe how to operate GEM without emi.
+
+It is assumed that users have downloaded the two zip files containing:
+  * the GEM codes, and
+  * the GDX input files.
+
+Moreover, it is assumed that GEM is located in a directory structure as follows:
+  * ..\GEM\Data
+  * ..\GEM\Output
+  * ..\GEM\Programs
+The GEM codes should be unpacked into the GEM programs directory and the GEM input files should be unpacked into the GEM data directory. It does not matter where the GEM directory is located. It is probably advisable not to run large GEM jobs over a network. Finally, the GEM programs directory ought to be placed on the Windows path environment variable.
+
+
+# The "runGEM" scripts #
+There are four simple GAMS' programs that control the invocation and operation of the various aspects of running a GEM job, or sequence of jobs. Before invoking these scripts it is necessary to edit the 3 "include" (or .inc) files described in the next section.
+  1. **runGEMsetup.gms** - after importing the file called GEMpathsAndFiles.inc, this script sets up a location in the GEM output directory where the output of the GEM run will be placed. It also archives certain files so that the precise configuration of the GEM run can be examined and the job replicated, if required, at some future date. Depending on the type of GAMS license, it may also invoke the file called GEMdeclarations.gms. Non-developer users of GEM should have no need to edit runGEMsetup.gms or GEMdeclarations.gms.
+  1. **runGEMDataAndSolve.gms** - after importing the file called GEMpathsAndFiles.inc, this script sequentially invokes the two programs called GEMdata.gms and GEMsolve.gms. GEMdata.gms itself will import GEMpathsAndFiles.inc, GEMsettings.inc, and GEMstochastic.inc. It then proceeds to load the data from the input GDX files specified by the user in GEMpathsAndFiles.inc and performs various computations to get the input data ready to pass along to GEMsolve.gms. GEMsolve.gms actually solves the model, or models, as configured by the user in GEMstochastic.inc. Finally, GEMsolve.gms will create GDX files of the model solution (all variable levels and equation marginal values) for use by GEMreports.gms. The runGEMDataAndSolve.gms script is to be invoked (sequentially) as many times as there are variants of the particular GEM run (see "runVersionName" and "runName" in GEMpathsAndFiles.inc). Non-developer users of GEM should have no need to edit runGEMDataAndSolve.gms, GEMdata.gms or GEMsolve.gms.
+  1. **runMergeGDXs.gms** - after importing the file called GEMpathsAndFiles.inc, this script takes the GDX files produced by GEMsolve.gms and merges them into a single GDX file ready for use by GEMreports.gms. More specifically, a set of merged GDX files is required for each variant of the run that is to be reported on. The runMergeGDXs.gms script will need to be edited prior to invocation, and the edits will need to be consistent with the declaration and initialization of the sets called runVersions and runVersionColor in GEMpathsAndFiles.inc.
+  1. **runGEMreports.gms** - after importing the files called GEMpathsAndFiles.inc and GEMsettings.inc, this script invokes the program called GEMreports.gms and, as the name suggests, it produces a collection of reports.  Non-developer users of GEM should have no need to edit runGEMreports.gms or GEMreports.gms
+
+# The ".inc" files #
+There are three so-called .inc files - GEMpathsAndFiles.inc, GEMsettings.inc, and GEMstochastic.inc. These three files contain the configuration settings specific to a GEM run. A GEM run comprises one or more run versions. If emi is used, the three .inc files are created automatically. Without emi, users must edit the .inc files accordingly. This task may prove to be a little difficult for novice users because much of the explanatory help available from emi is not provided in the .inc files.
+
+# The input GDX files #
+The input data is provided to GEM via three or more GDX files:
+  1. the first one, denoted GEMinputGDX in GEMpathsAndFiles.inc, contains all of the data (except for demand) that is invariant with respect to the regional/network configuration;
+  1. the second, denoted GEMdemandGDX in GEMpathsAndFiles.inc, contains the demand data (commensurate with a given load duration curve as defined in GEMinputGDX; and
+  1. the third input GDX file contains the data associated with a particular network and regional configuration.
+An override GDX file may also be prepared and used to override selected input data values with alternative values. See GEMoverrideGDX and GEMoverrideGDX in GEMpathsAndFiles.inc.
+
+The user interface, emi, can be used to modify the input GDX files or create new ones. Outside of emi, however, users need to find a way to modify the contents of the input GDX files. A set of Python tools for precisely this task is available at https://github.com/geoffleyland/py-gdx.
