@@ -1,6 +1,6 @@
 $inlinecom { }
 $eolcom !
-$setglobal runName         "Test45"
+$setglobal runName         "Test_init"
 $setglobal runVersionName  "mds5"
 $setglobal runVersionDesc  "High gas discovery"
 $setglobal runVersionRGB   "255.0.255"
@@ -17,7 +17,7 @@ $setglobal GEMdemandGDX    "NRG_2Region9LB_Standard.gdx"
 
 $setglobal GEMoverrideGDX  "mds5_Override.gdx"
 
-$setglobal useOverrides     1
+$setglobal useOverrides     0
 $setglobal sprsGEMsolve     0
 $setglobal Mode             0
 
