@@ -1,9 +1,9 @@
 *+++ Model +++
-$setglobal firstYear 2012
+$setglobal firstYear 2016
 * First modelled year.
-$setglobal lastYear 2030
+$setglobal lastYear 2050
 * Last modelled year.
-$setglobal RunType 1
+$setglobal RunType 2
 * default = 0 = run both GEM and DISP, 1 = Run GEM only, 2 = Run DISPatch only
 $setglobal GEMtype MIP
 * Specify whether GEM is to be a MIP or an RMIP - take care to get the spelling exact (default = MIP).
@@ -28,7 +28,7 @@ Scalar taxRate / .28 / ;
 Scalar depType / 1 / ;
 Scalar txPlantLife / 60 / ;
 Scalar txDepRate / .06 / ;
-Scalar randomCapexCostAdjuster / 0 / ;
+Scalar randomCapexCostAdjuster / .03 / ;
 
 
 *+++ GemConstraints +++
@@ -50,7 +50,7 @@ Scalar penaltyViolateRenNrg / 99999 / ;
 
 Scalar slackCost / 9999 / ;
 Scalar noVOLLblks / 0 / ;
-$setglobal NumVertices 4
+$setglobal NumVertices 3
 * Number of vertices in piecewise linear transmission loss functions (number of vertices = number of tranches + l) ;  
 
 
@@ -66,11 +66,12 @@ $setglobal AClossesSI 0.0
 
 
 *+++ Solver +++
-$setglobal Solver Gurobi
+$setglobal Solver Cplex
 * Choose solver - Gurobi, Cplex, or Xpress
-$setglobal optcr .0075
+*$setglobal optcr .0075
+$setglobal optcr .01
 * Relative optimality criterion for MIP (i.e. .003 equals .3%)
-$setglobal CPUsecsGEM 20000
+$setglobal CPUsecsGEM 50400
 * CPU seconds available for solver to spend solving GEM
 $setglobal Threads 4
 * Number of threads your MIP solver is licensed to use.

@@ -1,20 +1,20 @@
 * GEMdeclarations.gms
 
 
-* Last modified by Dr Phil Bishop, 08/09/2015 (emi@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 21/04/2016 (emi@ea.govt.nz)
 
 
 $ontext
-  This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM up to
-  and including GEMsolve. Symbols required only for post-solve reporting purposes are generally declared in GEMreports. However,
-  there are a few reporting-related declarations in this program, as GEMdata and GEMsolve do some preparatory work for GEMreports.
-  In a few cases, a handful of sets whose membership never changes, symbols are intialised as well as declared in this program.
-  In other words, the membership of those sets is assigned at the time of declaration. In all other cases, set membership and
+  This program declares all of the symbols (sets, scalars, parameters, variables, equations and files) used in GEM, i.e. in
+  GEMdata and GEMsolve. Symbols required only for post-solve reporting purposes are declared in GEMreports. However, there are
+  a few reporting-related declarations in this program, as GEMdata and GEMsolve do some preparatory work for GEMreports. In a
+  few cases, a handful of sets whose membership never changes, symbols are intialised as well as declared in this program. In
+  other words, the membership of those sets is assigned at the time of declaration. In all other cases, set membership and
   scalar/parameter values are obtained from user-specified input files, or are computed within GEMdata using the imported data.
 
-  The GEMdeclarations work file (GEMdeclarations.g00) is saved and used at invocation to restart GEMdata.
+  The GEMdeclarations work file (GEMdeclarations.g00) is saved and subsequently presented to GEMdata whne GEMdata is invoked.
 
-  Notes:
+  TODO:
   1. GEM has a comprehensive treatment of reserves, emodied in the following variables and equations:
        Variables: RESV, RESVVIOL, RESVTRFR and RESVREQINT; and
        Equations: resvsinglereq1, genmaxresv1, resvtrfr1, resvtrfr2, resvtrfr3, resvrequnit, resvreq2,
@@ -52,9 +52,9 @@ $offsymxref offsymlist
 *===============================================================================================
 * 1. Declare sets and parameters - the data for which is imported from input GDX files.
 
-* First, declare without initialising five sets (with fixed membership) that are not contained in the input GDX file. Rather, the
-* membership of these sets comes, either, from a .inc file or it's hard-coded later in GEMdeclarations. But they need to be declared
-* now because some sets in the input GDX files are defined on these five sets.
+* First, declare five sets for whom membership is fixed by means other than importing form the input GDX file. The membership of these
+* five sets comes, either, from a .inc file or it's hard-coded later in GEMdeclarations. But they need to be declared now because some
+* sets in the input GDX files are defined on these five sets.
 Sets
   y            'Modelled calendar years'
   ild          'Islands'
@@ -84,7 +84,7 @@ Sets
 
 Alias (g,gg), (i,ii), (r,rr), (ild,ild1), (ps,pss), (lb,lbb), (hY,hYY), (col,red,green,blue) ;
 
-* 36 mapping sets and subsets (grouped thematically as per the navigation pane of EMI)
+* 36 mapping sets and subsets (grouped thematically)
 Sets
 * 22 technology and fuel
   mapf_k(f,k)                                   'Map technology types to fuel types'
@@ -131,7 +131,7 @@ Sets
   mapReservoirs(v,i,g)                          'Reservoir mappings'
   ;
 
-* Declare 80 parameters (again, grouped thematically as per the navigation pane of EMI).
+* Declare 80 parameters (again, grouped thematically).
 Parameters
 * 15 technology and fuel
   i_plantLife(k)                                'Generation plant life, years'
@@ -230,7 +230,7 @@ Parameters
 *    c) Various GEM configuration sets and parameters.
 *    d) Declare all remaining sets and parameters.
 
-* a) Hard-coded sets (non-developer users have no need to change these set elements).
+* a) Hard-coded sets (non-developer users ought to have no need to change these set elements).
 Sets
   n                                             'Number of vertices in piecewise linear loss functions'
   ct                                            'Capital expenditure types'           / genplt     'New generation plant'
@@ -442,6 +442,7 @@ Parameters
   CO2taxByPlant(g,y,scenarios)                  'CO2 tax by plant, year and scenario, $/MWh'
 * Generation data.
   initialCapacity(g)                            'Capacity of existing generating plant in the first modelled year'
+  MWtoBuildByRegTechYr(k,r,y)                   'MW able to be built by technology, region and year'
   vbleConCostPlant(g)                           'Variablised capital cost of connection for new generation plant, $/MW'
   locationFactor(g)                             'Location factors by plant - used to adjust costs to account for marginal loss effects (sourced from zonal factors)'
   ensembleFactor(g)                             'Collection of total cost adjustment factors by plant (e.g. location factors and hydro peaking factors)'
