@@ -1,7 +1,7 @@
 * GEMreports.gms
 
 
-* Last modified by Dr Phil Bishop, 21/04/2016 (emi@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 23/04/2016 (emi@ea.govt.nz)
 
 
 $ontext
@@ -158,6 +158,8 @@ Sets
   firstYr(y)                       'First modelled year - as a set, not a scalar'
   firstPeriod(t)                   'First time period (i.e. period within the modelled year)'
   thermalFuel(f)                   'Thermal fuels'
+  wind(k)                          'Wind technologies'
+  nigen(g)                         'North Island generation plant'
   nwd(r,rr)                        'Northward direction of flow on Benmore-Haywards HVDC'
   swd(r,rr)                        'Southward direction of flow on Benmore-Haywards HVDC'
   paths(r,rr)                      'All valid transmission paths'
@@ -174,7 +176,7 @@ Sets
 * d) Load set membership, i.e. fundamental, subsets, and mapping sets, from the designated base case GDX file.
 $gdxin "%primaryOutput%\rep%reportName%\repData\Base case input data.gdx"
 $loaddc k f fg g s o i r e ps tupg t lb rc hY
-$loaddc firstYr firstPeriod thermalFuel nwd swd paths mapg_k mapg_f mapf_fg mapg_o mapg_r mapg_e mapAggR_r isIldEqReg
+$loaddc firstYr firstPeriod thermalFuel wind nigen nwd swd paths mapg_k mapg_f mapf_fg mapg_o mapg_r mapg_e mapAggR_r isIldEqReg
 $loaddc techColor
 
 
@@ -189,6 +191,7 @@ Sets
   possibleToRetire(rv,g)                      'Generating plant that may possibly be retired (exogenously or endogenously)'
   validYrOperate(rv,g,y)                      'Valid years in which an existing, committed or new plant can generate. Use to fix GEN to zero in invalid years'
   transitions(rv,tupg,r,rr,ps,pss)            'For all transmission paths, define the allowable transitions from one upgrade state to another'
+  allowedStates(rv,r,rr,ps)                   'All of the allowed states (initial and upgraded) for each active path'
   allAvgDispatchSolves(rv,expts,steps,scenSet)             'All solves for which the dispatch simulations are to be averaged over all scenarios mapped to each scenario set'
   allNotAvgDispatchSolves(rv,expts,steps,scenSet)          'All solves for which the dispatch simulations are not to be averaged over all scenarios mapped to each scenario set'
   avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen) 'Map average dispatch step to (old) dispatch step for an experiment' ;
@@ -198,6 +201,7 @@ Parameters
   i_namePlate(rv,g)                           'Nameplate capacity of generating plant, MW'
   i_heatrate(rv,g)                            'Heat rate of generating plant, GJ/GWh (default = 3600)'
   i_txCapacity(rv,r,rr,ps)                    'Transmission path capacities (bi-directional), MW'
+  i_txCapacityPO(rv,r,rr,ps)                  'Transmission path capacities with largest pole out (bi-directional, HVDC link only), MW'
   txCapitalCost(rv,r,rr,ps)                   'Capital cost of transmission upgrades by path and state, $m'
   totalFuelCost(rv,g,y,scen)                  'Total fuel cost - price plus fuel production and delivery charges all times heatrate - by plant, year and scenario, $/MWh'
   CO2taxByPlant(rv,g,y,scen)                  'CO2 tax by plant, year and scenario, $/MWh'
@@ -209,6 +213,18 @@ Parameters
   i_plantReservesCost(rv,g,rc)                'Plant-specific cost per reserve class, $/MWh'
   hoursPerBlock(rv,t,lb)                      'Hours per load block by time period'
   NrgDemand(rv,r,y,t,lb,scen)                 'Load (or energy demand) by region, year, time period and load block, GWh (used to create ldcMW)'
+  peakLoadNZ(rv,y,scen)                       'Peak load for New Zealand by year, MW'
+  peakLoadNI(rv,y,scen)                       'Peak load for North Island by year, MW'
+  peakConPlant(rv,g,y)                        'Contribution to peak of each generating plant by year'
+  NWpeakConPlant(rv,g,y)                      'Contribution to peak when there is no wind of each generating plant by year'
+  i_winterCapacityMargin(rv,y)                'Required winter capacity margin, MW'
+  i_SIACrisk(rv,y)                            'Required cover for South Island AC risk by year, MW'
+  i_fkSI(rv,y)                                'Required frequency keeping in South Island by year, MW'
+  i_fkNI(rv,y)                                'Required frequency keeping in North Island by year, MW'
+  i_HVDClossesAtMaxXfer(rv,y)                 'Required cover for HVDC (bi-pole) losses at maximum transfer by year, MW'
+  i_largestGenerator(rv,y)                    'Largest generation plant by year, MW'
+  i_P200ratioNZ(rv,y)                         'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), New Zealand'
+  i_P200ratioNI(rv,y)                         'Desired ratio of peak demand MW to average demand MW (derived from forecast GWh energy demand), North Island'
   yearNum(rv,y)                               'Real number associated with each year'
   PVfacG(rv,y,t)                              "Generation investor's present value factor by period"
   PVfacT(rv,y,t)                              "Transmission investor's present value factor by period"
@@ -220,9 +236,12 @@ Parameters
   exogMWretired(rv,g,y)                       'Exogenously retired MW by plant and year, MW' ;
 
 $gdxin "%primaryOutput%\rep%reportName%\repData\selectedInputData.gdx"
-$loaddc demandGen exist sigen possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate transitions allAvgDispatchSolves allNotAvgDispatchSolves avgDispatchSteptoRepStep
-$loaddc i_fuelQuantities i_namePlate i_heatrate i_txCapacity txCapitalCost totalFuelCost CO2taxByPlant SRMC i_fixedOM ensembleFactor i_HVDCshr i_HVDClevy
-$loaddc i_plantReservesCost hoursPerBlock NrgDemand yearNum PVfacG PVfacT capCharge refurbCapCharge MWtoBuild penaltyViolateReserves pNFresvCost exogMWretired
+$loaddc demandGen exist sigen possibleToBuild possibleToRefurbish possibleToEndogRetire possibleToRetire validYrOperate transitions allowedStates
+$loaddc allAvgDispatchSolves allNotAvgDispatchSolves avgDispatchSteptoRepStep i_fuelQuantities i_namePlate i_heatrate
+$loaddc i_txCapacity i_txCapacityPO txCapitalCost totalFuelCost CO2taxByPlant SRMC i_fixedOM ensembleFactor i_HVDCshr i_HVDClevy
+$loaddc i_plantReservesCost hoursPerBlock NrgDemand peakLoadNZ peakLoadNI peakConPlant NWpeakConPlant i_winterCapacityMargin i_SIACrisk
+$loaddc i_fkSI i_fkNI i_HVDClossesAtMaxXfer i_largestGenerator i_P200ratioNZ i_P200ratioNI
+$loaddc yearNum PVfacG PVfacT capCharge refurbCapCharge MWtoBuild penaltyViolateReserves pNFresvCost exogMWretired
 
 
 * f) Declare and load the parameters (variable levels and marginals) to be found in the merged 'reportOutput' GDX file.
@@ -425,6 +444,8 @@ loop((rv,expts,rs,steps)$mapStepsToRepSteps(rv,expts,rs,steps),
     CO2taxByPlant(rv,g,y,'averageDispatch')                        = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * CO2taxByPlant(rv,g,y,scen)) ;
     SRMC(rv,g,y,'averageDispatch')                                 = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * SRMC(rv,g,y,scen)) ;
     NrgDemand(rv,r,y,t,lb,'averageDispatch')                       = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * NrgDemand(rv,r,y,t,lb,scen)) ;
+    peakLoadNZ(rv,y,'averageDispatch')                             = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * peakLoadNZ(rv,y,scen)) ;
+    peakLoadNI(rv,y,'averageDispatch')                             = sum((scenSet,scen)$avgDispatchSteptoRepStep(rv,expts,rs,steps,scenSet,scen), wtScensToAvg(rv,expts) * peakLoadNI(rv,y,scen)) ;
   ) ;
 ) ;
 
@@ -443,82 +464,86 @@ Display allNotAvgDispatchSolves, allAvgDispatchSolves, mapStepsToRepSteps, numSc
 * 4. Undertake the declarations and calculations necessary to prepare all that is to be reported.
 
 Sets
-  objc                                                   'Objective function components'
-                                                          / obj_Check      'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'
-                                                            obj_total      'Objective function value'
-                                                            obj_gencapex   'Discounted levelised generation plant capital costs'
-                                                            obj_refurb     'Discounted levelised refurbishment capital costs'
-                                                            obj_txcapex    'Discounted levelised transmission capital costs'
-                                                            obj_fixOM      'After tax discounted fixed costs at generation plant'
-                                                            obj_varOM      'After tax discounted variable costs at generation plant'
-                                                            obj_hvdc       'After tax discounted HVDC charges'
-                                                            VOLLcost       'After tax discounted value of lost load'
-                                                            obj_rescosts   'After tax discounted reserve costs at generation plant'
-                                                            obj_resvviol   'Penalty cost of failing to meet reserves'
-                                                            obj_nfrcosts   'After tax discounted cost of non-free reserve cover for HVDC'
-                                                            obj_Penalties  'Value of all penalties'
-                                                            obj_Slacks     'Value of all slacks' /
-  repDom(rv,expts,rs,scenSet)                            'The runVersions-experiments-repSteps-scenarioSets domain to be reported on - key it off of r_TOTALCOST(rv,expts,rs,scenSet)'
-  sc(scen)                                               '(Dynamically) selected subsets of elements of scenarios'
-  existBuildOrRetire(rv,expts,rs,scenSet,g,y)            'Plant and years in which any plant either exists, is built, is refurbished, or is retired'
+  objc                                                     'Objective function components'
+                                                            / obj_Check      'Check that sum of all components including TOTALCOST less TOTALCOST equals TOTALCOST'
+                                                              obj_total      'Objective function value'
+                                                              obj_gencapex   'Discounted levelised generation plant capital costs'
+                                                              obj_refurb     'Discounted levelised refurbishment capital costs'
+                                                              obj_txcapex    'Discounted levelised transmission capital costs'
+                                                              obj_fixOM      'After tax discounted fixed costs at generation plant'
+                                                              obj_varOM      'After tax discounted variable costs at generation plant'
+                                                              obj_hvdc       'After tax discounted HVDC charges'
+                                                              VOLLcost       'After tax discounted value of lost load'
+                                                              obj_rescosts   'After tax discounted reserve costs at generation plant'
+                                                              obj_resvviol   'Penalty cost of failing to meet reserves'
+                                                              obj_nfrcosts   'After tax discounted cost of non-free reserve cover for HVDC'
+                                                              obj_Penalties  'Value of all penalties'
+                                                              obj_Slacks     'Value of all slacks' /
+  repDom(rv,expts,rs,scenSet)                              'The runVersions-experiments-repSteps-scenarioSets domain to be reported on - key it off of r_TOTALCOST(rv,expts,rs,scenSet)'
+  sc(scen)                                                 '(Dynamically) selected subsets of elements of scenarios'
+  existBuildOrRetire(rv,expts,rs,scenSet,g,y)              'Plant and years in which any plant either exists, is built, is refurbished, or is retired'
   ;
 
 Parameters
-  cntr                                                   'A counter'
-  unDiscFactor(rv,y,t)                                   "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by period and year"
-  unDiscFactorYr(rv,y)                                   "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by year (use last period of year)"
-  scenarioWeight(scen)                                   'Individual scenario weights'
-  objComponents(*,*,*,*,objc)                            'Components of objective function value'
+  cntr                                                     'A counter'
+  unDiscFactor(rv,y,t)                                     "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by period and year"
+  unDiscFactorYr(rv,y)                                     "Factor to adjust or 'un-discount' and 'un-tax' shadow prices or revenues - by year (use last period of year)"
+  scenarioWeight(scen)                                     'Individual scenario weights'
+  objComponents(*,*,*,*,objc)                              'Components of objective function value'
 * Capacity and capex
-  genBuiltByPlantYear(*,*,*,*,g,y)                       'Generating plant built by plant and year, MW'
-  genBuiltByPlantTechFuelRegionYear(*,*,*,*,g,k,f,r,y)   'Generating plant built by plant, technology, fuel, region and year, MW'
-  genBuiltByTechRegionYear(*,*,*,*,k,r,y)                'Generating plant built by technology, region and year, MW'
-  genBuiltByTechYear(*,*,*,*,k,y)                        'Generating plant built by technology and year, MW'
-  genBuiltByRegionYear(*,*,*,*,r,y)                      'Generating plant built by region and year, MW'
-  genBuiltByTechRegion(*,*,*,*,k,r)                      'Generating plant built by technology and region, MW'
-  genBuiltByTech(*,*,*,*,k)                              'Generating plant built by technology, MW'
-  genBuiltByRegion(*,*,*,*,r)                            'Generating plant built by region, MW'
-  genBuiltByYear(*,*,*,*,y)                              'Generating plant built by year, MW'
+  genBuiltByPlantYear(*,*,*,*,g,y)                         'Generating plant built by plant and year, MW'
+  genBuiltByPlantTechFuelRegionYear(*,*,*,*,g,k,f,r,y)     'Generating plant built by plant, technology, fuel, region and year, MW'
+  genBuiltByTechRegionYear(*,*,*,*,k,r,y)                  'Generating plant built by technology, region and year, MW'
+  genBuiltByTechYear(*,*,*,*,k,y)                          'Generating plant built by technology and year, MW'
+  genBuiltByRegionYear(*,*,*,*,r,y)                        'Generating plant built by region and year, MW'
+  genBuiltByTechRegion(*,*,*,*,k,r)                        'Generating plant built by technology and region, MW'
+  genBuiltByTech(*,*,*,*,k)                                'Generating plant built by technology, MW'
+  genBuiltByRegion(*,*,*,*,r)                              'Generating plant built by region, MW'
+  genBuiltByYear(*,*,*,*,y)                                'Generating plant built by year, MW'
 
-  capacityByPlantYear(*,*,*,*,g,y)                       'Capacity by plant and year, MW'
-  capacityByPlantTechFuelRegionYear(*,*,*,*,g,k,f,r,y)   'Capacity by plant, technology, fuel, region and year, MW'
-  capacityByTechRegionYear(*,*,*,*,k,r,y)                'Capacity by technology, region and year, MW'
-  capacityByTechYear(*,*,*,*,k,y)                        'Capacity by technology and year, MW'
-  capacityByRegionYear(*,*,*,*,r,y)                      'Capacity by region and year, MW'
+  capacityByPlantYear(*,*,*,*,g,y)                         'Capacity by plant and year, MW'
+  capacityByPlantTechFuelRegionYear(*,*,*,*,g,k,f,r,y)     'Capacity by plant, technology, fuel, region and year, MW'
+  capacityByTechRegionYear(*,*,*,*,k,r,y)                  'Capacity by technology, region and year, MW'
+  capacityByTechYear(*,*,*,*,k,y)                          'Capacity by technology and year, MW'
+  capacityByRegionYear(*,*,*,*,r,y)                        'Capacity by region and year, MW'
 
-  txCapacityByYear(*,*,*,*,r,rr,y)                       'Transmission capacity by path and year, MW'
-  txCapexByProjectPathStateYear(*,*,*,*,tupg,r,rr,pss,y) 'Transmission capital expenditure by project, path, state and year, $m'
-  txCapexByProjectYear(*,*,*,*,tupg,y)                   'Transmission capital expenditure by project and year, $m'
+  txCapacityByYear(*,*,*,*,r,rr,y)                         'Transmission capacity by path and year, MW'
+  txCapexByProjectPathStateYear(*,*,*,*,tupg,r,rr,pss,y)   'Transmission capital expenditure by project, path, state and year, $m'
+  txCapexByProjectYear(*,*,*,*,tupg,y)                     'Transmission capital expenditure by project and year, $m'
 
 * Operation
-  genByPlantLoadBlockYear(*,*,*,*,g,y,t,lb)              'Generation by plant, load block and year, GWh'
-  genByPlantYear(*,*,*,*,g,y)                            'Generation by plant and year, GWh'
-  genByPlantTechFuelRegionYear(*,*,*,*,g,k,f,r,y)        'Generation by plant, technology, fuel, region and year, GWh'
-  genByTechRegionYear(*,*,*,*,k,r,y)                     'Generation by technology, region and year, GWh'
-  genByTechYear(*,*,*,*,k,y)                             'Generation by technology and year, GWh'
-  genByRegionYear(*,*,*,*,r,y)                           'Generation by region and year, GWh'
-  genByTechRegion(*,*,*,*,k,r)                           'Generation by technology and region, GWh'
-  genByTech(*,*,*,*,k)                                   'Generation by technology, GWh'
-  genByRegion(*,*,*,*,r)                                 'Generation by region, GWh'
-  genByYear(*,*,*,*,y)                                   'Generation by year, GWh'
+  genByPlantLoadBlockYear(*,*,*,*,g,y,t,lb)                'Generation by plant, load block and year, GWh'
+  genByPlantYear(*,*,*,*,g,y)                              'Generation by plant and year, GWh'
+  genByPlantTechFuelRegionYear(*,*,*,*,g,k,f,r,y)          'Generation by plant, technology, fuel, region and year, GWh'
+  genByTechRegionYear(*,*,*,*,k,r,y)                       'Generation by technology, region and year, GWh'
+  genByTechYear(*,*,*,*,k,y)                               'Generation by technology and year, GWh'
+  genByRegionYear(*,*,*,*,r,y)                             'Generation by region and year, GWh'
+  genByTechRegion(*,*,*,*,k,r)                             'Generation by technology and region, GWh'
+  genByTech(*,*,*,*,k)                                     'Generation by technology, GWh'
+  genByRegion(*,*,*,*,r)                                   'Generation by region, GWh'
+  genByYear(*,*,*,*,y)                                     'Generation by year, GWh'
+  genAtTopOfLoadBlockYear(*,*,*,*,g,y,t,lb)                'Generation in top two blocks of LDC by plant and year, GWh'
+  genAtTopOfLoadBlockPltTechFuelRegYr(*,*,*,*,g,k,f,r,y,t) 'Generation in top two blocks of LDC by plant, technology, fuel, region and year, GWh'
+  peakDemandNZ(*,*,*,*,y,*)                                'Peak load for New Zealand by year, MW'
+  peakDemandNI(*,*,*,*,y,*)                                'Peak load for the North Island by year, MW'
+  peakDemandNWNI(*,*,*,*,y,*)                              'Peak load with no wind for the North Island by year, MW'
+  txByPathLoadBlockYear(*,*,*,*,r,rr,y,t,lb)               'Interregional transmission by load block and year, GWh'
+  txByPathYear(*,*,*,*,r,rr,y)                             'Interregional transmission by year, GWh'
+  txFromRegionByYear(*,*,*,*,r,y)                          'Transmission from each region by year, GWh'
+  txIntoRegionByYear(*,*,*,*,r,y)                          'Transmission to each region by year, GWh'
+  txByYear(*,*,*,*,y)                                      'Total transmission by year, GWh'
 
-  txByPathLoadBlockYear(*,*,*,*,r,rr,y,t,lb)             'Interregional transmission by load block and year, GWh'
-  txByPathYear(*,*,*,*,r,rr,y)                           'Interregional transmission by year, GWh'
-  txFromRegionByYear(*,*,*,*,r,y)                        'Transmission from each region by year, GWh'
-  txIntoRegionByYear(*,*,*,*,r,y)                        'Transmission to each region by year, GWh'
-  txByYear(*,*,*,*,y)                                    'Total transmission by year, GWh'
+  txLossesByPathLoadBlockYear(*,*,*,*,r,rr,y,t,lb)         'Interregional transmission losses by load block and year, GWh'
+  txLossesByPathYear(*,*,*,*,r,rr,y)                       'Interregional transmission losses by year, GWh'
+  txLossesFromRegionByYear(*,*,*,*,r,y)                    'Transmission losses on flows from each region by year, GWh'
+  txLossesIntoRegionByYear(*,*,*,*,r,y)                    'Transmission losses on flows to each region by year, GWh'
+  txLossesByYear(*,*,*,*,y)                                'Total transmission losses by year, GWh'
 
-  txLossesByPathLoadBlockYear(*,*,*,*,r,rr,y,t,lb)       'Interregional transmission losses by load block and year, GWh'
-  txLossesByPathYear(*,*,*,*,r,rr,y)                     'Interregional transmission losses by year, GWh'
-  txLossesFromRegionByYear(*,*,*,*,r,y)                  'Transmission losses on flows from each region by year, GWh'
-  txLossesIntoRegionByYear(*,*,*,*,r,y)                  'Transmission losses on flows to each region by year, GWh'
-  txLossesByYear(*,*,*,*,y)                              'Total transmission losses by year, GWh'
+  energyPrice(*,*,*,*,r,y)                                 'Time-weighted energy price by region and year, $/MWh'
 
-  energyPrice(*,*,*,*,r,y)                               'Time-weighted energy price by region and year, $/MWh'
-
-  loadByRegionLoadBlockYear(*,*,*,*,r,y,t,lb)            'Load by region, load block and year, GWh'
-  loadByRegionYear(*,*,*,*,r,y)                          'Load by region and year, GWh'
-  loadByYear(*,*,*,*,y)                                  'Load by year, GWh'
+  loadByRegionLoadBlockYear(*,*,*,*,r,y,t,lb)              'Load by region, load block and year, GWh'
+  loadByRegionYear(*,*,*,*,r,y)                            'Load by region and year, GWh'
+  loadByYear(*,*,*,*,y)                                    'Load by year, GWh'
   ;
 
 repDom(rv,expts,rs,scenSet)$r_TOTALCOST(rv,expts,rs,scenSet) = yes ;
@@ -622,6 +647,32 @@ loop(repDom(rv,expts,rs,scenSet),
 
   genByYear(repDom,y) = sum(g, genByPlantYear(repDom,g,y)) ;
 
+  genAtTopOfLoadBlockYear(repDom,g,y,t,lb)$( ord(lb) < 3 ) = genByPlantLoadBlockYear(repDom,g,y,t,lb) ;
+
+  genAtTopOfLoadBlockPltTechFuelRegYr(repDom,g,k,f,r,y,t)$( mapg_k(g,k) * mapg_f(g,f) * mapg_r(g,r) ) = sum(lb, genAtTopOfLoadBlockYear(repDom,g,y,t,lb)) ;
+
+  peakDemandNZ(repDom,y,'LHSpenalty') = sum(sc, scenarioWeight(sc) * r_PEAK_NZ_PENALTY(repDom,y,sc)) ;
+  peakDemandNZ(repDom,y,'LHS')        = sum(g, peakConPlant(rv,g,y) * r_CAPACITY(repDom,g,y)) - i_winterCapacityMargin(rv,y) - i_SIACrisk(rv,y) -
+                                        i_fkSI(rv,y) - i_HVDClossesAtMaxXfer(rv,y) ;
+  peakDemandNZ(repDom,y,'RHS')        = sum(sc, scenarioWeight(sc) * peakLoadNZ(rv,y,sc)) ;
+  peakDemandNZ(repDom,y,'Surplus%')$peakDemandNZ(repDom,y,'RHS') =
+                                        100 * ( peakDemandNZ(repDom,y,'LHSpenalty') + peakDemandNZ(repDom,y,'LHS') - peakDemandNZ(repDom,y,'RHS') ) / peakDemandNZ(repDom,y,'RHS') ;
+
+
+  peakDemandNI(repDom,y,'LHSpenalty') = sum(sc, scenarioWeight(sc) * r_PEAK_NI_PENALTY(repDom,y,sc)) ;
+  peakDemandNI(repDom,y,'LHS')        = sum(nigen(g), peakConPlant(rv,g,y) * r_CAPACITY(repDom,g,y)) + i_largestGenerator(rv,y) - i_winterCapacityMargin(rv,y) +
+                                        sum(allowedStates(rv,paths,ps)$nwd(paths), i_txCapacityPO(rv,paths,ps) * r_BTX(repDom,paths,ps,y)) ;
+  peakDemandNI(repDom,y,'RHS')        = sum(sc, scenarioWeight(sc) * peakLoadNI(rv,y,sc)) ;
+  peakDemandNI(repDom,y,'Surplus%')$peakDemandNI(repDom,y,'RHS') =
+                                        100 * ( peakDemandNI(repDom,y,'LHSpenalty') + peakDemandNI(repDom,y,'LHS') - peakDemandNI(repDom,y,'RHS') ) / peakDemandNI(repDom,y,'RHS') ;
+
+  peakDemandNWNI(repDom,y,'LHSpenalty') = sum(sc, scenarioWeight(sc) * r_NOWINDPEAK_NI_PENALTY(repDom,y,sc)) ;
+  peakDemandNWNI(repDom,y,'LHS')        = sum(mapg_k(g,k)$( nigen(g) and (not wind(k)) ), NWpeakConPlant(rv,g,y) * r_CAPACITY(repDom,g,y)) - i_fkNI(rv,y) +
+                                          sum(allowedStates(rv,paths,ps)$nwd(paths), i_txCapacityPO(rv,paths,ps) * r_BTX(repDom,paths,ps,y)) ;
+  peakDemandNWNI(repDom,y,'RHS')        = sum(sc, scenarioWeight(sc) * peakLoadNI(rv,y,sc)) ;
+  peakDemandNWNI(repDom,y,'Surplus%')$peakDemandNWNI(repDom,y,'RHS') =
+                                          100 * ( peakDemandNWNI(repDom,y,'LHSpenalty') + peakDemandNWNI(repDom,y,'LHS') - peakDemandNWNI(repDom,y,'RHS') ) / peakDemandNWNI(repDom,y,'RHS') ;
+
   txByPathLoadBlockYear(repDom,paths,y,t,lb) = 1e-3 * sum(sc, scenarioWeight(sc) * hoursPerBlock(rv,t,lb) * r_TX(repDom,paths,y,t,lb,sc)) ;
 
   txByPathYear(repDom,paths,y) = sum((t,lb), txByPathLoadBlockYear(repDom,paths,y,t,lb)) ;
@@ -670,6 +721,7 @@ Execute_Unload "%primaryOutput%\rep%reportName%\All results - %reportName%.gdx",
  txCapacityByYear, txCapexByProjectPathStateYear, txCapexByProjectYear
  genByPlantLoadBlockYear genByPlantYear genByPlantTechFuelRegionYear genByTechRegionYear genByTechYear
  genByRegionYear genByTechRegion genByTech genByRegion genByYear
+ genAtTopOfLoadBlockYear, genAtTopOfLoadBlockPltTechFuelRegYr peakDemandNZ peakDemandNI peakDemandNWNI
  txByPathLoadBlockYear txByPathYear txFromRegionByYear txIntoRegionByYear txByYear
  txLossesByPathLoadBlockYear txLossesByPathYear txLossesFromRegionByYear txLossesIntoRegionByYear txLossesByYear
  energyPrice loadByRegionLoadBlockYear loadByRegionYear loadByYear
@@ -756,6 +808,7 @@ loop((repDom(rv,expts,rs,scenSet),g,k,f,r)$sum(y, genBuiltByPlantTechFuelRegionY
 ) ;
 
 
+
 * x) Transmission capital expenditure by project, path, state and year, $m
 put txCapex 'Transmission capital expenditure by project, path, state and year ($m)' /
             'runVersion' 'Experiment' 'Step' 'scenarioSet' 'Project' 'From region' 'To region' 'Upgrade state' loop(y, put y.tl ) ;
@@ -769,6 +822,8 @@ loop((repDom(rv,expts,rs,scenSet),tupg,r,rr,ps)$sum(y, txCapexByProjectPathState
     ) ;
   ) ;
 ) ;
+
+
 
 * x) Generation (GWh)
 put genOutput 'Generation by plant, technology, fuel, region and year (GWh)' /

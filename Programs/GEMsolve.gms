@@ -1,16 +1,16 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 05/06/2012 (imm@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 22/04/2016 (emi@ea.govt.nz)
 
 
 $ontext
   This program continues sequentially from GEMdata. The GEMdata work file (GEMdata.g00) must be called at the invocation
   of GEMsolve. Note that GEMdata was invoked by restarting from the GEMdeclarations work file. Hence, GEMsolve embodies
   all that is declared and/or initialised within GEMdeclarations and GEMdata. GEMsolve may be followed either by another
-  invocation of GEMdata/GEMsolve - i.e. if multiple run versions - or by runMergeGDXs and then GEMreports.
+  invocation of GEMdata/GEMsolve - i.e. if there are to be multiple run versions, or by runGEMreports.
 
-  Notes:
+  TODO:
   1. Make sure that each model type has the correct modelstat error condition driving the abort statements. The assumption is that
      DISP is solved as an RMIP so the solver reporting related to MIPs is skipped for DISP. Is this o.k.? Should we force, perhaps
      in EMI, DISP to never be an LP. As an RMIP, it's an LP anyway. Allowing LP as a solve type requires more modelstat error conditions.
