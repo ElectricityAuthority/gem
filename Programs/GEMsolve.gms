@@ -1,7 +1,7 @@
 * GEMsolve.gms
 
 
-* Last modified by Dr Phil Bishop, 22/04/2016 (emi@ea.govt.nz)
+* Last modified by Dr Phil Bishop, 26/04/2016 (emi@ea.govt.nz)
 
 
 $ontext
@@ -308,8 +308,8 @@ $ label noGRschedule2
       slacks = %AddUpSlacks% ;
       penalties = %AddUpPenalties% ;
 
-*     Collect solver and model info for current model just solved, and figure out if entire GEMsolve invocation is to be
-*     aborted - but hold off aborting until solve report is created.
+*     Collect solver and model info for current model just solved, and figure out if entire GEMsolve job should be
+*     aborted, or a warning issued - but hold off doing anything until solve report is created.
       counter = 0 ;
       if(sameas(steps,'dispatch'),
         genSecs = DISP.resGen ; numSecs = DISP.resUsd ; numIters = DISP.iterUsd ; solverStat = DISP.solveStat ; modelStat = DISP.modelStat ;
@@ -340,7 +340,7 @@ $ label noGRschedule2
       putclose con // '   Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' from the run %runName% and the run version %runVersionName% has finished' /
                       '   Objective function value: ' TOTALCOST.l:<12:1 // ;
 
-*     If job is about to be aborted, post an error message in GEMsolveReport.
+*     If job is about to be aborted or a warning issued, post an error message in GEMsolveReport.
       if(counter = 1,
         putclose rep / 'Model: ' experiments.tl '-' steps.tl '-' scenSet.tl ' finished with some sort of problem and the job is now going to abort.' /
                        'Examine GEMsolve.lst and/or GEMsolve.log to see what went wrong.' ;
@@ -348,16 +348,16 @@ $ label noGRschedule2
 
       if(sameas(steps,'dispatch'),
         abort$( DISP.modelstat <> 1 and DISP.modelstat <> 8 ) "Problem encountered when solving DISP..." ;
-        abort$( DISP.solvestat = 2 ) "The iteration limit is insufficient. Increase iterlim in GEMsolve.gms" ;
-        abort$( DISP.solvestat = 3 ) "The CPU seconds for DISP are insufficient. Increase disp.reslim in GEMsolve.gms" ;
-        abort$( DISP.solvestat = 7 ) "The license file does not support your solver selections" ;
+        abort$( DISP.solvestat = 2 )   "The iteration limit is insufficient. Increase iterlim in GEMsolve.gms" ;
+        display$( DISP.solvestat = 3 ) "Warning: The CPU seconds for DISP are insufficient. Increase disp.reslim in GEMsolve.gms" ;
+        abort$( DISP.solvestat = 7 )   "The license file does not support your solver selections" ;
         else
-        abort$( GEM.modelstat = 10 ) "GEM is infeasible - check out GEMsolve.log to see what you've done wrong in configuring a model that is infeasible" ;
+        abort$( GEM.modelstat = 10 )   "GEM is infeasible - check out GEMsolve.log to see what you've done wrong in configuring a model that is infeasible" ;
         abort$( GEM.modelstat <> 1 and GEM.modelstat <> 8 ) "Problem encountered solving GEM..." ;
-        abort$( GEM.solvestat = 2 )  "The iteration limit is insufficient. Increase iterlim in GEMsolve.gms" ;
-        abort$( GEM.solvestat = 3 )  "The CPU seconds for GEM are insufficient. Increase CPUsecsGEM in GEMssttings.inc" ;
-        abort$( GEM.solvestat = 7 )  "The license file does not support your solver selections" ;
-      ) ;
+        abort$( GEM.solvestat = 2 )    "The iteration limit is insufficient. Increase iterlim in GEMsolve.gms" ;
+        display$( GEM.solvestat = 3 )  "Warning: The CPU seconds for GEM are insufficient. Increase CPUsecsGEM in GEMssttings.inc" ;
+        abort$( GEM.solvestat = 7 )    "The license file does not support your solver selections" ;
+     ) ;
 
 *     Write current model summary information to GEMsolveReport:
       put rep / 'Experiment: ' experiments.tl '.  Step: ' steps.tl '.  Scenario set: ' scenSet.tl '.' /
