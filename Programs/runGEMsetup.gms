@@ -47,3 +47,4 @@ Some notes for future development of emi (the EA models GUI):
     been distributed with GEM. But if they have been removed or deleted by the user, then the job should not and
     cannot proceed. The user should be informed as to why the job is terminating.
 $offtext
+
